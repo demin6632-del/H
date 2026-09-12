@@ -16,16 +16,15 @@ jobs:
           distribution: temurin
           java-version: '17'
 
-      - name: Check project
-        run: |
-          ls -la
-          test -f index.html
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
 
-      - name: Build APK placeholder
-        run: echo "Android build step ready - waiting for android project files"
+      - name: Build APK
+        working-directory: android
+        run: ./gradlew assembleDebug
 
-      - name: Upload files
+      - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: ChroniclesOfTheAbyss-build
-          path: .
+          name: ChroniclesOfTheAbyss-apk
+          path: android/app/build/outputs/apk/debug/*.apk
