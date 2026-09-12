@@ -10,10 +10,22 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Check project files
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Check project
         run: |
           ls -la
           test -f index.html
 
-      - name: Prepare build placeholder
-        run: echo "Android wrapper build step will be added here"
+      - name: Build APK placeholder
+        run: echo "Android build step ready - waiting for android project files"
+
+      - name: Upload files
+        uses: actions/upload-artifact@v4
+        with:
+          name: ChroniclesOfTheAbyss-build
+          path: .
