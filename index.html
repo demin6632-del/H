@@ -5,19 +5,13 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Хроники Бездны</title>
 <style>
-body{margin:0;background:#090b12;color:#eee;font-family:Arial,sans-serif}#app{max-width:520px;margin:auto;padding:16px}.hero{height:180px;background:linear-gradient(#16243a,#080b12);border-radius:18px;display:flex;align-items:end;padding:16px;box-sizing:border-box}.card{background:#151b28;border:1px solid #30384d;border-radius:14px;padding:16px;margin:12px 0}button{width:100%;padding:15px;margin:6px 0;border:0;border-radius:12px;background:#34206d;color:white;font-size:18px}.green{background:#39a845}
+body{margin:0;background:#090b12;color:#eee;font-family:Arial,sans-serif}#app{max-width:520px;margin:auto;padding:16px}.hero{height:180px;background:linear-gradient(#16243a,#080b12);border-radius:18px;display:flex;align-items:end;padding:16px;box-sizing:border-box}.card{background:#151b28;border:1px solid #30384d;border-radius:14px;padding:16px;margin:12px 0}.stat{background:#101522;border-radius:8px;padding:10px;margin:6px 0}button{width:100%;padding:15px;margin:6px 0;border:0;border-radius:12px;background:#34206d;color:white;font-size:18px}.green{background:#39a845}
 </style>
 </head>
 <body><div id="app"></div>
 <script>
-let game=JSON.parse(localStorage.abyssNew||'null')||{hero:null,hp:100,level:1,floor:1,room:0,gold:0,place:'city',log:'Вы прибыли в город у Бездны'};
+let game=JSON.parse(localStorage.abyssNew||'null')||{hero:null,hp:100,level:1,floor:1,room:0,gold:0,strength:5,defense:3,weapon:'Ржавый клинок',armor:'Старая одежда',screen:'city',log:'Вы прибыли в город у Бездны'};
 function save(){localStorage.abyssNew=JSON.stringify(game)}
-function render(){let app=document.getElementById('app');app.innerHTML=`<h1>🌑 Хроники Бездны</h1><div class="hero">🏰 Город у края Бездны</div><div class="card">👤 ${game.hero||'Нет героя'}<br>❤️ HP: ${game.hp}<br>⭐ Уровень: ${game.level}<br>💰 Золото: ${game.gold}<br>🌑 Этаж: ${game.floor}<br><br>${game.log}</div>`+(game.hero?city():`<button onclick="start()">Создать героя</button>`)}
-function city(){return `<button class="green" onclick="enter()">🌑 Войти в Бездну</button><button onclick="character()">👤 Персонаж</button><button onclick="inventory()">🎒 Инвентарь</button><button onclick="guild()">⚔ Гильдия охотников</button>`}
-function start(){game.hero='Искатель Бездны';game.log='Вы начинаете путь';save();render()}
-function enter(){game.log='Вы спускаетесь в первую комнату Бездны';game.room=1;save();render()}
-function character(){game.log='Характеристики героя открыты';save();render()}
-function inventory(){game.log='Инвентарь пока пуст';save();render()}
-function guild(){game.log='Гильдия ждёт новых охотников';save();render()}
-render();
+function render(){let app=document.getElementById('app');if(game.screen==='character'){app.innerHTML=`<h1>👤 Персонаж</h1><div class="card"><h2>${game.hero}</h2><div class="stat">⭐ Уровень: ${game.level}</div><div class="stat">❤️ HP: ${game.hp}</div><div class="stat">⚔ Сила: ${game.strength}</div><div class="stat">🛡 Защита: ${game.defense}</div><div class="stat">🗡 Оружие: ${game.weapon}</div><div class="stat">🥋 Броня: ${game.armor}</div></div><button onclick="back()">← В город</button>`;return}app.innerHTML=`<h1>🌑 Хроники Бездны</h1><div class="hero">🏰 Город у края Бездны</div><div class="card">👤 ${game.hero||'Нет героя'}<br>❤️ HP: ${game.hp}<br>⭐ Уровень: ${game.level}<br>💰 Золото: ${game.gold}<br>🌑 Этаж: ${game.floor}<br><br>${game.log}</div>`+(game.hero?`<button class="green" onclick="enter()">🌑 Войти в Бездну</button><button onclick="character()">👤 Персонаж</button><button onclick="inventory()">🎒 Инвентарь</button>`:`<button onclick="start()">Создать героя</button>`)}
+function start(){game.hero='Искатель Бездны';save();render()}function character(){game.screen='character';save();render()}function back(){game.screen='city';save();render()}function enter(){game.log='Вы спускаетесь в Бездну';save();render()}function inventory(){game.log='Инвентарь пуст';save();render()}render();
 </script></body></html>
