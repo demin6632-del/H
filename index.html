@@ -1,0 +1,20 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Хроники Бездны</title>
+<style>
+body{margin:0;background:#080b12;color:#eee;font-family:Arial,sans-serif}#app{max-width:520px;margin:auto;padding:16px}.card{background:#151b28;border:1px solid #30384d;border-radius:14px;padding:16px;margin:12px 0}button{width:100%;padding:15px;margin:6px 0;border:0;border-radius:12px;background:#34206d;color:white;font-size:18px}
+</style>
+</head>
+<body><div id="app"></div>
+<script>
+let game=JSON.parse(localStorage.abyssNew||'null')||{hero:null,hp:100,level:1,floor:1,room:0,gold:0,log:'Начало пути'};
+function save(){localStorage.abyssNew=JSON.stringify(game)}
+function render(){document.getElementById('app').innerHTML=`<h1>Хроники Бездны</h1><div class="card">Герой: ${game.hero||'нет'}<br>Уровень: ${game.level}<br>HP: ${game.hp}<br>Этаж: ${game.floor}<br>Комната: ${game.room}/5<br>Золото: ${game.gold}<br><br>${game.log}</div>`+(game.hero?`<button onclick="enter()">🌑 Войти в Бездну</button><button onclick="explore()">🔎 Исследовать</button>`:`<button onclick="start()">Начать путь</button>`)}
+function start(){game.hero='Искатель Бездны';save();render()}
+function enter(){game.log='Вы вошли на этаж '+game.floor;save();render()}
+function explore(){game.room++;game.log='Комната исследована';if(game.room>=5){game.room=0;game.floor++;game.log='Найдена лестница. Новый этаж'}else{game.gold+=5}save();render()}
+render();
+</script></body></html>
