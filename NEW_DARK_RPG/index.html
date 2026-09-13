@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Новый проект RPG</title>
+<style>body{background:#080808;color:#ddd;font-family:monospace}#game{max-width:480px;margin:auto;padding:15px}.panel{background:#111;border:1px solid #444;padding:15px;margin:10px 0}button{width:100%;padding:12px;margin:5px;background:#222;color:#fff}</style>
+</head>
+<body>
+<div id="game"><h1>Новый проект RPG</h1><div class="panel"><button onclick="start()">Начать игру</button><button onclick="explore()">Исследовать область</button><p id="out">Ожидание...</p></div></div>
+<script>
+let saveKey='new_dark_rpg_save_v1';
+let hero={name:'Странник',hp:100,energy:50,items:[]};
+function start(){localStorage.setItem(saveKey,JSON.stringify(hero));document.getElementById('out').innerHTML='Герой создан';}
+function explore(){let e=['🌲 Лес найден','🏚️ Руины найдены','⚔️ Встречен враг','🎒 Найден предмет'];let r=e[Math.floor(Math.random()*e.length)];hero.items.push(r);localStorage.setItem(saveKey,JSON.stringify(hero));document.getElementById('out').innerHTML=r;}
+</script>
+</body>
+</html>
