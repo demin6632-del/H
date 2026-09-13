@@ -1,38 +1,32 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
 <title>Тени Забытого Мира</title>
 <style>
-body{background:#080808;color:#ddd;font-family:monospace}#game{max-width:480px;margin:auto;padding:15px}.panel{background:#111;border:1px solid #444;padding:15px;margin:10px 0;border-radius:8px}button{width:100%;padding:12px;margin:5px;background:#222;color:white;border:1px solid #555}.hidden{display:none}.bar{height:15px;background:#222}.hp{height:100%;background:#900}
-</style>
-</head>
-<body>
-<div id="game">
-<h1>ТЕНИ ЗАБЫТОГО МИРА</h1>
+body{background:#080808;color:#ddd;font-family:monospace}#game{max-width:480px;margin:auto;padding:15px}.panel{background:#111;border:1px solid #444;padding:15px;margin:10px 0;border-radius:8px}button{width:100%;padding:12px;margin:5px;background:#222;color:white;border:1px solid #555}.hidden{display:none}
+</style></head>
+<body><div id="game"><h1>ТЕНИ ЗАБЫТОГО МИРА</h1>
 <div id="menu" class="panel"><button onclick="start()">Начать игру</button></div>
 <div id="main" class="hidden">
-<div class="panel"><h2 id="name"></h2><p id="stats"></p><button onclick="explore()">🔎 Исследовать область</button></div>
+<div class="panel"><h2 id="name"></h2><p id="stats"></p><button onclick="explore()">🔎 Исследовать область</button><button onclick="showInv()">🎒 Инвентарь</button><button onclick="levelUp()">📈 Развитие</button></div>
 <div id="battle" class="panel hidden"><h2 id="enemyName"></h2><p id="enemyHp"></p><button onclick="attack()">⚔️ Атаковать</button><button onclick="defend()">🛡️ Защищаться</button><button onclick="skill()">✨ Навык</button><button onclick="escapeBattle()">🏃 Отступить</button></div>
-<div class="panel" id="out">Готово</div>
-</div>
-</div>
+<div class="panel" id="out">Готово</div></div></div>
 <script>
 let saveKey='new_dark_rpg_save_v1';
-let hero={name:'Странник',hp:100,energy:50,attack:10,def:5,items:[]};
+let hero={name:'Странник',hp:100,energy:50,attack:10,def:5,level:1,xp:0,items:[],weapon:'Нет',armor:'Нет'};
 let enemy=null;let guard=false;
-function start(){document.getElementById('menu').classList.add('hidden');document.getElementById('main').classList.remove('hidden');save();update();}
-function explore(){let e=['Теневой зверь','Заражённый охотник','Мутант пустоши'];enemy={name:e[Math.floor(Math.random()*e.length)],hp:40};battle.classList.remove('hidden');updateBattle();out.innerHTML='Обнаружен враг: '+enemy.name;}
-function update(){name.innerHTML=hero.name;stats.innerHTML='❤️ '+hero.hp+' ✨ '+hero.energy+' ⚔️ '+hero.attack;}
-function updateBattle(){enemyHp.innerHTML='❤️ '+enemy.hp+'/40';enemyName.innerHTML='👹 '+enemy.name;}
-function attack(){let d=hero.attack;enemy.hp-=d;turn();}
-function defend(){guard=true;out.innerHTML='Ты готовишься к удару';enemyTurn();}
-function skill(){if(hero.energy>=10){enemy.hp-=25;hero.energy-=10;turn();}else out.innerHTML='Недостаточно энергии';}
-function turn(){if(enemy.hp<=0){out.innerHTML='🏆 Победа! Получен предмет';hero.items.push('Находка');battle.classList.add('hidden');save();update();return;}enemyTurn();}
-function enemyTurn(){let d=guard?5:10;hero.hp-=d;guard=false;if(hero.hp<1)hero.hp=1;update();updateBattle();}
-function escapeBattle(){battle.classList.add('hidden');out.innerHTML='Ты покинул место исследования';}
-function save(){localStorage.setItem(saveKey,JSON.stringify(hero));}
-</script>
-</body>
-</html>
+function start(){menu.classList.add('hidden');main.classList.remove('hidden');save();update()}
+function explore(){let e=['Теневой зверь','Заражённый охотник','Мутант пустоши'];enemy={name:e[Math.floor(Math.random()*e.length)],hp:40,max:40};battle.classList.remove('hidden');updateBattle();out.innerHTML='Обнаружен враг: '+enemy.name}
+function update(){name.innerHTML=hero.name+' Ур. '+hero.level;stats.innerHTML='❤️ '+hero.hp+' ✨ '+hero.energy+' ⚔️ '+hero.attack+' 🛡️ '+hero.def}
+function updateBattle(){enemyName.innerHTML='👹 '+enemy.name;enemyHp.innerHTML='❤️ '+enemy.hp+'/'+enemy.max}
+function attack(){enemy.hp-=hero.attack;turn()}
+function defend(){guard=true;out.innerHTML='Защита';enemyTurn()}
+function skill(){if(hero.energy>=10){hero.energy-=10;enemy.hp-=25;turn()}else out.innerHTML='Нет энергии'}
+function turn(){if(enemy.hp<=0){hero.xp+=50;hero.items.push('Случайный предмет');out.innerHTML='🏆 Победа! Получен опыт и предмет';battle.classList.add('hidden');save();update();return}enemyTurn()}
+function enemyTurn(){hero.hp-=guard?5:10;guard=false;if(hero.hp<1)hero.hp=1;update();updateBattle()}
+function escapeBattle(){battle.classList.add('hidden');out.innerHTML='Отступление'}
+function showInv(){out.innerHTML='🎒 '+hero.items.join(', ')+'<br>🗡️ '+hero.weapon+'<br>🛡️ '+hero.armor}
+function levelUp(){if(hero.xp>=100){hero.level++;hero.xp=0;hero.attack+=3;hero.hp+=20;out.innerHTML='Уровень повышен'}else out.innerHTML='Опыт: '+hero.xp+'/100';update();save()}
+function save(){localStorage.setItem(saveKey,JSON.stringify(hero))}
+</script></body></html>
