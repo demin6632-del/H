@@ -41,6 +41,7 @@ jobs:
           python tools/fix_hero_mobile_overflow.py
           python tools/install_exact_hero_character_v37.py
           python tools/fix_hero_character_size_v38.py
+          python tools/fix_stats_skills_buttons.py
           python - <<'PY'
           from pathlib import Path
           p=Path('android/app/build.gradle')
