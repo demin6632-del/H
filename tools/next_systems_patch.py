@@ -2,8 +2,6 @@ from pathlib import Path
 
 FILES=[Path('NEW_DARK_RPG/index.html'),Path('android/app/src/main/assets/index.html')]
 
-# Точечное развитие существующей игры: без перестройки экранов и без замены базового цикла.
-
 def remove_function(src,name):
     marker='function '+name+'('
     while True:
@@ -41,13 +39,11 @@ for path in FILES:
     s=path.read_text(encoding='utf-8')
     original=s
 
-    # 1. Закрываем последний путь обхода лимита инвентаря — Таинственный ключ.
     old_key="function buyKey(){const price=75;if(getGold()<price){sfx('error');if(el('out'))el('out').innerHTML='<span class=\"red\">Недостаточно золота.</span>';return}hero.gold-=price;hero.items.push({name:'Таинственный ключ',type:'other',icon:'🔑'});save();logEvent('МАГАЗИН','Куплен Таинственный ключ.');shopTab('other')}"
     new_key="function buyKey(){const price=75;if(!inventoryHasSpace()){sfx('error');if(el('out'))el('out').innerHTML='<span class=\"red\">Инвентарь заполнен (24/24).</span>';return}if(getGold()<price){sfx('error');if(el('out'))el('out').innerHTML='<span class=\"red\">Недостаточно золота.</span>';return}hero.gold-=price;hero.items.push({name:'Таинственный ключ',type:'other',icon:'🔑'});save();logEvent('МАГАЗИН','Куплен Таинственный ключ.');shopTab('other')}"
     if old_key not in s:raise SystemExit(f'{path}: buyKey exact source not found')
     s=s.replace(old_key,new_key,1)
 
-    # 2. Миграция старых сохранений: новые поля навыка получают безопасные значения.
     needle="hero.crit=Math.max(0,Math.min(1,Number(hero.crit||0)));hero.weapon=hero.weapon||'Нет';"
     repl="hero.crit=Math.max(0,Math.min(1,Number(hero.crit||0)));hero.skillLevel=Math.max(1,Math.min(5,Number(hero.skillLevel||1)));hero.skillPoints=Math.max(0,Number(hero.skillPoints||0));hero.weapon=hero.weapon||'Нет';"
     if needle not in s:raise SystemExit(f'{path}: normalizeHero skill insertion point not found')
@@ -58,7 +54,6 @@ for path in FILES:
     if start_old not in s:raise SystemExit(f'{path}: start hero source not found')
     s=s.replace(start_old,start_new,1)
 
-    # 3. Полноценный прогресс одного классового навыка: до 5 уровня.
     s=remove_function(s,'upgradeSkill')
     s=remove_function(s,'renderSkills')
     marker='function showSkills(){'
@@ -69,19 +64,16 @@ for path in FILES:
     if skill_old not in s:raise SystemExit(f'{path}: skill damage source not found')
     s=s.replace(skill_old,skill_new,1)
 
-    # 4. Каждый уровень героя даёт 1 очко навыка. Базовые бонусы уровня сохраняются.
     level_old="hero.attack+=3;hero.maxHp+=20;hero.maxEnergy+=5;levels++"
     level_new="hero.attack+=3;hero.maxHp+=20;hero.maxEnergy+=5;hero.skillPoints=(Number(hero.skillPoints)||0)+1;levels++"
     if level_old not in s:raise SystemExit(f'{path}: level-up source not found')
     s=s.replace(level_old,level_new,1)
 
-    # 5. Разнообразие Бездны: 18% обычных комнат становятся короткими событиями.
     explore_old="const names=['Теневой зверь','Заражённый охотник','Мутант пустоши','Пожиратель костей'];const roomNumber=abyssRoom+1;const boss=abyssFloor===MAX_FLOOR&&roomNumber===ROOMS_PER_FLOOR;const elite=!boss&&roomNumber===ROOMS_PER_FLOOR;"
-    explore_new="const names=['Теневой зверь','Заражённый охотник','Мутант пустоши','Пожиратель костей'];const roomNumber=abyssRoom+1;const boss=abyssFloor===MAX_FLOOR&&roomNumber===ROOMS_PER_FLOOR;const elite=!boss&&roomNumber===ROOMS_PER_FLOOR;if(!boss&&!elite&&Math.random()<0.18){const events=[{name:'Кровавый алтарь',apply:()=>{const heal=Math.max(1,Math.round(hero.maxHp*.25));hero.hp=Math.min(hero.maxHp,hero.hp+heal);return'Восстановлено '+heal+' HP.'}},{name:'Забытый тайник',apply:()=>{const gold=30+abyssFloor*5;hero.gold+=gold;return'Найдено '+gold+' золота.'}},{name:'Источник Бездны',apply:()=>{const energy=Math.max(1,Math.round(hero.maxEnergy*.35));hero.energy=Math.min(hero.maxEnergy,hero.energy+energy);return'Восстановлено '+energy+' энергии.'}}];const event=events[Math.floor(Math.random()*events.length)];const result=event.apply();abyssRoom++;save();logEvent('СОБЫТИЕ',event.name+': '+result);update();screenHistory=['menu','main','abyss'];history.replaceState({screen:'abyss'},'','#abyss');setScreen('abyss',false);updateAbyss();if(el('out'))el('out').innerHTML='<span class=\"green\">'+event.name+': '+result+'</span>';return}"
+    explore_new="const names=['Теневой зверь','Заражённый охотник','Мутант пустоши','Пожиратель костей'];const roomNumber=abyssRoom+1;const boss=abyssFloor===MAX_FLOOR&&roomNumber===ROOMS_PER_FLOOR;const elite=!boss&&roomNumber===ROOMS_PER_FLOOR;if(!boss&&!elite&&Math.random()<0.18){const events=[{name:'Кровавый алтарь',apply:()=>{const heal=Math.max(1,Math.round(hero.maxHp*.25));hero.hp=Math.min(hero.maxHp,hero.hp+heal);return'Восстановлено '+heal+' HP.'}},{name:'Забытый тайник',apply:()=>{const gold=30+abyssFloor*5;hero.gold+=gold;return'Найдено '+gold+' золота.'}},{name:'Источник Бездны',apply:()=>{const energy=Math.max(1,Math.round(hero.maxEnergy*.35));hero.energy=Math.min(hero.maxEnergy,hero.energy+energy);return'Восстановлено '+energy+' энергии.'}}];const event=events[Math.floor(Math.random()*events.length)];const result=event.apply();abyssRoom++;save();logEvent('СОБЫТИЕ',event.name+': '+result);update();screenHistory=['menu','main','abyss'];history.replaceState({screen:'abyss'},'','#abyss');setScreen('abyss',false);updateAbyss();if(el('out'))el('out').innerHTML='<span class=\"green\">'+event.name+': '+result+'</span>';return}if(!boss&&!elite&&Math.random()<0.40){abyssRoom++;save();logEvent('БЕЗ БОЯ','Путь в Бездне продолжается без столкновения.');update();screenHistory=['menu','main','abyss'];history.replaceState({screen:'abyss'},'','#abyss');setScreen('abyss',false);updateAbyss();if(el('out'))el('out').innerHTML='<span class=\"muted\">В этот раз путь прошёл без боя.</span>';return}"
     if explore_old not in s:raise SystemExit(f'{path}: explore source not found')
     s=s.replace(explore_old,explore_new,1)
 
-    # 6. Владыка Бездны получает вторую фазу на 50% HP.
     update_old="el('enemyName').innerHTML=(enemy.isBoss?'👑 Владыка Бездны':enemy.isElite?'👿 Элитный ':'Проклятый ')+enemy.name;"
     update_new="if(enemy.isBoss&&enemy.phase===2)el('enemyName').innerHTML='👑 Владыка Бездны · Фаза II';else el('enemyName').innerHTML=(enemy.isBoss?'👑 Владыка Бездны':enemy.isElite?'👿 Элитный ':'Проклятый ')+enemy.name;"
     if update_old not in s:raise SystemExit(f'{path}: updateBattle source not found')
@@ -97,7 +89,6 @@ for path in FILES:
     if enemy_turn_old not in s:raise SystemExit(f'{path}: enemyTurn source not found')
     s=s.replace(enemy_turn_old,enemy_turn_new,1)
 
-    # 7. После улучшения/загрузки статы и навыки автоматически перерисовываются.
     update_old="updateHud();renderHero();renderEquipment();renderTavern()}"
     update_new="updateHud();renderHero();renderEquipment();renderTavern();if(el('statsContent'))renderStats();if(el('skillsContent'))renderSkills()}"
     if update_old not in s:raise SystemExit(f'{path}: update source not found')
