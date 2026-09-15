@@ -23,7 +23,7 @@ jobs:
           import base64, hashlib
           p=Path('tools/character_v37.webp.b64')
           s=p.read_text(encoding='ascii').strip()
-          expected='56478cec71cfca91c8247c0976b0ded557b2ca92c2eeb7c520d78f6d445b23b2'
+          expected='f40fc52385200d1dd67cf71c717c659e136d17c60334414c368c2fcf3da5bedb'
           actual=hashlib.sha256(s.encode('ascii')).hexdigest()
           if actual != expected:
               raise SystemExit(f'character image data mismatch: {actual}')
