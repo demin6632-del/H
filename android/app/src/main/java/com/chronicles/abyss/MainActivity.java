@@ -5,7 +5,7 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
 import android.graphics.Color;
-import android.view.View;
+import android.view.KeyEvent;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
@@ -14,6 +14,7 @@ import androidx.core.splashscreen.SplashScreen;
 
 public class MainActivity extends Activity {
     private volatile boolean webViewReady = false;
+    private WebView web;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -25,7 +26,7 @@ public class MainActivity extends Activity {
 
         super.onCreate(savedInstanceState);
 
-        WebView web = new WebView(this);
+        web = new WebView(this);
         web.setBackgroundColor(Color.rgb(8, 8, 8));
 
         WebSettings settings = web.getSettings();
@@ -55,5 +56,16 @@ public class MainActivity extends Activity {
 
         // Защита от вечного splash при ошибке загрузки WebView.
         new Handler(Looper.getMainLooper()).postDelayed(() -> webViewReady = true, 5000);
+    }
+
+    @Override
+    public boolean onKeyDown(int keyCode, KeyEvent event) {
+        // Системная кнопка/жест Назад сначала возвращает на предыдущий экран игры.
+        // Если истории игры уже нет, Android выполняет стандартное действие выхода.
+        if (keyCode == KeyEvent.KEYCODE_BACK && web != null && web.canGoBack()) {
+            web.goBack();
+            return true;
+        }
+        return super.onKeyDown(keyCode, event);
     }
 }
