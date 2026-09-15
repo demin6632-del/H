@@ -3,6 +3,8 @@ import re
 
 FILES=[Path('NEW_DARK_RPG/index.html'),Path('android/app/src/main/assets/index.html')]
 
+FUNCTION_NAMES=['inventoryHasSpace','addItemToInventory','unequipItemType','unequipAll','showStats','showSkills','renderStats','renderSkills']
+
 FUNCTIONS=r'''
 function inventoryHasSpace(){return hero.items.length<24}
 function addItemToInventory(item){if(!inventoryHasSpace())return false;hero.items.push(item);return true}
@@ -13,6 +15,22 @@ function showSkills(){renderSkills();setScreen('skills')}
 function renderStats(){const s=classStats[hero.class]||{};const crit=Math.round((hero.crit||0)*100);if(el('statsContent'))el('statsContent').innerHTML='<div class="info-row"><span>Имя</span><b>'+hero.name+'</b></div><div class="info-row"><span>Класс</span><b>'+((hero.class)||'—')+'</b></div><div class="info-row"><span>Уровень</span><b>'+hero.level+'</b></div><div class="info-row"><span>Опыт</span><b>'+hero.xp+'/100</b></div><div class="info-row"><span>Здоровье</span><b>'+hero.hp+'/'+hero.maxHp+'</b></div><div class="info-row"><span>Энергия</span><b>'+hero.energy+'/'+hero.maxEnergy+'</b></div>';if(el('statsCombat'))el('statsCombat').innerHTML='<div>⚔️ Сила: <b>'+hero.attack+'</b></div><div>🛡️ Защита: <b>'+hero.def+'</b></div><div>◆ Критический шанс: <b>'+crit+'%</b></div><div>🪙 Золото: <b>'+getGold()+'</b></div><div>⚔️ Оружие: <b>'+hero.weapon+'</b></div><div>🛡️ Броня: <b>'+hero.armor+'</b></div><div>⭐ Базовая сила класса: <b>'+((s.attack)||'—')+'</b></div><div>🛡️ Базовая защита класса: <b>'+((s.def)||'—')+'</b></div>'}
 function renderSkills(){const s=classStats[hero.class]||{};const sk=skillStats[hero.class]||{};if(el('skillsContent'))el('skillsContent').innerHTML='<div class="info-card"><h3>'+((s.skill)||'Навык не выбран')+'</h3><div class="sep"></div><div class="info-row"><span>Класс</span><b>'+((hero.class)||'—')+'</b></div><div class="info-row"><span>Стоимость энергии</span><b>'+((sk.cost)||'—')+'</b></div><div class="info-row"><span>Базовый урон</span><b>'+((sk.damage)||'—')+'</b></div><p class="muted" style="text-align:center;line-height:1.5">Навык класса используется в бою. Параметры зависят от выбранного класса героя.</p></div>'}
 '''
+
+def remove_all_functions(src,names):
+    for name in names:
+        while True:
+            marker='function '+name+'('
+            p=src.find(marker)
+            if p<0: break
+            brace=src.find('{',p)
+            if brace<0: break
+            depth=1;i=brace+1
+            while i<len(src) and depth:
+                if src[i]=='{':depth+=1
+                elif src[i]=='}':depth-=1
+                i+=1
+            src=src[:p]+src[i:]
+    return src
 
 def replace_function(src,name,new):
     marker='function '+name+'('
@@ -31,10 +49,11 @@ for path in FILES:
     s=path.read_text(encoding='utf-8')
     original=s
 
-    if 'function inventoryHasSpace()' not in s:
-        marker='function levelUp(){'
-        if marker not in s: raise SystemExit(f'levelUp marker missing: {path}')
-        s=s.replace(marker,FUNCTIONS+'\n'+marker,1)
+    # Удаляем все накопившиеся версии этих обработчиков и ставим ровно одну финальную версию.
+    s=remove_all_functions(s,FUNCTION_NAMES)
+    marker='function levelUp(){'
+    if marker not in s: raise SystemExit(f'levelUp marker missing: {path}')
+    s=s.replace(marker,FUNCTIONS+'\n'+marker,1)
 
     s=s.replace('id="heroXp">0/1000','id="heroXp">0/100')
     s=s.replace('const xpNeed=1000;','const xpNeed=100;',1)
@@ -75,7 +94,6 @@ for path in FILES:
         block=s[battle_start:battle_end]
         block=block.replace('<button class="back-mini" onclick="goBack()">← Назад</button>','<button class="back-mini" onclick="escapeBattle()">← Отступить</button>',1)
         block=block.replace('<button onclick="goBack()">← Назад</button>','<button onclick="escapeBattle()">← Отступить</button>',1)
-        # В старой версии уже есть отдельная кнопка «Отступить». Убираем только дубликат, не меняя механику.
         block=block.replace('<button onclick="escapeBattle()">↩ Отступить</button><button onclick="escapeBattle()">← Отступить</button>','<button onclick="escapeBattle()">↩ Отступить</button>',1)
         s=s[:battle_start]+block+s[battle_end:]
 
