@@ -1,6 +1,6 @@
 name: Build APK
 
-# Сборка v2.3 после дополнительного усиления фоновой музыки
+# Сборка v2.4 после дополнительного усиления фоновой музыки
 
 on:
   workflow_dispatch:
@@ -13,46 +13,34 @@ permissions:
 jobs:
   build:
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-
       - name: Apply game fixes and amplified background music
         run: |
           python tools/fix_button_interactions.py
           python tools/add_background_music.py
-          python tools/amplify_background_music.py
+          python tools/amplify_music_v2.py
           python - <<'PY'
           from pathlib import Path
-          p = Path('android/app/build.gradle')
-          s = p.read_text()
-          s = s.replace("versionCode 13", "versionCode 14")
-          s = s.replace("versionName '2.2'", "versionName '2.3'")
+          p=Path('android/app/build.gradle')
+          s=p.read_text()
+          s=s.replace('versionCode 13','versionCode 15').replace("versionName '2.2'","versionName '2.4'").replace('versionCode 14','versionCode 15').replace("versionName '2.3'","versionName '2.4'")
           p.write_text(s)
           PY
-
       - name: Commit permanent source fixes
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add NEW_DARK_RPG/index.html android/app/src/main/assets/index.html android/app/build.gradle
-          if git diff --cached --quiet; then
-            echo "No source changes to commit."
-          else
-            git commit -m "Improve background music volume [skip ci]"
-            git push origin HEAD:main
-          fi
-
+          if git diff --cached --quiet; then echo "No source changes to commit."; else git commit -m "Amplify background music [skip ci]"; git push origin HEAD:main; fi
       - name: Set up Java
         uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: '17'
-
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v4
-
       - name: Prepare permanent signing key
         env:
           ANDROID_KEYSTORE_B64: ${{ secrets.ANDROID_KEYSTORE_B64 }}
@@ -65,22 +53,19 @@ jobs:
           echo "ANDROID_KEYSTORE_PASSWORD=$ANDROID_KEYSTORE_PASSWORD" >> "$GITHUB_ENV"
           echo "ANDROID_KEY_ALIAS=$ANDROID_KEY_ALIAS" >> "$GITHUB_ENV"
           echo "ANDROID_KEY_PASSWORD=$ANDROID_KEY_PASSWORD" >> "$GITHUB_ENV"
-
       - name: Build signed release APK
         working-directory: android
         run: ./gradlew assembleRelease --no-daemon
-
       - name: Verify APK signature and version
         working-directory: android
         run: |
           APK=app/build/outputs/apk/release/app-release.apk
           BUILD_TOOLS=$(find "$ANDROID_HOME/build-tools" -maxdepth 1 -mindepth 1 -type d | sort -V | tail -1)
           "$BUILD_TOOLS/apksigner" verify --verbose "$APK"
-          "$BUILD_TOOLS/aapt" dump badging "$APK" | grep -E "package: name='com.chronicles.abyss'|versionName='2.3'|versionCode='14'"
-
+          "$BUILD_TOOLS/aapt" dump badging "$APK" | grep -E "package: name='com.chronicles.abyss'|versionName='2.4'|versionCode='15'"
       - name: Upload signed APK
         uses: actions/upload-artifact@v4
         with:
-          name: ChroniclesOfTheAbyss-apk-release-v2.3
+          name: ChroniclesOfTheAbyss-apk-release-v2.4
           path: android/app/build/outputs/apk/release/app-release.apk
           if-no-files-found: error
