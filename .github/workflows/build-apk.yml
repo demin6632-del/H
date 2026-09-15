@@ -3,6 +3,7 @@ name: Build APK
 # Сборка с проверкой кнопок, экипировки и интерфейса
 # BUILD-RELEASE-TRIGGER-2026-09-16 — пересборка последних изменений
 # BUILD-BATTLE-FREQUENCY-2026-09-16 — более редкие обычные бои
+# BUILD-INFINITE-ABYSS-V2-2026-09-16 — настоящая бесконечная постоянная Бездна
 
 on:
   workflow_dispatch:
@@ -46,6 +47,7 @@ jobs:
           python tools/fix_stats_skills_buttons.py
           python tools/final_game_stabilization.py
           python tools/next_systems_patch.py
+          python tools/fix_infinite_abyss_mode.py
           python - <<'PY'
           from pathlib import Path
           import re
@@ -67,9 +69,12 @@ jobs:
               Path('/tmp/game.js').write_text(js)
               print(f'Checking {name}: {len(s)} bytes')
               subprocess.run(['node','--check','/tmp/game.js'],check=True)
-              required=['id="stats"','id="skills"','function inventoryHasSpace()','function unequipItemType(type)','function unequipAll()','function showStats()','function showSkills()','function levelUp()','function upgradeSkill()','Math.random()<0.18','Math.random()<0.40','enemy.phase===1']
+              required=['id="stats"','id="skills"','function inventoryHasSpace()','function unequipItemType(type)','function unequipAll()','function showStats()','function showSkills()','function levelUp()','function upgradeSkill()','Math.random()<0.18','Math.random()<0.40','enemy.phase===1','INFINITE_PERSISTENCE_FIX_V2']
               missing=[x for x in required if x not in s]
               if missing: raise SystemExit(f'{name}: missing required stabilization: {missing}')
+              if "abyssFloor++" not in s: raise SystemExit(f'{name}: infinite floor progression missing')
+              if "resetAbyss();hero.hp=hero.maxHp" in s: raise SystemExit(f'{name}: death still resets Abyss progress')
+              if "Завершить Бездну" in s: raise SystemExit(f'{name}: finite Abyss ending remains')
               if "hero.xp+=xp;hero.gold+=gold;levelUp();" not in s: raise SystemExit(f'{name}: XP level-up hook missing')
               if "sk.skill+' нанёс" in s: raise SystemExit(f'{name}: old broken skill-name reference remains')
               if "function escapeBattle(){goBack()}" in s: raise SystemExit(f'{name}: old escape handler remains')
@@ -80,7 +85,7 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add NEW_DARK_RPG/index.html android/app/src/main/assets/index.html android/app/build.gradle
-          if git diff --cached --quiet; then echo "No source changes to commit."; else git commit -m "Apply battle frequency adjustment [skip ci]"; git push origin HEAD:main; fi
+          if git diff --cached --quiet; then echo "No source changes to commit."; else git commit -m "Apply true persistent infinite Abyss mode [skip ci]"; git push origin HEAD:main; fi
       - name: Set up Java
         uses: actions/setup-java@v4
         with:
