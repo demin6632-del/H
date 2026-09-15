@@ -23,16 +23,38 @@ jobs:
         with:
           gradle-version: '8.9'
 
-      - name: Check Android project
-        working-directory: android
-        run: ls -la
+      - name: Prepare permanent signing key
+        env:
+          KEYSTORE_B64: ${{ secrets.ANDROID_KEYSTORE_B64 }}
+        run: |
+          set -e
+          if [ -z "$KEYSTORE_B64" ]; then
+            echo "ERROR: GitHub secret ANDROID_KEYSTORE_B64 is not configured."
+            exit 1
+          fi
+          echo "$KEYSTORE_B64" | base64 --decode > "$RUNNER_TEMP/chronicles-release.jks"
+          test -s "$RUNNER_TEMP/chronicles-release.jks"
 
-      - name: Build APK
+      - name: Build signed release APK
         working-directory: android
-        run: gradle --no-daemon assembleDebug
+        env:
+          ANDROID_KEYSTORE_PATH: ${{ runner.temp }}/chronicles-release.jks
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: gradle --no-daemon clean assembleRelease
 
-      - name: Upload APK
+      - name: Verify APK signature and version
+        working-directory: android
+        run: |
+          APK=$(find app/build/outputs/apk/release -name '*.apk' -type f | head -n 1)
+          test -n "$APK"
+          echo "Built: $APK"
+          apksigner verify --verbose "$APK"
+
+      - name: Upload signed APK
         uses: actions/upload-artifact@v4
         with:
-          name: ChroniclesOfTheAbyss-apk
-          path: android/app/build/outputs/apk/debug/*.apk
+          name: ChroniclesOfTheAbyss-apk-release-v1.1
+          path: android/app/build/outputs/apk/release/*.apk
+          if-no-files-found: error
