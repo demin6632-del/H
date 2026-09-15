@@ -8,8 +8,8 @@ android {
         applicationId 'com.chronicles.abyss'
         minSdk 24
         targetSdk 35
-        versionCode 2
-        versionName '1.1'
+        versionCode 3
+        versionName '1.2'
     }
 
     // Постоянная release-подпись берётся из переменных GitHub Actions.
@@ -24,6 +24,28 @@ android {
                 keyPassword System.getenv('ANDROID_KEY_PASSWORD')
             }
         }
+    }
+
+    // Аватар хранится как текст Base64 и превращается в PNG/JPEG во время сборки.
+    // Это позволяет держать бинарный ресурс в репозитории без внешних зависимостей.
+    def avatarGeneratedRes = file("$buildDir/generated/res/avatar")
+    sourceSets {
+        main.res.srcDir(avatarGeneratedRes)
+    }
+
+    def generateAvatarResource = tasks.register('generateAvatarResource') {
+        outputs.dir(avatarGeneratedRes)
+        doLast {
+            def drawableDir = new File(avatarGeneratedRes, 'drawable')
+            drawableDir.mkdirs()
+            def source = file('src/main/avatar_base64.txt').text.replaceAll(/\s+/, '')
+            def avatarFile = new File(drawableDir, 'game_avatar.jpg')
+            avatarFile.bytes = source.decodeBase64()
+        }
+    }
+
+    tasks.named('preBuild').configure {
+        dependsOn(generateAvatarResource)
     }
 
     buildTypes {
