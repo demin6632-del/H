@@ -1,6 +1,7 @@
 name: Build APK
 
 # Сборка с проверкой кнопок, экипировки и интерфейса
+# BUILD-RELEASE-TRIGGER-2026-09-16 — пересборка последних изменений
 
 on:
   workflow_dispatch:
