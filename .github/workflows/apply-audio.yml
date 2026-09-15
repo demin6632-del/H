@@ -22,7 +22,7 @@ jobs:
           python3 - <<'PY'
           from pathlib import Path
 
-          audio_js = r'''\n/* Аудиосистема: процедурная тёмная музыка и звуки без внешних файлов */
+          audio_js = r'''/* Аудиосистема: процедурная тёмная музыка и звуки без внешних файлов */
           let audioCtx=null,audioMaster=null,musicGain=null,sfxGain=null,musicTimer=null,musicStep=0;
           let audioEnabled=localStorage.getItem('abyss_audio_enabled')!=='0';
           let musicVolume=Number(localStorage.getItem('abyss_music_volume')||0.28);
@@ -80,6 +80,7 @@ jobs:
           html_files=['NEW_DARK_RPG/index.html','android/app/src/main/assets/index.html']
           for fn in html_files:
               p=Path(fn); text=p.read_text(encoding='utf-8')
+              text=text.replace('\\n/* Аудиосистема: процедурная тёмная музыка','/* Аудиосистема: процедурная тёмная музыка')
               if '/* Аудиосистема: процедурная тёмная музыка' not in text:
                   marker='let saveKey='; pos=text.find(marker)
                   if pos<0: raise SystemExit(f'marker missing in {fn}')
