@@ -128,13 +128,15 @@
 .hero-character-image{
   display:block!important;
   width:auto!important;
-  height:155%!important;
+  height:100%!important;
   max-width:100%!important;
   object-fit:contain!important;
   object-position:center bottom!important;
   filter:drop-shadow(0 0 12px rgba(190,0,0,.42))!important;
 }
-@media(max-width:360px){.hero-figure{height:260px!important;min-height:260px!important}.hero-character-image{height:145%!important}}
+@media(max-width:360px){
+  .hero-figure{height:260px!important;min-height:260px!important}
+}
 </style>
 </style>
 </head>
@@ -284,4 +286,26 @@ function renderHeroEquipment(){const w=el('heroWeaponCard'),a=el('heroArmorCard'
 function heroRefNav(id){document.querySelectorAll('.screen').forEach(s=>s.classList.add('hidden'));const target=el(id);if(target)target.classList.remove('hidden');if(id==='hero')renderHero();if(id==='inventory'&&typeof renderInventory==='function')renderInventory();if(id==='equipment'&&typeof renderEquipment==='function')renderEquipment();}
 function levelUp(){if(hero.xp<100){if(el('out'))el('out').innerHTML='Опыт: '+hero.xp+'/100';return}let levels=0;while(hero.xp>=100){hero.xp-=100;hero.level++;hero.attack+=3;hero.maxHp+=20;hero.maxEnergy+=5;levels++}hero.hp=hero.maxHp;hero.energy=hero.maxEnergy;logEvent('ПРОКАЧКА','Получено уровней: '+levels+'.');if(el('out'))el('out').innerHTML='<span class="green">Уровень повышен: +'+levels+'.</span>';update();save()}function save(){localStorage.setItem(saveKey,JSON.stringify({version:SAVE_VERSION,hero,abyssFloor,abyssRoom,abyssBossDefeated,allies,journal:journalEntries}));localStorage.setItem('abyss_gold',String(hero.gold||0))}function showExit(){save();el('modal').classList.remove('hidden')}function closeModal(){el('modal').classList.add('hidden')}function mainMenu(){save();gameMusicAllowed=false;stopMusic();if(audioCtx&&audioCtx.state==='running')audioCtx.suspend();closeModal();screenHistory=['menu'];history.replaceState({screen:'menu'},'','#menu');setScreen('menu',false)}let screenHistory=['menu'];
 function goBack(){sfx('back');if(screenHistory.length>1){screenHistory.pop();const prev=screenHistory[screenHistory.length-1];setScreen(prev,false);history.replaceState({screen:prev},'','#'+prev);update();return;}if(hero.class)setScreen('main',false);else setScreen('menu',false)}window.addEventListener('popstate',function(event){let screen=event.state&&event.state.screen?event.state.screen:'menu';if(screenHistory[screenHistory.length-1]!==screen)screenHistory.push(screen);setScreen(screen,false);if(screen==='battle')updateBattle();if(screen==='abyss')updateAbyss();if(screen==='main')update();if(screen==='inventory')renderInventory();if(screen==='equipment')renderEquipment();if(screen==='hero')renderHero();if(screen==='shop')shopTab(shopCategory);if(screen==='tavern')renderTavern();if(screen==='journal')renderJournal();if(screen==='death')update()});screenHistory=['menu'];history.replaceState({screen:'menu'},'',location.pathname+location.search+'#menu');const saved=loadGame();if(saved&&el('continueHit'))el('continueHit').classList.remove('hidden');update();updateAbyss();renderJournal();renderTavern();
-</script></div></body></html>
+</script></div>
+<style id="hero-character-scale-v38-final">
+/* === v3.8 FINAL: увеличиваем видимого героя поверх всех предыдущих CSS === */
+.hero-v34 .hero-figure .hero-character-image{
+  display:block!important;
+  width:auto!important;
+  height:100%!important;
+  max-width:none!important;
+  max-height:none!important;
+  object-fit:contain!important;
+  object-position:center bottom!important;
+  transform:scale(2)!important;
+  transform-origin:center bottom!important;
+  flex:0 0 auto!important;
+}
+.hero-v34 .hero-figure{overflow:visible!important}
+.hero-v34 .hero-stage{overflow:hidden!important}
+@media(max-width:390px){
+  .hero-v34 .hero-figure .hero-character-image{transform:scale(1.8)!important}
+}
+</style>
+
+</body></html>
