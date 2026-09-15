@@ -16,6 +16,22 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+      - name: Validate exact Hero character image
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import base64, hashlib
+          p=Path('tools/character_v37.webp.b64')
+          s=p.read_text(encoding='ascii').strip()
+          expected='ae80fdfb48259d66778db2e06e799047e63fff18ebbf83ffeced2af75ccf700c'
+          actual=hashlib.sha256(s.encode('ascii')).hexdigest()
+          if actual != expected:
+              raise SystemExit(f'character image data mismatch: {actual}')
+          raw=base64.b64decode(s, validate=True)
+          if raw[:4] != b'RIFF' or raw[8:12] != b'WEBP':
+              raise SystemExit('character image is not a valid WEBP container')
+          print(f'Hero image OK: {len(raw)} bytes')
+          PY
       - name: Repair game source and button interactions
         run: |
           python tools/install_v3_priority_fixes.py
@@ -27,13 +43,14 @@ jobs:
           python tools/patch_hero_screen_final.py
           python tools/patch_hero_reference_v35.py
           python tools/fix_hero_mobile_overflow.py
+          python tools/install_exact_hero_character_v37.py
           python - <<'PY'
           from pathlib import Path
           p=Path('android/app/build.gradle')
           s=p.read_text()
           import re
-          s=re.sub(r'versionCode\s+\d+', 'versionCode 23', s, count=1)
-          s=re.sub(r"versionName\s+'[^']+'", "versionName '3.6'", s, count=1)
+          s=re.sub(r'versionCode\s+\d+', 'versionCode 24', s, count=1)
+          s=re.sub(r"versionName\s+'[^']+'", "versionName '3.7'", s, count=1)
           p.write_text(s)
           PY
       - name: Static JavaScript syntax check
@@ -41,17 +58,20 @@ jobs:
           python - <<'PY'
           from pathlib import Path
           import re
-          s=Path('NEW_DARK_RPG/index.html').read_text()
-          js='\n'.join(m.group(1) for m in re.finditer(r'<script[^>]*>(.*?)</script>',s,re.S))
-          Path('/tmp/game.js').write_text(js)
+          for name in ['NEW_DARK_RPG/index.html','android/app/src/main/assets/index.html']:
+              s=Path(name).read_text(encoding='utf-8')
+              js='\n'.join(m.group(1) for m in re.finditer(r'<script[^>]*>(.*?)</script>',s,re.S))
+              Path('/tmp/game.js').write_text(js)
+              print(f'Checking {name}: {len(s)} bytes')
+              import subprocess
+              subprocess.run(['node','--check','/tmp/game.js'],check=True)
           PY
-          node --check /tmp/game.js
       - name: Commit permanent source fixes
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add NEW_DARK_RPG/index.html android/app/src/main/assets/index.html android/app/build.gradle
-          if git diff --cached --quiet; then echo "No source changes to commit."; else git commit -m "Fix Hero mobile layout overflow [skip ci]"; git push origin HEAD:main; fi
+          if git diff --cached --quiet; then echo "No source changes to commit."; else git commit -m "Use exact uploaded Hero character image [skip ci]"; git push origin HEAD:main; fi
       - name: Set up Java
         uses: actions/setup-java@v4
         with:
@@ -80,10 +100,10 @@ jobs:
           APK=app/build/outputs/apk/release/app-release.apk
           BUILD_TOOLS=$(find "$ANDROID_HOME/build-tools" -maxdepth 1 -mindepth 1 -type d | sort -V | tail -1)
           "$BUILD_TOOLS/apksigner" verify --verbose "$APK"
-          "$BUILD_TOOLS/aapt" dump badging "$APK" | grep -E "package: name='com.chronicles.abyss'|versionName='3.6'|versionCode='23'"
+          "$BUILD_TOOLS/aapt" dump badging "$APK" | grep -E "package: name='com.chronicles.abyss'|versionName='3.7'|versionCode='24'"
       - name: Upload signed APK
         uses: actions/upload-artifact@v4
         with:
-          name: ChroniclesOfTheAbyss-apk-release-v3.6
+          name: ChroniclesOfTheAbyss-apk-release-v3.7
           path: android/app/build/outputs/apk/release/app-release.apk
           if-no-files-found: error
