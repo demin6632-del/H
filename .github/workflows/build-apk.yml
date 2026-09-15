@@ -1,6 +1,6 @@
 name: Build APK
 
-# Сборка v3 с полным блоком приоритетных исправлений
+# Сборка с повторной проверкой нажатий кнопок и исправлением интерфейса
 
 on:
   workflow_dispatch:
@@ -16,24 +16,35 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-      - name: Install v3 priority fixes
+      - name: Repair game source and button interactions
         run: |
           python tools/install_v3_priority_fixes.py
+          python tools/repair_button_build.py
           python tools/fix_button_interactions.py
           python tools/amplify_music_v3.py
           python - <<'PY'
           from pathlib import Path
           p=Path('android/app/build.gradle')
           s=p.read_text()
-          s=s.replace('versionCode 13','versionCode 17').replace("versionName '2.2'","versionName '3.0'").replace('versionCode 14','versionCode 17').replace("versionName '2.3'","versionName '3.0'").replace('versionCode 15','versionCode 17').replace("versionName '2.4'","versionName '3.0'").replace('versionCode 16','versionCode 17').replace("versionName '2.5'","versionName '3.0'")
+          s=s.replace('versionCode 13','versionCode 18').replace("versionName '2.2'","versionName '3.1'").replace('versionCode 14','versionCode 18').replace("versionName '2.3'","versionName '3.1'").replace('versionCode 15','versionCode 18').replace("versionName '2.4'","versionName '3.1'").replace('versionCode 16','versionCode 18').replace("versionName '2.5'","versionName '3.1'").replace('versionCode 17','versionCode 18').replace("versionName '3.0'","versionName '3.1'")
           p.write_text(s)
           PY
+      - name: Static JavaScript syntax check
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import re
+          s=Path('NEW_DARK_RPG/index.html').read_text()
+          js='\n'.join(m.group(1) for m in re.finditer(r'<script[^>]*>(.*?)</script>',s,re.S))
+          Path('/tmp/game.js').write_text(js)
+          PY
+          node --check /tmp/game.js
       - name: Commit permanent source fixes
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add NEW_DARK_RPG/index.html android/app/src/main/assets/index.html android/app/build.gradle
-          if git diff --cached --quiet; then echo "No source changes to commit."; else git commit -m "Apply v3 priority fixes [skip ci]"; git push origin HEAD:main; fi
+          if git diff --cached --quiet; then echo "No source changes to commit."; else git commit -m "Repair button interactions and inventory [skip ci]"; git push origin HEAD:main; fi
       - name: Set up Java
         uses: actions/setup-java@v4
         with:
@@ -62,10 +73,10 @@ jobs:
           APK=app/build/outputs/apk/release/app-release.apk
           BUILD_TOOLS=$(find "$ANDROID_HOME/build-tools" -maxdepth 1 -mindepth 1 -type d | sort -V | tail -1)
           "$BUILD_TOOLS/apksigner" verify --verbose "$APK"
-          "$BUILD_TOOLS/aapt" dump badging "$APK" | grep -E "package: name='com.chronicles.abyss'|versionName='3.0'|versionCode='17'"
+          "$BUILD_TOOLS/aapt" dump badging "$APK" | grep -E "package: name='com.chronicles.abyss'|versionName='3.1'|versionCode='18'"
       - name: Upload signed APK
         uses: actions/upload-artifact@v4
         with:
-          name: ChroniclesOfTheAbyss-apk-release-v3.0
+          name: ChroniclesOfTheAbyss-apk-release-v3.1
           path: android/app/build/outputs/apk/release/app-release.apk
           if-no-files-found: error
