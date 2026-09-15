@@ -21,6 +21,8 @@ for p in paths:
         s=s.replace(set_screen_old,set_screen_new,1)
     elif set_screen_new not in s:
         raise SystemExit(f'setScreen target not found: {p}')
+    # В v3 старое объявление inventoryCategory находится рядом с journalEntries.
+    s=s.replace("let journalEntries=[],allies=[],inventoryCategory='all';", "let journalEntries=[],allies=[];", 1)
     a=s.find(inv_start)
     b=s.find(inv_end,a)
     if a<0 or b<0:
