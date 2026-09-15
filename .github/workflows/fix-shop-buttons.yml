@@ -1,0 +1,73 @@
+name: Fix shop buttons
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  fix:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Apply shop button fix
+        shell: python
+        run: |
+          from pathlib import Path
+
+          files = [Path('NEW_DARK_RPG/index.html'), Path('android/app/src/main/assets/index.html')]
+          old_shop = '''<div id="shop" class="screen hidden"><div class="screen-title"><button class="back-mini" onclick="goBack()">← Назад</button><h2>Магазин</h2></div><div class="panel"><div class="gold" style="text-align:right">🪙 100</div><div class="tabs"><button>Оружие</button><button>Броня</button><button>Расходники</button><button>Прочее</button></div><div class="item"><div class="item-icon">🗡️</div><div>Железный меч<small>+2 к урону</small></div><b class="gold">50</b></div><div class="item"><div class="item-icon">🛡️</div><div>Кожаная броня<small>+2 к защите</small></div><b class="gold">40</b></div><div class="item"><div class="item-icon">🧪</div><div>Зелье здоровья<small>Восстанавливает 50 HP</small></div><b class="gold">25</b></div><div class="item"><div class="item-icon">🔵</div><div>Зелье маны<small>Восстанавливает 30 MP</small></div><b class="gold">25</b></div><button onclick="goBack()">Назад</button></div></div>'''
+          new_shop = '''<div id="shop" class="screen hidden"><div class="screen-title"><button class="back-mini" onclick="goBack()">← Назад</button><h2>Магазин</h2></div><div class="panel"><div class="gold" style="text-align:right">🪙 <b id="shopGold">100</b></div><div class="tabs"><button onclick="shopTab('weapon')">Оружие</button><button onclick="shopTab('armor')">Броня</button><button onclick="shopTab('consumable')">Расходники</button><button onclick="shopTab('other')">Прочее</button></div><div id="shopList"></div><button onclick="goBack()">Назад</button></div></div>'''
+
+          old_js = "function showShop(){setScreen('shop')}"
+          new_js = """function showShop(){shopTab('weapon');setScreen('shop')}\nconst shopItems=[{id:'sword',cat:'weapon',icon:'🗡️',name:'Железный меч',desc:'+2 к урону',price:50},{id:'armor',cat:'armor',icon:'🛡️',name:'Кожаная броня',desc:'+2 к защите',price:40},{id:'hp',cat:'consumable',icon:'🧪',name:'Зелье здоровья',desc:'Восстанавливает 50 HP',price:25},{id:'mp',cat:'consumable',icon:'🔵',name:'Зелье маны',desc:'Восстанавливает 30 MP',price:25}];\nlet shopCategory='weapon';\nfunction shopTab(cat){shopCategory=cat;const list=el('shopList');if(!list)return;const items=shopItems.filter(x=>x.cat===cat);if(cat==='other'){list.innerHTML='<div class=\\"item\\"><div class=\\"item-icon\\">🔑</div><div>Таинственный ключ<small>Редкий предмет</small></div><b class=\\"gold\\">75</b></div>';if(el('shopGold'))el('shopGold').textContent=getGold();return;}list.innerHTML=items.map(x=>'<button class=\\"item shop-item\\" style=\\"text-align:left;display:grid;width:100%\\" onclick=\\"buyItem(\\''+x.id+'\\')\\"><div class=\\"item-icon\\">'+x.icon+'</div><div>'+x.name+'<small>'+x.desc+'</small></div><b class=\\"gold\\">'+x.price+'</b></button>').join('');if(el('shopGold'))el('shopGold').textContent=getGold()}\nfunction getGold(){return Number(localStorage.getItem('abyss_gold')||100)}\nfunction setGold(v){localStorage.setItem('abyss_gold',String(Math.max(0,v)));if(el('shopGold'))el('shopGold').textContent=getGold()}\nfunction buyItem(id){const item=shopItems.find(x=>x.id===id);if(!item)return;const gold=getGold();if(gold<item.price){sfx('error');if(el('out'))el('out').innerHTML='<span class=\\"red\\">Недостаточно золота.</span>';return;}setGold(gold-item.price);if(item.cat==='weapon')hero.attack+=2;if(item.cat==='armor')hero.def+=2;if(item.id==='hp')hero.items.push('Зелье здоровья');if(item.id==='mp')hero.items.push('Зелье маны');save();update();sfx('buy');if(el('out'))el('out').innerHTML='<span class=\\"green\\">Куплено: '+item.name+'.</span>';shopTab(shopCategory)}"""
+
+          old_back = "function goBack(){sfx('back');if(history.length>1)history.back()}"
+          new_back = """let screenHistory=['menu'];\nfunction goBack(){sfx('back');if(screenHistory.length>1){screenHistory.pop();const prev=screenHistory[screenHistory.length-1];setScreen(prev,false);history.replaceState({screen:prev},'','#'+prev);update();return;}if(hero.class)setScreen('main',false);else setScreen('menu',false)}"""
+
+          old_set = "function setScreen(screen,push=true){screens.forEach(s=>{if(el(s))el(s).classList.toggle('hidden',s!==screen)});if(push)history.pushState({screen:screen},'','#'+screen);updateHud()}"
+          new_set = "function setScreen(screen,push=true){screens.forEach(s=>{if(el(s))el(s).classList.toggle('hidden',s!==screen)});if(push){if(screenHistory[screenHistory.length-1]!==screen)screenHistory.push(screen);history.pushState({screen:screen},'','#'+screen)}updateHud()}"
+
+          old_pop = "window.addEventListener('popstate',function(event){let screen=event.state&&event.state.screen?event.state.screen:'menu';setScreen(screen,false);if(screen==='battle')updateBattle();if(screen==='main')update();if(screen==='inventory')renderInventory();if(screen==='equipment')renderEquipment();if(screen==='hero')renderHero()});"
+          new_pop = "window.addEventListener('popstate',function(event){let screen=event.state&&event.state.screen?event.state.screen:'menu';if(screenHistory[screenHistory.length-1]!==screen)screenHistory.push(screen);setScreen(screen,false);if(screen==='battle')updateBattle();if(screen==='main')update();if(screen==='inventory')renderInventory();if(screen==='equipment')renderEquipment();if(screen==='hero')renderHero();if(screen==='shop')shopTab(shopCategory)});"
+
+          for path in files:
+              s = path.read_text(encoding='utf-8')
+              if old_shop in s:
+                  s = s.replace(old_shop, new_shop, 1)
+              elif 'id="shopList"' not in s:
+                  raise SystemExit(f'Shop block not found in {path}')
+              if old_js in s:
+                  s = s.replace(old_js, new_js, 1)
+              elif 'function shopTab(' not in s:
+                  raise SystemExit(f'showShop function not found in {path}')
+              if old_set in s:
+                  s = s.replace(old_set, new_set, 1)
+              if old_back in s:
+                  s = s.replace(old_back, new_back, 1)
+              if old_pop in s:
+                  s = s.replace(old_pop, new_pop, 1)
+              s = s.replace("history.replaceState({screen:'menu'},'',location.pathname+location.search+'#menu');update();", "screenHistory=['menu'];history.replaceState({screen:'menu'},'',location.pathname+location.search+'#menu');update();", 1)
+              path.write_text(s, encoding='utf-8')
+
+          grad = Path('android/app/build.gradle')
+          gs = grad.read_text(encoding='utf-8').replace("versionCode 9", "versionCode 10").replace("versionName '1.8'", "versionName '1.9'")
+          if "versionName '1.9'" not in gs:
+              raise SystemExit('Android version was not 1.8')
+          grad.write_text(gs, encoding='utf-8')
+
+          wf = Path('.github/workflows/build-apk.yml')
+          ws = wf.read_text(encoding='utf-8').replace('ChroniclesOfTheAbyss-apk-release-v1.8', 'ChroniclesOfTheAbyss-apk-release-v1.9')
+          wf.write_text(ws, encoding='utf-8')
+
+      - name: Commit changes
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add NEW_DARK_RPG/index.html android/app/src/main/assets/index.html android/app/build.gradle .github/workflows/build-apk.yml
+          git diff --cached --quiet && exit 0
+          git commit -m "Исправить кнопки магазина и навигацию"
+          git push
