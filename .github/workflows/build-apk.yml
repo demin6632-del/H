@@ -1,6 +1,7 @@
 name: Build APK
 
-# Сборка v2.2 после настройки более светлой и громкой фоновой музыки
+# Сборка v2.3 после дополнительного усиления фоновой музыки
+
 on:
   workflow_dispatch:
   push:
@@ -12,39 +13,38 @@ permissions:
 jobs:
   build:
     runs-on: ubuntu-latest
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Apply game fixes and background music
-        shell: bash
+      - name: Apply game fixes and amplified background music
         run: |
-          set -e
           python tools/fix_button_interactions.py
           python tools/add_background_music.py
+          python tools/amplify_background_music.py
           python - <<'PY'
           from pathlib import Path
-          p=Path('android/app/build.gradle')
-          s=p.read_text(encoding='utf-8')
-          s=s.replace('versionCode 12','versionCode 13',1).replace("versionName '2.1'","versionName '2.2'",1)
-          p.write_text(s,encoding='utf-8')
+          p = Path('android/app/build.gradle')
+          s = p.read_text()
+          s = s.replace("versionCode 13", "versionCode 14")
+          s = s.replace("versionName '2.2'", "versionName '2.3'")
+          p.write_text(s)
           PY
 
       - name: Commit permanent source fixes
-        shell: bash
         run: |
-          set -e
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add NEW_DARK_RPG/index.html android/app/src/main/assets/index.html android/app/build.gradle
           if git diff --cached --quiet; then
             echo "No source changes to commit."
           else
-            git commit -m "Tune background music [skip ci]"
+            git commit -m "Improve background music volume [skip ci]"
             git push origin HEAD:main
           fi
 
-      - name: Setup Java
+      - name: Set up Java
         uses: actions/setup-java@v4
         with:
           distribution: temurin
@@ -52,44 +52,35 @@ jobs:
 
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v4
-        with:
-          gradle-version: '8.9'
 
       - name: Prepare permanent signing key
         env:
-          KEYSTORE_B64: ${{ secrets.ANDROID_KEYSTORE_B64 }}
-        run: |
-          set -e
-          if [ -z "$KEYSTORE_B64" ]; then
-            echo "ERROR: GitHub secret ANDROID_KEYSTORE_B64 is not configured."
-            exit 1
-          fi
-          echo "$KEYSTORE_B64" | base64 --decode > "$RUNNER_TEMP/chronicles-release.jks"
-          test -s "$RUNNER_TEMP/chronicles-release.jks"
-
-      - name: Build signed release APK
-        working-directory: android
-        env:
-          ANDROID_KEYSTORE_PATH: ${{ runner.temp }}/chronicles-release.jks
+          ANDROID_KEYSTORE_B64: ${{ secrets.ANDROID_KEYSTORE_B64 }}
           ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
           ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
           ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
-        run: gradle --no-daemon clean assembleRelease
+        run: |
+          echo "$ANDROID_KEYSTORE_B64" | base64 --decode > "$RUNNER_TEMP/release.keystore"
+          echo "ANDROID_KEYSTORE_PATH=$RUNNER_TEMP/release.keystore" >> "$GITHUB_ENV"
+          echo "ANDROID_KEYSTORE_PASSWORD=$ANDROID_KEYSTORE_PASSWORD" >> "$GITHUB_ENV"
+          echo "ANDROID_KEY_ALIAS=$ANDROID_KEY_ALIAS" >> "$GITHUB_ENV"
+          echo "ANDROID_KEY_PASSWORD=$ANDROID_KEY_PASSWORD" >> "$GITHUB_ENV"
+
+      - name: Build signed release APK
+        working-directory: android
+        run: ./gradlew assembleRelease --no-daemon
 
       - name: Verify APK signature and version
         working-directory: android
         run: |
-          set -e
-          APK=$(find app/build/outputs/apk/release -name '*.apk' -type f | head -n 1)
-          test -n "$APK"
-          echo "Built: $APK"
-          APKSIGNER=$(find "$ANDROID_HOME/build-tools" -name apksigner -type f | sort -V | tail -n 1)
-          test -n "$APKSIGNER"
-          "$APKSIGNER" verify --verbose "$APK"
+          APK=app/build/outputs/apk/release/app-release.apk
+          BUILD_TOOLS=$(find "$ANDROID_HOME/build-tools" -maxdepth 1 -mindepth 1 -type d | sort -V | tail -1)
+          "$BUILD_TOOLS/apksigner" verify --verbose "$APK"
+          "$BUILD_TOOLS/aapt" dump badging "$APK" | grep -E "package: name='com.chronicles.abyss'|versionName='2.3'|versionCode='14'"
 
       - name: Upload signed APK
         uses: actions/upload-artifact@v4
         with:
-          name: ChroniclesOfTheAbyss-apk-release-v2.2
-          path: android/app/build/outputs/apk/release/*.apk
+          name: ChroniclesOfTheAbyss-apk-release-v2.3
+          path: android/app/build/outputs/apk/release/app-release.apk
           if-no-files-found: error
