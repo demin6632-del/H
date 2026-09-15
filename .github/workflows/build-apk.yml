@@ -42,11 +42,12 @@ jobs:
           python tools/install_exact_hero_character_v37.py
           python tools/fix_hero_character_size_v38.py
           python tools/fix_stats_skills_buttons.py
+          python tools/final_game_stabilization.py
           python - <<'PY'
           from pathlib import Path
+          import re
           p=Path('android/app/build.gradle')
           s=p.read_text()
-          import re
           s=re.sub(r'versionCode\s+\d+', 'versionCode 24', s, count=1)
           s=re.sub(r"versionName\s+'[^']+'", "versionName '3.7'", s, count=1)
           p.write_text(s)
@@ -56,20 +57,26 @@ jobs:
           python - <<'PY'
           from pathlib import Path
           import re
+          import subprocess
           for name in ['NEW_DARK_RPG/index.html','android/app/src/main/assets/index.html']:
               s=Path(name).read_text(encoding='utf-8')
               js='\n'.join(m.group(1) for m in re.finditer(r'<script[^>]*>(.*?)</script>',s,re.S))
               Path('/tmp/game.js').write_text(js)
               print(f'Checking {name}: {len(s)} bytes')
-              import subprocess
               subprocess.run(['node','--check','/tmp/game.js'],check=True)
+              required=['id="stats"','id="skills"','function inventoryHasSpace()','function unequipItemType(type)','function unequipAll()','function showStats()','function showSkills()','function levelUp()']
+              missing=[x for x in required if x not in s]
+              if missing: raise SystemExit(f'{name}: missing required stabilization: {missing}')
+              if "hero.xp+=xp;hero.gold+=gold;levelUp();" not in s: raise SystemExit(f'{name}: XP level-up hook missing')
+              if "sk.skill+' нанёс" in s: raise SystemExit(f'{name}: old broken skill-name reference remains')
+              if "function escapeBattle(){goBack()}" in s: raise SystemExit(f'{name}: old escape handler remains')
           PY
       - name: Commit permanent source fixes
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add NEW_DARK_RPG/index.html android/app/src/main/assets/index.html android/app/build.gradle
-          if git diff --cached --quiet; then echo "No source changes to commit."; else git commit -m "Use exact uploaded Hero character image [skip ci]"; git push origin HEAD:main; fi
+          if git diff --cached --quiet; then echo "No source changes to commit."; else git commit -m "Stabilize RPG progression and navigation [skip ci]"; git push origin HEAD:main; fi
       - name: Set up Java
         uses: actions/setup-java@v4
         with:
@@ -99,9 +106,23 @@ jobs:
           BUILD_TOOLS=$(find "$ANDROID_HOME/build-tools" -maxdepth 1 -mindepth 1 -type d | sort -V | tail -1)
           "$BUILD_TOOLS/apksigner" verify --verbose "$APK"
           "$BUILD_TOOLS/aapt" dump badging "$APK" | grep -E "package: name='com.chronicles.abyss'|versionName='3.7'|versionCode='24'"
+      - name: Package APK ZIP
+        working-directory: android
+        run: |
+          mkdir -p release-package
+          cp app/build/outputs/apk/release/app-release.apk release-package/ChroniclesOfTheAbyss-stabilized-v3.7.apk
+          sha256sum release-package/ChroniclesOfTheAbyss-stabilized-v3.7.apk > release-package/SHA256SUMS.txt
+          cd release-package
+          zip -9 ../ChroniclesOfTheAbyss-stabilized-v3.7.zip *
       - name: Upload signed APK
         uses: actions/upload-artifact@v4
         with:
-          name: ChroniclesOfTheAbyss-apk-release-v3.7
+          name: ChroniclesOfTheAbyss-stabilized-apk-v3.7
           path: android/app/build/outputs/apk/release/app-release.apk
+          if-no-files-found: error
+      - name: Upload APK ZIP
+        uses: actions/upload-artifact@v4
+        with:
+          name: ChroniclesOfTheAbyss-stabilized-zip-v3.7
+          path: android/ChroniclesOfTheAbyss-stabilized-v3.7.zip
           if-no-files-found: error
