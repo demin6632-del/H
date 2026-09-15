@@ -40,6 +40,7 @@ jobs:
           python tools/patch_hero_reference_v35.py
           python tools/fix_hero_mobile_overflow.py
           python tools/install_exact_hero_character_v37.py
+          python tools/fix_hero_character_size_v38.py
           python - <<'PY'
           from pathlib import Path
           p=Path('android/app/build.gradle')
