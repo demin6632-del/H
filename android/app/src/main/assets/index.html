@@ -1,1 +1,40 @@
-<!doctype html><html lang="ru"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Хроники Бездны</title><style>body{background:#090b12;color:#eee;font-family:Arial}#app{max-width:520px;margin:auto;padding:16px}.card{background:#151b28;border:1px solid #30384d;border-radius:14px;padding:16px;margin:12px}button{width:100%;padding:15px;margin:6px;border:0;border-radius:12px;background:#34206d;color:white;font-size:18px}.red{background:#8b2424}.green{background:#39a845}</style></head><body><div id="app"></div><script>let game=JSON.parse(localStorage.abyssNew||'null')||{hero:null,hp:100,maxHp:100,level:1,xp:0,nextXp:100,gold:0,strength:5,defense:3,floor:1,room:0,enemy:null,screen:'city',log:''};let enemies=[{name:'Падший страж',hp:40,damage:8,defense:2,rewardGold:10,rewardXp:15},{name:'Бездонный паук',hp:25,damage:5,defense:1,rewardGold:7,rewardXp:10},{name:'Пепельный рыцарь',hp:80,damage:15,defense:5,rewardGold:25,rewardXp:40}];function save(){localStorage.abyssNew=JSON.stringify(game)}function levelUp(){while(game.xp>=game.nextXp){game.xp-=game.nextXp;game.level++;game.nextXp=game.level*150;game.maxHp+=20;game.hp=game.maxHp;game.strength+=3;game.defense+=2;game.log='⭐ Новый уровень '+game.level+'!'}}function render(){let a=document.getElementById('app');if(game.screen==='battle'){a.innerHTML=`<h1>⚔ Бой</h1><div class=card>👹 ${game.enemy.name}<br>❤️ ${game.enemy.hp}/${game.enemy.maxHp}<br>⚔ Урон ${game.enemy.damage}<br>🛡 Защита ${game.enemy.defense}<hr>👤 HP ${game.hp}/${game.maxHp}<br>⭐ Уровень ${game.level}<br>✨ XP ${game.xp}/${game.nextXp}</div><button class=red onclick=attack()>⚔ Атаковать</button>`;return}if(game.screen==='character'){a.innerHTML=`<h1>👤 Персонаж</h1><div class=card>⭐ Уровень: ${game.level}<br>✨ Опыт: ${game.xp}/${game.nextXp}<br>❤️ HP: ${game.hp}/${game.maxHp}<br>⚔ Сила: ${game.strength}<br>🛡 Защита: ${game.defense}</div><button onclick=city()>← Город</button>`;return}if(game.screen==='abyss'){a.innerHTML=`<h1>🌑 Бездна</h1><div class=card>Этаж ${game.floor}<br>Комната ${game.room}/5<br>${game.log}</div><button class=green onclick=explore()>🔎 Исследовать</button><button onclick=city()>← Город</button>`;return}a.innerHTML=`<h1>🌑 Хроники Бездны</h1><div class=card>🏰 Город<br>👤 ${game.hero||'Нет героя'}<br>⭐ Уровень ${game.level}<br>✨ XP ${game.xp}/${game.nextXp}<br>💰 ${game.gold}</div>${game.hero?'<button onclick=abyss()>🌑 Войти в Бездну</button><button onclick=character()>👤 Персонаж</button>':'<button onclick=start()>Создать героя</button>'}`}function start(){game.hero='Искатель Бездны';save();render()}function abyss(){game.screen='abyss';save();render()}function city(){game.screen='city';save();render()}function character(){game.screen='character';render()}function explore(){game.room++;if(game.room>5){game.floor++;game.room=1;game.log='Лестница найдена'}else if(Math.random()<.8){let e=JSON.parse(JSON.stringify(enemies[Math.floor(Math.random()*enemies.length)]));e.maxHp=e.hp;game.enemy=e;game.screen='battle'}else game.log='Найдена награда';save();render()}function attack(){let dmg=Math.max(1,game.strength-game.enemy.defense);game.enemy.hp-=dmg;if(game.enemy.hp<=0){game.gold+=game.enemy.rewardGold;game.xp+=game.enemy.rewardXp;game.log='Враг побеждён +'+game.enemy.rewardXp+' XP';levelUp();game.enemy=null;game.screen='abyss'}else{game.hp-=Math.max(1,game.enemy.damage-game.defense);if(game.hp<=0){game.hp=game.maxHp;game.screen='city';game.log='Поражение'}}save();render()}render();</script></body></html>
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Тени Забытого Мира</title>
+<style>
+body{background:#080808;color:#ddd;font-family:monospace}#game{max-width:480px;margin:auto;padding:15px}.panel{background:#111;border:1px solid #444;padding:15px;margin:10px 0;border-radius:8px}button{width:100%;padding:12px;margin:5px;background:#222;color:white;border:1px solid #555}.hidden{display:none}.class-btn{text-align:left}.class-btn b{display:block;font-size:16px;margin-bottom:5px}
+</style></head>
+<body><div id="game"><h1>ТЕНИ ЗАБЫТОГО МИРА</h1>
+<div id="menu" class="panel"><button onclick="showClasses()">Начать игру</button></div>
+<div id="classes" class="panel hidden"><h2>Выбор класса</h2><button class="class-btn" onclick="start('Воин')"><b>⚔️ Воин</b>❤️ 130 · ✨ 40 · ⚔️ 12 · 🛡️ 9</button><button class="class-btn" onclick="start('Маг')"><b>🔮 Маг</b>❤️ 80 · ✨ 100 · ⚔️ 16 · 🛡️ 3</button><button class="class-btn" onclick="start('Разбойник')"><b>🗡️ Разбойник</b>❤️ 95 · ✨ 65 · ⚔️ 14 · 🛡️ 5</button><button class="class-btn" onclick="start('Охотник')"><b>🏹 Охотник</b>❤️ 105 · ✨ 60 · ⚔️ 15 · 🛡️ 6</button></div>
+<div id="main" class="hidden">
+<div class="panel"><h2 id="name"></h2><p id="stats"></p><button onclick="explore()">🔎 Исследовать область</button><button onclick="showInv()">🎒 Инвентарь</button><button onclick="levelUp()">📈 Развитие</button></div>
+<div id="battle" class="panel hidden"><h2 id="enemyName"></h2><p id="enemyHp"></p><button onclick="attack()">⚔️ Атаковать</button><button onclick="defend()">🛡️ Защищаться</button><button onclick="skill()">✨ Навык</button><button onclick="escapeBattle()">🏃 Отступить</button></div>
+<div class="panel" id="out">Готово</div></div></div>
+<script>
+let saveKey='new_dark_rpg_save_v1';
+const classStats={
+ 'Воин':{hp:130,maxHp:130,energy:40,maxEnergy:40,attack:12,def:9},
+ 'Маг':{hp:80,maxHp:80,energy:100,maxEnergy:100,attack:16,def:3},
+ 'Разбойник':{hp:95,maxHp:95,energy:65,maxEnergy:65,attack:14,def:5},
+ 'Охотник':{hp:105,maxHp:105,energy:60,maxEnergy:60,attack:15,def:6}
+};
+let hero={name:'Странник',class:'',hp:100,maxHp:100,energy:50,maxEnergy:50,attack:10,def:5,level:1,xp:0,items:[],weapon:'Нет',armor:'Нет'};
+let enemy=null;let guard=false;
+function showClasses(){menu.classList.add('hidden');classes.classList.remove('hidden')}
+function start(className){let s=classStats[className];hero={name:'Странник',class:className,hp:s.hp,maxHp:s.maxHp,energy:s.energy,maxEnergy:s.maxEnergy,attack:s.attack,def:s.def,level:1,xp:0,items:[],weapon:'Нет',armor:'Нет'};classes.classList.add('hidden');main.classList.remove('hidden');save();update();out.innerHTML='Выбран класс: '+className}
+function explore(){let e=['Теневой зверь','Заражённый охотник','Мутант пустоши'];enemy={name:e[Math.floor(Math.random()*e.length)],hp:40,max:40};battle.classList.remove('hidden');updateBattle();out.innerHTML='Обнаружен враг: '+enemy.name}
+function update(){name.innerHTML=hero.name+' · '+hero.class+' · Ур. '+hero.level;stats.innerHTML='❤️ '+hero.hp+'/'+hero.maxHp+' ✨ '+hero.energy+'/'+hero.maxEnergy+' ⚔️ '+hero.attack+' 🛡️ '+hero.def}
+function updateBattle(){enemyName.innerHTML='👹 '+enemy.name;enemyHp.innerHTML='❤️ '+enemy.hp+'/'+enemy.max}
+function attack(){enemy.hp-=hero.attack;turn()}
+function defend(){guard=true;out.innerHTML='Защита';enemyTurn()}
+function skill(){if(hero.energy>=10){hero.energy-=10;enemy.hp-=25;turn()}else out.innerHTML='Нет энергии'}
+function turn(){if(enemy.hp<=0){hero.xp+=50;hero.items.push('Случайный предмет');out.innerHTML='🏆 Победа! Получен опыт и предмет';battle.classList.add('hidden');save();update();return}enemyTurn()}
+function enemyTurn(){hero.hp-=guard?5:10;guard=false;if(hero.hp<1)hero.hp=1;update();updateBattle()}
+function escapeBattle(){battle.classList.add('hidden');out.innerHTML='Отступление'}
+function showInv(){out.innerHTML='🎒 '+hero.items.join(', ')+'<br>🗡️ '+hero.weapon+'<br>🛡️ '+hero.armor}
+function levelUp(){if(hero.xp>=100){hero.level++;hero.xp=0;hero.attack+=3;hero.hp+=20;hero.maxHp+=20;out.innerHTML='Уровень повышен'}else out.innerHTML='Опыт: '+hero.xp+'/100';update();save()}
+function save(){localStorage.setItem(saveKey,JSON.stringify(hero))}
+</script></body></html>
