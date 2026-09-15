@@ -1,6 +1,6 @@
 name: Build APK
 
-# Сборка v2.1 после добавления постоянной фоновой музыки
+# Сборка v2.2 после настройки более светлой и громкой фоновой музыки
 on:
   workflow_dispatch:
   push:
@@ -26,7 +26,7 @@ jobs:
           from pathlib import Path
           p=Path('android/app/build.gradle')
           s=p.read_text(encoding='utf-8')
-          s=s.replace('versionCode 11','versionCode 12',1).replace("versionName '2.0'","versionName '2.1'",1)
+          s=s.replace('versionCode 12','versionCode 13',1).replace("versionName '2.1'","versionName '2.2'",1)
           p.write_text(s,encoding='utf-8')
           PY
 
@@ -40,7 +40,7 @@ jobs:
           if git diff --cached --quiet; then
             echo "No source changes to commit."
           else
-            git commit -m "Add enhanced background music [skip ci]"
+            git commit -m "Tune background music [skip ci]"
             git push origin HEAD:main
           fi
 
@@ -90,6 +90,6 @@ jobs:
       - name: Upload signed APK
         uses: actions/upload-artifact@v4
         with:
-          name: ChroniclesOfTheAbyss-apk-release-v2.1
+          name: ChroniclesOfTheAbyss-apk-release-v2.2
           path: android/app/build/outputs/apk/release/*.apk
           if-no-files-found: error
