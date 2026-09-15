@@ -1,4 +1,17 @@
 <resources>
+    <!-- Обычная тема игры после завершения загрузочного экрана. -->
     <style name="AppTheme" parent="android:style/Theme.Material.Light.NoActionBar">
+        <item name="android:fontFamily">monospace</item>
+        <item name="android:windowLightStatusBar">false</item>
+        <item name="android:statusBarColor">#080808</item>
+        <item name="android:navigationBarColor">#080808</item>
+    </style>
+
+    <!-- Полноценный стартовый экран: используется и на Android 12+, и на старых версиях. -->
+    <style name="AppTheme.Starting" parent="Theme.SplashScreen.IconBackground">
+        <item name="windowSplashScreenBackground">#080808</item>
+        <item name="windowSplashScreenAnimatedIcon">@drawable/game_avatar</item>
+        <item name="windowSplashScreenIconBackgroundColor">#140808</item>
+        <item name="postSplashScreenTheme">@style/AppTheme</item>
     </style>
 </resources>
