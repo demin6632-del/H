@@ -1,29 +1,42 @@
 from pathlib import Path
-import re
 
 ROOT = Path(__file__).resolve().parents[1]
+
+STYLE = r'''
+<style id="hero-character-scale-v38-final">
+/* === v3.8 FINAL: увеличиваем видимого героя поверх всех предыдущих CSS === */
+.hero-v34 .hero-figure .hero-character-image{
+  display:block!important;
+  width:auto!important;
+  height:100%!important;
+  max-width:none!important;
+  max-height:none!important;
+  object-fit:contain!important;
+  object-position:center bottom!important;
+  transform:scale(2)!important;
+  transform-origin:center bottom!important;
+  flex:0 0 auto!important;
+}
+.hero-v34 .hero-figure{overflow:visible!important}
+.hero-v34 .hero-stage{overflow:hidden!important}
+@media(max-width:390px){
+  .hero-v34 .hero-figure .hero-character-image{transform:scale(1.8)!important}
+}
+</style>
+'''
 
 for rel in ('NEW_DARK_RPG/index.html', 'android/app/src/main/assets/index.html'):
     path = ROOT / rel
     text = path.read_text(encoding='utf-8')
-    if 'hero-character-v37' not in text:
-        raise RuntimeError(f'Не найден блок hero-character-v37 в {rel}')
-
-    # Увеличиваем самого героя, не меняя сетку карточек и игровую механику.
-    text = re.sub(
-        r'(\.hero-character-image\{.*?height:)100%(.*?object-fit:contain!important;)',
-        r'\g<1>155%\g<2>',
-        text,
-        count=1,
-        flags=re.S,
-    )
-    # На узких экранах оставляем увеличенный масштаб, но чуть меньше.
-    text = re.sub(
-        r'(@media\(max-width:360px\)\{\s*\.hero-figure\{height:260px!important;min-height:260px!important\}\s*\})',
-        r'@media(max-width:360px){.hero-figure{height:260px!important;min-height:260px!important}.hero-character-image{height:145%!important}}',
-        text,
-        count=1,
-        flags=re.S,
-    )
+    marker = 'hero-character-scale-v38-final'
+    if marker in text:
+        start = text.index('<style id="hero-character-scale-v38-final">')
+        end = text.index('</style>', start) + len('</style>')
+        text = text[:start] + STYLE.strip() + text[end:]
+    else:
+        pos = text.rfind('</body>')
+        if pos < 0:
+            pos = len(text)
+        text = text[:pos] + STYLE + '\n' + text[pos:]
     path.write_text(text, encoding='utf-8')
-    print(f'Увеличен персонаж в {rel}')
+    print(f'Final hero scale applied to {rel}')
