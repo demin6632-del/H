@@ -58,6 +58,60 @@
 .hero-ref .hero-bottom-tabs button:last-child{border-right:0}.hero-ref .hero-bottom-tabs button b{display:block;font-size:34px;color:#777;margin-bottom:10px}.hero-ref .hero-bottom-tabs button.active{color:#e52a2a;background:linear-gradient(#160606,#080404);box-shadow:inset 0 0 20px rgba(230,0,0,.18)}.hero-ref .hero-bottom-tabs button.active b{color:#ef2a2a}
 @media(max-width:700px){.hero-ref{padding:7px 6px 8px}.hero-ref .hero-progress{gap:8px;margin-bottom:9px}.hero-ref .hero-progress .info-card{height:74px;padding:8px}.hero-ref .hero-progress .info-row{font-size:15px;margin-bottom:6px}.hero-ref .hero-progress .info-row b{font-size:19px}.hero-ref .hero-progress .bar{height:7px}.hero-ref .hero-stage{grid-template-columns:1fr .95fr 1fr;gap:6px;min-height:510px;padding:7px 0}.hero-ref .hero-stage:after{width:70px;height:70px;top:32px}.hero-ref .hero-equip-side{gap:7px}.hero-ref .hero-equip-card{height:112px;padding:6px;grid-template-columns:46px 1fr;column-gap:5px}.hero-ref .gear-icon{width:44px;height:82px;font-size:28px}.hero-ref .hero-equip-card b{font-size:14px}.hero-ref .hero-equip-card small{font-size:11px}.hero-ref .hero-equip-card button{min-height:34px;font-size:14px;border-radius:8px}.hero-ref .hero-figure{height:500px}.hero-ref .hero-stats-box{margin-top:8px;padding:8px;font-size:11px;line-height:1.7}.hero-ref .hero-stats-box>div{padding:0 6px}.hero-ref .hero-stat{gap:4px}.hero-ref .hero-stat .ico{font-size:17px}.hero-ref .hero-actions{gap:8px;margin-top:8px}.hero-ref .hero-actions button{min-height:52px;font-size:19px}.hero-ref .hero-bottom-tabs{margin-top:8px}.hero-ref .hero-bottom-tabs button{min-height:76px;font-size:10px}.hero-ref .hero-bottom-tabs button b{font-size:24px;margin-bottom:5px}}
 @media(max-width:390px){.hero-ref .hero-stage{gap:3px}.hero-ref .hero-equip-card{height:92px;grid-template-columns:38px 1fr}.hero-ref .gear-icon{width:36px;height:68px;font-size:23px}.hero-ref .hero-equip-card b{font-size:11px}.hero-ref .hero-equip-card small{font-size:9px}.hero-ref .hero-equip-card button{min-height:28px;font-size:11px}.hero-ref .hero-figure{height:410px}.hero-ref .hero-stats-box{font-size:9px}.hero-ref .hero-stat .ico{font-size:14px}.hero-ref .hero-bottom-tabs button{font-size:8px;min-height:64px}}
+
+/* === FIX v3.6: мобильная ширина экрана героя === */
+.hero-ref,
+.hero-ref *{min-width:0}
+.hero-ref{width:100%;max-width:100%;overflow:hidden}
+.hero-ref .hero-stage{
+  width:100%;
+  max-width:100%;
+  grid-template-columns:minmax(0,1fr) minmax(86px,.78fr) minmax(0,1fr);
+  overflow:hidden;
+}
+.hero-ref .hero-equip-side{min-width:0;overflow:hidden}
+.hero-ref .hero-equip-card{
+  min-width:0;
+  width:100%;
+  max-width:100%;
+  overflow:hidden;
+}
+.hero-ref .hero-equip-card b,
+.hero-ref .hero-equip-card small{
+  min-width:0;
+  max-width:100%;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+.hero-ref .hero-equip-card button{
+  width:100%;
+  max-width:100%;
+  min-width:0;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+.hero-ref .hero-figure{min-width:0;width:100%;overflow:visible}
+.hero-ref .hero-art-svg{min-width:0;max-width:100%}
+.hero-ref .hero-progress,
+.hero-ref .hero-progress .info-card,
+.hero-ref .hero-stats-box,
+.hero-ref .hero-stats-box>div{min-width:0;max-width:100%}
+.hero-ref .hero-stat{min-width:0;max-width:100%}
+.hero-ref .hero-stat .val{min-width:0;max-width:100%;overflow:hidden;text-overflow:ellipsis}
+@media(max-width:700px){
+  .hero-ref .hero-stage{
+    grid-template-columns:minmax(0,1fr) minmax(74px,.72fr) minmax(0,1fr);
+    gap:4px;
+    overflow:hidden;
+  }
+  .hero-ref .hero-equip-card{padding:6px 5px}
+  .hero-ref .hero-equip-card button{padding-left:4px;padding-right:4px}
+}
+@media(max-width:390px){
+  .hero-ref .hero-stage{grid-template-columns:minmax(0,1fr) minmax(62px,.62fr) minmax(0,1fr);gap:3px}
+}
+
 </style>
 </head>
 <body><div id="game">
