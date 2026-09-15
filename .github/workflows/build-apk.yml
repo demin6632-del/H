@@ -5,6 +5,7 @@ name: Build APK
 # BUILD-BATTLE-FREQUENCY-2026-09-16 — более редкие обычные бои
 # BUILD-INFINITE-ABYSS-V2-2026-09-16 — настоящая бесконечная постоянная Бездна
 # BUILD-INFINITE-ABYSS-V2-TRIGGER — финальная проверка и APK
+# BUILD-INFINITE-ABYSS-V2-FIX — исправление перехода после 7-го этажа
 
 on:
   workflow_dispatch:
