@@ -1,0 +1,116 @@
+name: Apply audio system
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - .github/workflows/apply-audio.yml
+
+permissions:
+  contents: write
+
+jobs:
+  audio:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Add procedural music and sound effects
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          audio_js = r'''\n/* Аудиосистема: процедурная тёмная музыка и звуки без внешних файлов */
+          let audioCtx=null,audioMaster=null,musicGain=null,sfxGain=null,musicTimer=null,musicStep=0;
+          let audioEnabled=localStorage.getItem('abyss_audio_enabled')!=='0';
+          let musicVolume=Number(localStorage.getItem('abyss_music_volume')||0.28);
+          let sfxVolume=Number(localStorage.getItem('abyss_sfx_volume')||0.55);
+          function initAudio(){
+            if(audioCtx)return;
+            const C=window.AudioContext||window.webkitAudioContext;if(!C)return;
+            audioCtx=new C();audioMaster=audioCtx.createGain();musicGain=audioCtx.createGain();sfxGain=audioCtx.createGain();
+            musicGain.gain.value=musicVolume;sfxGain.gain.value=sfxVolume;audioMaster.gain.value=audioEnabled?1:0;
+            musicGain.connect(audioMaster);sfxGain.connect(audioMaster);audioMaster.connect(audioCtx.destination);
+            startMusic();
+          }
+          function resumeAudio(){if(!audioCtx)initAudio();if(audioCtx&&audioCtx.state==='suspended')audioCtx.resume()}
+          function tone(freq,dur,type='sine',vol=.08,when=0,slide=0){
+            if(!audioCtx||!audioEnabled)return;const t=audioCtx.currentTime+when,o=audioCtx.createOscillator(),g=audioCtx.createGain();
+            o.type=type;o.frequency.setValueAtTime(Math.max(30,freq),t);if(slide)o.frequency.exponentialRampToValueAtTime(Math.max(30,freq+slide),t+dur);
+            g.gain.setValueAtTime(.0001,t);g.gain.exponentialRampToValueAtTime(Math.max(.0001,vol),t+.015);g.gain.exponentialRampToValueAtTime(.0001,t+dur);
+            o.connect(g).connect(sfxGain);o.start(t);o.stop(t+dur+.03)
+          }
+          function noise(dur=.12,vol=.08,when=0){
+            if(!audioCtx||!audioEnabled)return;const n=audioCtx.createBufferSource(),b=audioCtx.createBuffer(1,audioCtx.sampleRate*dur,audioCtx.sampleRate),a=b.getChannelData(0);
+            for(let i=0;i<a.length;i++)a[i]=(Math.random()*2-1)*(1-i/a.length);n.buffer=b;const f=audioCtx.createBiquadFilter(),g=audioCtx.createGain();f.type='lowpass';f.frequency.value=1800;
+            const t=audioCtx.currentTime+when;g.gain.setValueAtTime(vol,t);g.gain.exponentialRampToValueAtTime(.0001,t+dur);n.connect(f).connect(g).connect(sfxGain);n.start(t)
+          }
+          function sfx(name){
+            resumeAudio();if(!audioCtx||!audioEnabled)return;
+            if(name==='click'){tone(520,.055,'square',.045);tone(780,.07,'square',.035,.035)}
+            else if(name==='start'){tone(220,.18,'sine',.08);tone(330,.18,'sine',.07,.12);tone(440,.28,'sine',.08,.24)}
+            else if(name==='attack'){tone(180,.12,'sawtooth',.12,0,120);noise(.08,.07,.03)}
+            else if(name==='skill'){tone(260,.22,'triangle',.08,0,300);tone(520,.3,'sine',.07,.08,240)}
+            else if(name==='hit'){noise(.12,.1);tone(90,.14,'square',.07,0,-35)}
+            else if(name==='victory'){[523,659,784,1047].forEach((f,i)=>tone(f,.24,'sine',.075,i*.11))}
+            else if(name==='back'){tone(360,.08,'triangle',.05,0,-100)}
+            else if(name==='buy'){tone(700,.08,'square',.05);tone(980,.12,'square',.05,.07)}
+            else if(name==='error'){tone(120,.16,'sawtooth',.08,0,-40)}
+            else if(name==='open'){tone(300,.12,'triangle',.05);tone(450,.18,'triangle',.05,.08)}
+          }
+          function startMusic(){
+            if(!audioCtx||musicTimer)return;
+            const notes=[55,65.41,73.42,49,55,61.74,73.42,43.65],lead=[220,196,246.94,174.61,220,261.63,196,164.81];
+            musicTimer=setInterval(()=>{
+              if(!audioCtx||!audioEnabled)return;const i=musicStep++%notes.length;
+              const t=audioCtx.currentTime;bass(notes[i],.42,t);toneMusic(lead[i],.28,t+.08);if(i%4===0)toneMusic(notes[i]*2,.18,t+.22)
+            },420)
+          }
+          function bass(f,d,t){if(!audioCtx)return;const o=audioCtx.createOscillator(),g=audioCtx.createGain();o.type='triangle';o.frequency.value=f;g.gain.setValueAtTime(.0001,t);g.gain.exponentialRampToValueAtTime(.045,t+.03);g.gain.exponentialRampToValueAtTime(.0001,t+d);o.connect(g).connect(musicGain);o.start(t);o.stop(t+d+.02)}
+          function toneMusic(f,d,t){if(!audioCtx)return;const o=audioCtx.createOscillator(),g=audioCtx.createGain();o.type='sine';o.frequency.value=f;g.gain.setValueAtTime(.0001,t);g.gain.exponentialRampToValueAtTime(.018,t+.02);g.gain.exponentialRampToValueAtTime(.0001,t+d);o.connect(g).connect(musicGain);o.start(t);o.stop(t+d+.02)}
+          function setAudioEnabled(v){audioEnabled=!!v;localStorage.setItem('abyss_audio_enabled',audioEnabled?'1':'0');if(audioMaster)audioMaster.gain.setTargetAtTime(audioEnabled?1:0,audioCtx.currentTime,.03);if(audioEnabled)resumeAudio()}
+          function setMusicVolume(v){musicVolume=Math.max(0,Math.min(1,Number(v)));localStorage.setItem('abyss_music_volume',musicVolume);if(musicGain)musicGain.gain.value=musicVolume}
+          function setSfxVolume(v){sfxVolume=Math.max(0,Math.min(1,Number(v)));localStorage.setItem('abyss_sfx_volume',sfxVolume);if(sfxGain)sfxGain.gain.value=sfxVolume}
+          document.addEventListener('pointerdown',()=>{resumeAudio()},{passive:true,once:true});
+          document.addEventListener('click',e=>{if(e.target.closest('button')){resumeAudio();sfx('click')}},true);
+          '''
+
+          html_files=['NEW_DARK_RPG/index.html','android/app/src/main/assets/index.html']
+          for fn in html_files:
+              p=Path(fn); text=p.read_text(encoding='utf-8')
+              if '/* Аудиосистема: процедурная тёмная музыка' not in text:
+                  marker='let saveKey='; pos=text.find(marker)
+                  if pos<0: raise SystemExit(f'marker missing in {fn}')
+                  text=text[:pos]+audio_js+'\n'+text[pos:]
+              old='<div class="info-row"><span>Звук</span><input class="range" type="range" value="78"></div><div class="info-row"><span>Музыка</span><input class="range" type="range" value="78"></div>'
+              new='<div class="info-row"><span>Звук</span><input id="sfxVolume" class="range" type="range" min="0" max="1" step="0.01" value="0.55" oninput="setSfxVolume(this.value)"></div><div class="info-row"><span>Музыка</span><input id="musicVolume" class="range" type="range" min="0" max="1" step="0.01" value="0.28" oninput="setMusicVolume(this.value)"></div><div class="info-row"><span>Аудио</span><button onclick="setAudioEnabled(!audioEnabled);this.innerHTML=audioEnabled?\'Включено\':\'Выключено\'">Включено</button></div>'
+              text=text.replace(old,new)
+              text=text.replace("function showClasses(){setScreen('classes')}","function showClasses(){resumeAudio();sfx('start');setScreen('classes')}")
+              text=text.replace("function showAbyss(){setScreen('abyss')}","function showAbyss(){sfx('open');setScreen('abyss')}")
+              text=text.replace("function explore(){let e=", "function explore(){sfx('open');let e=")
+              text=text.replace("function attack(){if(!enemy)return;enemy.hp-=hero.attack;", "function attack(){if(!enemy)return;sfx('attack');enemy.hp-=hero.attack;")
+              text=text.replace("function skill(){if(!enemy)return;if(hero.energy>=10){", "function skill(){if(!enemy)return;if(hero.energy>=10){sfx('skill');")
+              text=text.replace("if(enemy.hp<=0){hero.xp+=50;", "if(enemy.hp<=0){sfx('victory');hero.xp+=50;")
+              text=text.replace("function enemyTurn(){hero.hp-=guard?5:10;", "function enemyTurn(){sfx('hit');hero.hp-=guard?5:10;")
+              text=text.replace("function escapeBattle(){history.back()}","function escapeBattle(){sfx('back');history.back()}")
+              text=text.replace("function goBack(){if(history.length>1)history.back()}","function goBack(){sfx('back');if(history.length>1)history.back()}")
+              p.write_text(text,encoding='utf-8')
+
+          p=Path('android/app/build.gradle'); text=p.read_text(encoding='utf-8')
+          text=text.replace("versionCode 8","versionCode 9").replace("versionName '1.7'","versionName '1.8'")
+          p.write_text(text,encoding='utf-8')
+
+          p=Path('.github/workflows/build-apk.yml'); text=p.read_text(encoding='utf-8')
+          text=text.replace('ChroniclesOfTheAbyss-apk-release-v1.7','ChroniclesOfTheAbyss-apk-release-v1.8')
+          p.write_text(text,encoding='utf-8')
+          PY
+
+      - name: Commit audio changes
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add NEW_DARK_RPG/index.html android/app/src/main/assets/index.html android/app/build.gradle .github/workflows/build-apk.yml
+          git commit -m "Добавить звуки и музыку"
+          git push
