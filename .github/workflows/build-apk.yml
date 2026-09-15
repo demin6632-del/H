@@ -16,11 +16,9 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-      - name: Apply game fixes and amplified background music
+      - name: Apply game fixes and final music amplification
         run: |
           python tools/fix_button_interactions.py
-          python tools/add_background_music.py
-          python tools/amplify_music_v2.py
           python tools/amplify_music_v3.py
           python - <<'PY'
           from pathlib import Path
