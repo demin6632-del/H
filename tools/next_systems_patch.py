@@ -34,19 +34,16 @@ def replace_function(src,name,new):
     if depth:raise SystemExit(f'function {name}: unbalanced braces')
     return src[:p]+new+src[i:]
 
-
 SKILL_FUNCS=r'''function upgradeSkill(){hero.skillLevel=Math.max(1,Number(hero.skillLevel||1));hero.skillPoints=Math.max(0,Number(hero.skillPoints||0));if(hero.skillLevel>=5){if(el('out'))el('out').innerHTML='<span class="muted">Навык уже достиг максимального уровня.</span>';return}if(hero.skillPoints<1){if(el('out'))el('out').innerHTML='<span class="red">Нет очков навыка.</span>';return}hero.skillPoints--;hero.skillLevel++;sfx('buy');logEvent('НАВЫК','Улучшен навык «'+((classStats[hero.class]||{}).skill||'Навык')+'» до уровня '+hero.skillLevel+'.');save();renderSkills();renderStats();if(el('out'))el('out').innerHTML='<span class="green">Навык улучшен до уровня '+hero.skillLevel+'.</span>'}
 function renderSkills(){const s=classStats[hero.class]||{};const sk=skillStats[hero.class]||{};const level=Math.max(1,Number(hero.skillLevel||1));const points=Math.max(0,Number(hero.skillPoints||0));const bonus=(level-1)*4;const damage=Number(sk.damage||0)+bonus;const can=level<5&&points>0;if(el('skillsContent'))el('skillsContent').innerHTML='<div class="info-card"><h3>'+((s.skill)||'Навык не выбран')+'</h3><div class="sep"></div><div class="info-row"><span>Класс</span><b>'+((hero.class)||'—')+'</b></div><div class="info-row"><span>Уровень навыка</span><b>'+level+'/5</b></div><div class="info-row"><span>Очки навыка</span><b>'+points+'</b></div><div class="info-row"><span>Стоимость энергии</span><b>'+((sk.cost)||'—')+'</b></div><div class="info-row"><span>Урон навыка</span><b>'+damage+'</b></div><p class="muted" style="text-align:center;line-height:1.5">Каждое улучшение навыка даёт +4 к его базовому урону. Очко навыка выдаётся за каждый новый уровень героя.</p><button onclick="upgradeSkill()" '+(can?'':'disabled')+'>'+(level>=5?'Максимальный уровень':can?'Улучшить навык · 1 очко':'Нужно очко навыка')+'</button></div>'}
 '''
 
 INFINITE_MARK='INFINITE-ABYSS-PERSISTENT-RPG-V1'
-INFINITE_WRAPPER=r'''<script id="infinite-abyss-persistent-rpg-v1">
-/* INFINITE-ABYSS-PERSISTENT-RPG-V1 — бесконечная Бездна без рогалика.
+INFINITE_JS=r'''/* INFINITE-ABYSS-PERSISTENT-RPG-V1 — бесконечная Бездна без рогалика.
    Первые 7 этажей сохраняются; с 8-го начинается постоянная бесконечная глубина.
    Персонаж, уровень, предметы, золото и прогресс не сбрасываются после смерти. */
 (function(){
   const BEST_KEY='chronicles_abyss_infinite_best_v1';
-  const OLD_MAX_FLOOR=7;
   function readBest(){return Math.max(1,Number(localStorage.getItem(BEST_KEY)||1));}
   function writeBest(){if(typeof abyssFloor==='number'&&abyssFloor>readBest())localStorage.setItem(BEST_KEY,String(Math.floor(abyssFloor)));}
   function restoreBest(){if(typeof abyssFloor!=='number')return;const best=readBest();if(best>abyssFloor)abyssFloor=best;}
@@ -63,7 +60,7 @@ INFINITE_WRAPPER=r'''<script id="infinite-abyss-persistent-rpg-v1">
       try{
         const depth=Math.max(1,Number(abyssFloor||1));
         const best=Math.max(depth,readBest());
-        let host=el('abyss');
+        const host=el('abyss');
         if(host){
           let box=el('infiniteDepthPanel');
           if(!box){box=document.createElement('div');box.id='infiniteDepthPanel';box.className='panel';host.insertBefore(box,host.firstChild)}
@@ -85,7 +82,7 @@ INFINITE_WRAPPER=r'''<script id="infinite-abyss-persistent-rpg-v1">
     die=function(){const best=readBest();const r=__die.apply(this,arguments);try{if(best>=8)abyssFloor=best;writeBest();save();}catch(e){}return r};
   }
 })();
-</script>'''
+'''
 
 for path in FILES:
     s=path.read_text(encoding='utf-8')
@@ -146,15 +143,12 @@ for path in FILES:
     if update_old not in s:raise SystemExit(f'{path}: update source not found')
     s=s.replace(update_old,update_new,1)
 
-    # Бесконечная глубина начинается после завершения 7-го этажа.
-    # Внутренний лимит делаем технически недостижимым, сохраняя первые 7 этажей без изменений.
     s=re.sub(r'const MAX_FLOOR=\d+;', 'const MAX_FLOOR=999999;', s, count=1)
 
-    # Обновляем ранее установленный best-depth только после фактического прохождения.
     if INFINITE_MARK not in s:
         pos=s.rfind('</script>')
         if pos<0:raise SystemExit(f'{path}: closing script tag not found')
-        s=s[:pos]+INFINITE_WRAPPER+s[pos:]
+        s=s[:pos]+INFINITE_JS+s[pos:]
 
     if s==original:raise SystemExit(f'{path}: no changes made')
     path.write_text(s,encoding='utf-8')
