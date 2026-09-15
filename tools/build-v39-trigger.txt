@@ -1,0 +1,1 @@
+Build v3.9 APK after fixing the actual hero SVG scale.
