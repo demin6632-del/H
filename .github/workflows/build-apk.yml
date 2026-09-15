@@ -25,12 +25,14 @@ jobs:
           python tools/show_equipped_state.py
           python tools/patch_hero_equipment.py
           python tools/patch_hero_screen_final.py
+          python tools/patch_hero_reference_v35.py
           python - <<'PY'
           from pathlib import Path
           p=Path('android/app/build.gradle')
           s=p.read_text()
-          for code,name in [(13,'2.2'),(14,'2.3'),(15,'2.4'),(16,'2.5'),(17,'3.0'),(18,'3.1'),(19,'3.2'),(20,'3.3')]:
-              s=s.replace(f'versionCode {code}', 'versionCode 21').replace(f"versionName '{name}'", "versionName '3.4'")
+          import re
+          s=re.sub(r'versionCode\s+\d+', 'versionCode 22', s, count=1)
+          s=re.sub(r"versionName\s+'[^']+'", "versionName '3.5'", s, count=1)
           p.write_text(s)
           PY
       - name: Static JavaScript syntax check
@@ -48,7 +50,7 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add NEW_DARK_RPG/index.html android/app/src/main/assets/index.html android/app/build.gradle
-          if git diff --cached --quiet; then echo "No source changes to commit."; else git commit -m "Apply v3.4 hero screen [skip ci]"; git push origin HEAD:main; fi
+          if git diff --cached --quiet; then echo "No source changes to commit."; else git commit -m "Apply v3.5 reference hero screen [skip ci]"; git push origin HEAD:main; fi
       - name: Set up Java
         uses: actions/setup-java@v4
         with:
@@ -77,10 +79,10 @@ jobs:
           APK=app/build/outputs/apk/release/app-release.apk
           BUILD_TOOLS=$(find "$ANDROID_HOME/build-tools" -maxdepth 1 -mindepth 1 -type d | sort -V | tail -1)
           "$BUILD_TOOLS/apksigner" verify --verbose "$APK"
-          "$BUILD_TOOLS/aapt" dump badging "$APK" | grep -E "package: name='com.chronicles.abyss'|versionName='3.4'|versionCode='21'"
+          "$BUILD_TOOLS/aapt" dump badging "$APK" | grep -E "package: name='com.chronicles.abyss'|versionName='3.5'|versionCode='22'"
       - name: Upload signed APK
         uses: actions/upload-artifact@v4
         with:
-          name: ChroniclesOfTheAbyss-apk-release-v3.4
+          name: ChroniclesOfTheAbyss-apk-release-v3.5
           path: android/app/build/outputs/apk/release/app-release.apk
           if-no-files-found: error
