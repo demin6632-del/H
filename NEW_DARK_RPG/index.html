@@ -34,7 +34,7 @@
 /* Аудиосистема: процедурная тёмная музыка и звуки без внешних файлов */
 let audioCtx=null,audioMaster=null,musicGain=null,sfxGain=null,musicCompressor=null,musicTimer=null,musicStep=0;
 let audioEnabled=localStorage.getItem('abyss_audio_enabled')!=='0';
-let musicVolume=Number(localStorage.getItem('abyss_music_volume')||0.70);
+let musicVolume=Math.max(0,Math.min(1,Number(localStorage.getItem('abyss_music_volume')||1)));
 let sfxVolume=Number(localStorage.getItem('abyss_sfx_volume')||0.55);
 function initAudio(){
   if(audioCtx)return;
@@ -88,7 +88,7 @@ function bass(f,d,t){if(!audioCtx)return;const o=audioCtx.createOscillator(),g=a
 function toneMusic(f,d,t){if(!audioCtx)return;const o=audioCtx.createOscillator(),g=audioCtx.createGain();o.type='triangle';o.frequency.value=f;g.gain.setValueAtTime(.0001,t);g.gain.exponentialRampToValueAtTime(.035,t+.02);g.gain.exponentialRampToValueAtTime(.0001,t+d);o.connect(g).connect(musicGain);o.start(t);o.stop(t+d+.02)}
 function padChord(fs,t,d){if(!audioCtx)return;fs.forEach(f=>{const o=audioCtx.createOscillator(),g=audioCtx.createGain(),filter=audioCtx.createBiquadFilter();o.type='triangle';o.frequency.value=f;filter.type='lowpass';filter.frequency.value=1100;g.gain.setValueAtTime(.0001,t);g.gain.exponentialRampToValueAtTime(.014,t+.12);g.gain.exponentialRampToValueAtTime(.0001,t+d);o.connect(filter).connect(g).connect(musicGain);o.start(t);o.stop(t+d+.03)})}
 function setAudioEnabled(v){audioEnabled=!!v;localStorage.setItem('abyss_audio_enabled',audioEnabled?'1':'0');if(audioMaster)audioMaster.gain.setTargetAtTime(audioEnabled?1:0,audioCtx.currentTime,.03);if(audioEnabled)resumeAudio()}
-function setMusicVolume(v){musicVolume=Math.max(0,Math.min(1,Number(v)));localStorage.setItem('abyss_music_volume',musicVolume);if(musicGain){const t=audioCtx?audioCtx.currentTime:0;musicGain.gain.cancelScheduledValues(t);musicGain.gain.setTargetAtTime(Math.min(1.8,musicVolume*1.8),t,.025)}}}
+function setMusicVolume(v){musicVolume=Math.max(0,Math.min(1,Number(v)));localStorage.setItem('abyss_music_volume',musicVolume);if(musicGain){const t=audioCtx?audioCtx.currentTime:0;musicGain.gain.cancelScheduledValues(t);musicGain.gain.setTargetAtTime(Math.min(1.8,musicVolume*1.8),t,.025)}}
 function setSfxVolume(v){sfxVolume=Math.max(0,Math.min(1,Number(v)));localStorage.setItem('abyss_sfx_volume',sfxVolume);if(sfxGain)sfxGain.gain.value=sfxVolume}
 document.addEventListener('pointerdown',()=>{resumeAudio()},{passive:true,once:true});
 document.addEventListener('click',e=>{if(e.target.closest('button')){resumeAudio();sfx('click')}},true);
