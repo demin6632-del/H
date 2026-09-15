@@ -1,6 +1,6 @@
 name: Build APK
 
-# Сборка с повторной проверкой нажатий кнопок и исправлением интерфейса
+# Сборка с проверкой кнопок, экипировки и интерфейса
 
 on:
   workflow_dispatch:
@@ -23,11 +23,12 @@ jobs:
           python tools/fix_button_interactions.py
           python tools/amplify_music_v3.py
           python tools/show_equipped_state.py
+          python tools/patch_hero_equipment.py
           python - <<'PY'
           from pathlib import Path
           p=Path('android/app/build.gradle')
           s=p.read_text()
-          s=s.replace('versionCode 13','versionCode 19').replace("versionName '2.2'","versionName '3.2'").replace('versionCode 14','versionCode 19').replace("versionName '2.3'","versionName '3.2'").replace('versionCode 15','versionCode 19').replace("versionName '2.4'","versionName '3.2'").replace('versionCode 16','versionCode 19').replace("versionName '2.5'","versionName '3.2'").replace('versionCode 17','versionCode 19').replace("versionName '3.0'","versionName '3.2'").replace('versionCode 18','versionCode 19').replace("versionName '3.1'","versionName '3.2'")
+          s=s.replace('versionCode 13','versionCode 20').replace("versionName '2.2'","versionName '3.3'").replace('versionCode 14','versionCode 20').replace("versionName '2.3'","versionName '3.3'").replace('versionCode 15','versionCode 20').replace("versionName '2.4'","versionName '3.3'").replace('versionCode 16','versionCode 20').replace("versionName '2.5'","versionName '3.3'").replace('versionCode 17','versionCode 20').replace("versionName '3.0'","versionName '3.3'").replace('versionCode 18','versionCode 20').replace("versionName '3.1'","versionName '3.3'").replace('versionCode 19','versionCode 20').replace("versionName '3.2'","versionName '3.3'")
           p.write_text(s)
           PY
       - name: Static JavaScript syntax check
@@ -45,7 +46,7 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add NEW_DARK_RPG/index.html android/app/src/main/assets/index.html android/app/build.gradle
-          if git diff --cached --quiet; then echo "No source changes to commit."; else git commit -m "Show equipped and unequipped item states [skip ci]"; git push origin HEAD:main; fi
+          if git diff --cached --quiet; then echo "No source changes to commit."; else git commit -m "Add interactive hero equipment screen [skip ci]"; git push origin HEAD:main; fi
       - name: Set up Java
         uses: actions/setup-java@v4
         with:
@@ -74,10 +75,10 @@ jobs:
           APK=app/build/outputs/apk/release/app-release.apk
           BUILD_TOOLS=$(find "$ANDROID_HOME/build-tools" -maxdepth 1 -mindepth 1 -type d | sort -V | tail -1)
           "$BUILD_TOOLS/apksigner" verify --verbose "$APK"
-          "$BUILD_TOOLS/aapt" dump badging "$APK" | grep -E "package: name='com.chronicles.abyss'|versionName='3.2'|versionCode='19'"
+          "$BUILD_TOOLS/aapt" dump badging "$APK" | grep -E "package: name='com.chronicles.abyss'|versionName='3.3'|versionCode='20'"
       - name: Upload signed APK
         uses: actions/upload-artifact@v4
         with:
-          name: ChroniclesOfTheAbyss-apk-release-v3.2
+          name: ChroniclesOfTheAbyss-apk-release-v3.3
           path: android/app/build/outputs/apk/release/app-release.apk
           if-no-files-found: error
