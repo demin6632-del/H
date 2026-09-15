@@ -1,5 +1,6 @@
 name: Build APK
 
+# Аудиосистема v1.8: сборка после исправления JS-синтаксиса
 on:
   workflow_dispatch:
   push:
