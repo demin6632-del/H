@@ -54,7 +54,7 @@ jobs:
           echo "ANDROID_KEY_PASSWORD=$ANDROID_KEY_PASSWORD" >> "$GITHUB_ENV"
       - name: Build signed release APK
         working-directory: android
-        run: ./gradlew assembleRelease --no-daemon
+        run: gradle assembleRelease --no-daemon
       - name: Verify APK signature and version
         working-directory: android
         run: |
