@@ -19,7 +19,7 @@ jobs:
 
       - name: Apply canonical game release
         run: |
-          python tools/apply_v3_release.py
+          python tools/apply_v3_release_fix.py
           cmp -s NEW_DARK_RPG/index.html android/app/src/main/assets/index.html
           python - <<'PY'
           from pathlib import Path
