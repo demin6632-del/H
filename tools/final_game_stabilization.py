@@ -75,6 +75,8 @@ for path in FILES:
         block=s[battle_start:battle_end]
         block=block.replace('<button class="back-mini" onclick="goBack()">← Назад</button>','<button class="back-mini" onclick="escapeBattle()">← Отступить</button>',1)
         block=block.replace('<button onclick="goBack()">← Назад</button>','<button onclick="escapeBattle()">← Отступить</button>',1)
+        # В старой версии уже есть отдельная кнопка «Отступить». Убираем только дубликат, не меняя механику.
+        block=block.replace('<button onclick="escapeBattle()">↩ Отступить</button><button onclick="escapeBattle()">← Отступить</button>','<button onclick="escapeBattle()">↩ Отступить</button>',1)
         s=s[:battle_start]+block+s[battle_end:]
 
     old_escape="function escapeBattle(){goBack()}"
