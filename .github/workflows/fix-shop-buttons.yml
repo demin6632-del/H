@@ -1,6 +1,8 @@
 name: Fix shop buttons
 
 on:
+  push:
+    branches: [ "main" ]
   workflow_dispatch:
 
 permissions:
@@ -27,36 +29,26 @@ jobs:
 
           old_back = "function goBack(){sfx('back');if(history.length>1)history.back()}"
           new_back = """let screenHistory=['menu'];\nfunction goBack(){sfx('back');if(screenHistory.length>1){screenHistory.pop();const prev=screenHistory[screenHistory.length-1];setScreen(prev,false);history.replaceState({screen:prev},'','#'+prev);update();return;}if(hero.class)setScreen('main',false);else setScreen('menu',false)}"""
-
           old_set = "function setScreen(screen,push=true){screens.forEach(s=>{if(el(s))el(s).classList.toggle('hidden',s!==screen)});if(push)history.pushState({screen:screen},'','#'+screen);updateHud()}"
           new_set = "function setScreen(screen,push=true){screens.forEach(s=>{if(el(s))el(s).classList.toggle('hidden',s!==screen)});if(push){if(screenHistory[screenHistory.length-1]!==screen)screenHistory.push(screen);history.pushState({screen:screen},'','#'+screen)}updateHud()}"
-
           old_pop = "window.addEventListener('popstate',function(event){let screen=event.state&&event.state.screen?event.state.screen:'menu';setScreen(screen,false);if(screen==='battle')updateBattle();if(screen==='main')update();if(screen==='inventory')renderInventory();if(screen==='equipment')renderEquipment();if(screen==='hero')renderHero()});"
           new_pop = "window.addEventListener('popstate',function(event){let screen=event.state&&event.state.screen?event.state.screen:'menu';if(screenHistory[screenHistory.length-1]!==screen)screenHistory.push(screen);setScreen(screen,false);if(screen==='battle')updateBattle();if(screen==='main')update();if(screen==='inventory')renderInventory();if(screen==='equipment')renderEquipment();if(screen==='hero')renderHero();if(screen==='shop')shopTab(shopCategory)});"
 
           for path in files:
               s = path.read_text(encoding='utf-8')
-              if old_shop in s:
-                  s = s.replace(old_shop, new_shop, 1)
-              elif 'id="shopList"' not in s:
-                  raise SystemExit(f'Shop block not found in {path}')
-              if old_js in s:
-                  s = s.replace(old_js, new_js, 1)
-              elif 'function shopTab(' not in s:
-                  raise SystemExit(f'showShop function not found in {path}')
-              if old_set in s:
-                  s = s.replace(old_set, new_set, 1)
-              if old_back in s:
-                  s = s.replace(old_back, new_back, 1)
-              if old_pop in s:
-                  s = s.replace(old_pop, new_pop, 1)
+              if old_shop in s: s = s.replace(old_shop, new_shop, 1)
+              elif 'id="shopList"' not in s: raise SystemExit(f'Shop block not found in {path}')
+              if old_js in s: s = s.replace(old_js, new_js, 1)
+              elif 'function shopTab(' not in s: raise SystemExit(f'showShop function not found in {path}')
+              if old_set in s: s = s.replace(old_set, new_set, 1)
+              if old_back in s: s = s.replace(old_back, new_back, 1)
+              if old_pop in s: s = s.replace(old_pop, new_pop, 1)
               s = s.replace("history.replaceState({screen:'menu'},'',location.pathname+location.search+'#menu');update();", "screenHistory=['menu'];history.replaceState({screen:'menu'},'',location.pathname+location.search+'#menu');update();", 1)
               path.write_text(s, encoding='utf-8')
 
           grad = Path('android/app/build.gradle')
           gs = grad.read_text(encoding='utf-8').replace("versionCode 9", "versionCode 10").replace("versionName '1.8'", "versionName '1.9'")
-          if "versionName '1.9'" not in gs:
-              raise SystemExit('Android version was not 1.8')
+          if "versionName '1.9'" not in gs: raise SystemExit('Android version was not 1.8')
           grad.write_text(gs, encoding='utf-8')
 
           wf = Path('.github/workflows/build-apk.yml')
