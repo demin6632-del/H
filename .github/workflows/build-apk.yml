@@ -2,6 +2,7 @@ name: Build APK
 
 # Сборка с проверкой кнопок, экипировки и интерфейса
 # BUILD-RELEASE-TRIGGER-2026-09-16 — пересборка последних изменений
+# BUILD-BATTLE-FREQUENCY-2026-09-16 — более редкие обычные бои
 
 on:
   workflow_dispatch:
@@ -66,7 +67,7 @@ jobs:
               Path('/tmp/game.js').write_text(js)
               print(f'Checking {name}: {len(s)} bytes')
               subprocess.run(['node','--check','/tmp/game.js'],check=True)
-              required=['id="stats"','id="skills"','function inventoryHasSpace()','function unequipItemType(type)','function unequipAll()','function showStats()','function showSkills()','function levelUp()','function upgradeSkill()','Math.random()<0.18','enemy.phase===1']
+              required=['id="stats"','id="skills"','function inventoryHasSpace()','function unequipItemType(type)','function unequipAll()','function showStats()','function showSkills()','function levelUp()','function upgradeSkill()','Math.random()<0.18','Math.random()<0.40','enemy.phase===1']
               missing=[x for x in required if x not in s]
               if missing: raise SystemExit(f'{name}: missing required stabilization: {missing}')
               if "hero.xp+=xp;hero.gold+=gold;levelUp();" not in s: raise SystemExit(f'{name}: XP level-up hook missing')
@@ -79,7 +80,7 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add NEW_DARK_RPG/index.html android/app/src/main/assets/index.html android/app/build.gradle
-          if git diff --cached --quiet; then echo "No source changes to commit."; else git commit -m "Develop Abyss skills and boss systems [skip ci]"; git push origin HEAD:main; fi
+          if git diff --cached --quiet; then echo "No source changes to commit."; else git commit -m "Apply battle frequency adjustment [skip ci]"; git push origin HEAD:main; fi
       - name: Set up Java
         uses: actions/setup-java@v4
         with:
