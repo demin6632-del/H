@@ -13,8 +13,8 @@ for path in FILES:
     if old not in s: raise SystemExit(f'{path}: finite floor transition not found')
     s=s.replace(old,new,1)
 
-    # Удаляем старое завершение Бездны, которое находилось внутри перехода последнего этажа.
-    old="abyssBossDefeated=true;save();logEvent('БЕЗДНА','Вершина Бездны достигнута.');if(el('out'))el('out').innerHTML='<span class=\"gold\">Ты достиг вершины Бездны.</span>';screenHistory=['menu','main'];history.replaceState({screen:'main'},'','#main');setScreen('main',false);return"
+    # Полностью удаляем старое конечное завершение вместе с его закрывающей скобкой.
+    old="abyssBossDefeated=true;save();logEvent('БЕЗДНА','Вершина Бездны достигнута.');if(el('out'))el('out').innerHTML='<span class=\"gold\">Ты достиг вершины Бездны.</span>';screenHistory=['menu','main'];history.replaceState({screen:'main'},'','#main');setScreen('main',false);return}"
     if old not in s: raise SystemExit(f'{path}: finite Abyss ending not found')
     s=s.replace(old,'',1)
 
