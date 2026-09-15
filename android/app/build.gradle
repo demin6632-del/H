@@ -8,8 +8,8 @@ android {
         applicationId 'com.chronicles.abyss'
         minSdk 24
         targetSdk 35
-        versionCode 3
-        versionName '1.2'
+        versionCode 4
+        versionName '1.3'
     }
 
     // Постоянная release-подпись берётся из переменных GitHub Actions.
@@ -26,8 +26,8 @@ android {
         }
     }
 
-    // Аватар хранится как текст Base64 и превращается в PNG/JPEG во время сборки.
-    // Это позволяет держать бинарный ресурс в репозитории без внешних зависимостей.
+    // Иконка приложения берётся прямо из уже встроенной в игру аватарки.
+    // Это сохраняет одну и ту же картинку в HTML-игре и Android-приложении.
     def avatarGeneratedRes = file("$buildDir/generated/res/avatar")
     sourceSets {
         main.res.srcDir(avatarGeneratedRes)
@@ -38,7 +38,14 @@ android {
         doLast {
             def drawableDir = new File(avatarGeneratedRes, 'drawable')
             drawableDir.mkdirs()
-            def source = file('src/main/avatar_base64.txt').text.replaceAll(/\s+/, '')
+
+            def html = file('src/main/assets/index.html').getText('UTF-8')
+            def matcher = (html =~ /data:image\/jpeg;base64,([^"]+)/)
+            if (!matcher.find()) {
+                throw new GradleException('Не удалось найти встроенную аватарку в Android-версии игры.')
+            }
+
+            def source = matcher.group(1).replaceAll(/\s+/, '')
             def avatarFile = new File(drawableDir, 'game_avatar.jpg')
             avatarFile.bytes = source.decodeBase64()
         }
