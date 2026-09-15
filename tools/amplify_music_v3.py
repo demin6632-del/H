@@ -28,5 +28,36 @@ for p in FILES:
         count=1
     )
 
+    # Музыка должна существовать только пока пользователь находится в игре.
+    if 'let gameMusicAllowed=false;' not in s:
+        s=s.replace('let audioCtx=null,audioMaster=null,musicGain=null,sfxGain=null,musicCompressor=null,musicTimer=null,musicStep=0;', 'let audioCtx=null,audioMaster=null,musicGain=null,sfxGain=null,musicCompressor=null,musicTimer=null,musicStep=0;\nlet gameMusicAllowed=false;')
+
+    # Инициализация AudioContext сама по себе не запускает музыку на главном меню.
+    s=s.replace('  startMusic();\n}', '}', 1)
+
+    # Таймер музыки не должен работать, когда игра закрыта/запрещена.
+    s=s.replace('function startMusic(){\n  if(!audioCtx||musicTimer)return;', 'function startMusic(){\n  if(!audioCtx||!gameMusicAllowed||musicTimer)return;')
+
+    # Останавливаем и возобновляем музыку при смене состояния страницы.
+    if 'function stopMusic(){' not in s:
+        marker="function setSfxVolume(v){sfxVolume=Math.max(0,Math.min(1,Number(v)));localStorage.setItem('abyss_sfx_volume',sfxVolume);if(sfxGain)sfxGain.gain.value=sfxVolume}\n"
+        lifecycle=("function stopMusic(){if(musicTimer){clearInterval(musicTimer);musicTimer=null}musicStep=0;if(musicGain&&audioCtx){const t=audioCtx.currentTime;musicGain.gain.cancelScheduledValues(t);musicGain.gain.setTargetAtTime(0,t,.03)}}\n"
+                   "function resumeMusic(){if(!audioCtx||!gameMusicAllowed||!audioEnabled)return;if(audioCtx.state==='suspended')audioCtx.resume();const t=audioCtx.currentTime;if(musicGain){musicGain.gain.cancelScheduledValues(t);musicGain.gain.setTargetAtTime(Math.min(1.8,musicVolume*1.8),t,.03)}startMusic()}\n"
+                   "document.addEventListener('visibilitychange',()=>{if(document.hidden){stopMusic();if(audioCtx&&audioCtx.state==='running')audioCtx.suspend()}else{resumeMusic()}});\n"
+                   "window.addEventListener('pagehide',()=>{stopMusic();if(audioCtx&&audioCtx.state==='running')audioCtx.suspend()});\n")
+        if marker in s:
+            s=s.replace(marker,marker+lifecycle,1)
+        else:
+            raise SystemExit(f'Audio SFX marker not found in {p}')
+
+    # При старте новой игры разрешаем музыку и запускаем её.
+    s=s.replace("function start(className){let s=classStats[className];", "function start(className){gameMusicAllowed=true;let s=classStats[className];", 1)
+    # После выбора класса обязательно возвращаем аудио из suspended-состояния.
+    s=s.replace("setScreen('main')}", "resumeAudio();resumeMusic();setScreen('main')}", 1)
+
+    # Кнопка «Да» в окне выхода должна полностью остановить фоновую музыку.
+    s=s.replace("function mainMenu(){closeModal();", "function mainMenu(){gameMusicAllowed=false;stopMusic();if(audioCtx&&audioCtx.state==='running')audioCtx.suspend();closeModal();", 1)
+
     p.write_text(s,encoding='utf-8')
-print('Music slider fixed: 0-100%, persistent, 1.8x maximum, JS syntax repaired.')
+
+print('Background music lifecycle fixed: stops on exit/hide, resumes only when returning to an active game.')
