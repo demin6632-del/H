@@ -101,16 +101,12 @@ jobs:
           p=Path('android/app/build.gradle'); text=p.read_text(encoding='utf-8')
           text=text.replace("versionCode 8","versionCode 9").replace("versionName '1.7'","versionName '1.8'")
           p.write_text(text,encoding='utf-8')
-
-          p=Path('.github/workflows/build-apk.yml'); text=p.read_text(encoding='utf-8')
-          text=text.replace('ChroniclesOfTheAbyss-apk-release-v1.7','ChroniclesOfTheAbyss-apk-release-v1.8')
-          p.write_text(text,encoding='utf-8')
           PY
 
       - name: Commit audio changes
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add NEW_DARK_RPG/index.html android/app/src/main/assets/index.html android/app/build.gradle .github/workflows/build-apk.yml
+          git add NEW_DARK_RPG/index.html android/app/src/main/assets/index.html android/app/build.gradle
           git commit -m "Добавить звуки и музыку"
           git push
