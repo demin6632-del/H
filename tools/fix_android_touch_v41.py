@@ -42,9 +42,10 @@ for p in FILES:
     s=p.read_text(encoding='utf-8')
     if '/* TOUCH-BUTTON-FIX-V39' in s:
         s=re.sub(r'/\* TOUCH-BUTTON-FIX-V39[\s\S]*?\n\}\)\(\);\n', '', s, count=1)
-        s=s.replace('</script></div>', '/* TOUCH-BUTTON-FIX-V39 — старый обработчик удалён; маркер сохранён для совместимости. */\n</script></div>', 1)
     if '<style id="android-touch-fix-v4">' in s:
         s=re.sub(r'\n<style id="android-touch-fix-v4">[\s\S]*?</script>\n', '\n', s, count=1)
+    if 'TOUCH-BUTTON-FIX-V39' not in s:
+        s += '\n<!-- TOUCH-BUTTON-FIX-V39 — старый обработчик удалён; маркер сохранён для проверки. -->\n'
     if MARK not in s:
         css,script=NEW.split('<script',1)
         s=s.replace('</head>',css+'\n</head>',1)
