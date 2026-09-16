@@ -54,9 +54,10 @@ public class MainActivity extends Activity {
             }
         });
 
-        // ANDROID-TOUCH-NATIVE-FALLBACK-V42:
-        // штатное событие WebView остаётся основным; если оно не дошло до JS,
-        // после короткой задержки выполняем точечный fallback по координатам касания.
+        // ANDROID-TOUCH-NATIVE-FALLBACK-V43:
+        // штатный ввод WebView остаётся основным. Если касание не дошло до JS,
+        // выполняем резервный клик. Координаты переводятся из физических пикселей
+        // View в реальные CSS-координаты viewport, поэтому масштаб экрана не ломает hit-test.
         web.setOnTouchListener((v, event) -> {
             if (event.getActionMasked() == MotionEvent.ACTION_DOWN) {
                 downX = event.getX();
@@ -67,14 +68,24 @@ public class MainActivity extends Activity {
                 final float y = event.getY();
                 final long duration = System.currentTimeMillis() - downAt;
                 if (Math.hypot(x - downX, y - downY) < 35f && duration < 1200L) {
-                    final float density = getResources().getDisplayMetrics().density;
                     touchHandler.postDelayed(() -> {
                         if (web == null) return;
-                        final float cssX = x / Math.max(1f, density);
-                        final float cssY = y / Math.max(1f, density);
-                        String js = "(function(x,y){if(Date.now()-(window.__lastNativeAuditClick||0)<600)return;var e=document.elementFromPoint(x,y);var b=e&&e.closest?e.closest('button'):null;if(b&&!b.disabled)b.click();})(" + cssX + "," + cssY + ")";
+                        String js = "(function(px,py){"
+                                + "if(Date.now()-(window.__lastNativeAuditClick||0)<600)return;"
+                                + "var vw=document.documentElement.clientWidth||window.innerWidth;"
+                                + "var vh=document.documentElement.clientHeight||window.innerHeight;"
+                                + "var x=px*vw/Math.max(1," + web.getWidth() + ");"
+                                + "var y=py*vh/Math.max(1," + web.getHeight() + ");"
+                                + "var e=document.elementFromPoint(x,y);"
+                                + "var b=e&&e.closest?e.closest('button'):null;"
+                                + "if(b&&!b.disabled){"
+                                + "var c=b.closest('.class-card');"
+                                + "if(c){var o=c.getAttribute('onclick')||'';var m=o.match(/start\\(['\"]([^'\"]+)['\"]\\)/);"
+                                + "if(m&&typeof window.start==='function'){window.__lastNativeAuditClick=Date.now();window.start(m[1]);return;}}"
+                                + "b.click();}"
+                                + "})(" + x + "," + y + ")";
                         web.evaluateJavascript(js, null);
-                    }, 300L);
+                    }, 120L);
                 }
             }
             return false;
