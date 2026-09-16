@@ -1,1 +1,1 @@
-Final Android touch-fix build trigger V44. Coordinate hit-test fixed for Android WebView. No game logic.
+Final Android touch-fix build trigger V45. Native class-card hit-test bypasses HTML touch event dependency. No game logic.
