@@ -7,7 +7,6 @@ import android.os.Looper;
 import android.graphics.Color;
 import android.view.KeyEvent;
 import android.view.MotionEvent;
-import android.view.View;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
@@ -42,22 +41,19 @@ public class MainActivity extends Activity {
             @Override
             public void onPageCommitVisible(WebView view, String url) {
                 webViewReady = true;
-                installClickAudit(view);
                 super.onPageCommitVisible(view, url);
             }
 
             @Override
             public void onPageFinished(WebView view, String url) {
                 webViewReady = true;
-                installClickAudit(view);
                 super.onPageFinished(view, url);
             }
         });
 
-        // ANDROID-TOUCH-NATIVE-FALLBACK-V43:
-        // штатный ввод WebView остаётся основным. Если касание не дошло до JS,
-        // выполняем резервный клик. Координаты переводятся из физических пикселей
-        // View в реальные CSS-координаты viewport, поэтому масштаб экрана не ломает hit-test.
+        // ANDROID-TOUCH-NATIVE-FALLBACK-V45:
+        // Резервный обработчик выполняет hit-test напрямую из Android.
+        // Для карточек класса он не зависит от pointer/touch/click-событий HTML.
         web.setOnTouchListener((v, event) -> {
             if (event.getActionMasked() == MotionEvent.ACTION_DOWN) {
                 downX = event.getX();
@@ -67,37 +63,40 @@ public class MainActivity extends Activity {
                 final float x = event.getX();
                 final float y = event.getY();
                 final long duration = System.currentTimeMillis() - downAt;
-                if (Math.hypot(x - downX, y - downY) < 35f && duration < 1200L) {
+                if (Math.hypot(x - downX, y - downY) < 45f && duration < 1500L) {
                     touchHandler.postDelayed(() -> {
                         if (web == null) return;
+
+                        // Сначала пробуем точно определить карточку класса по её DOM-геометрии.
                         String js = "(function(px,py){"
-                                + "if(Date.now()-(window.__lastNativeAuditClick||0)<600)return;"
-                                + "var vw=document.documentElement.clientWidth||window.innerWidth;"
-                                + "var vh=document.documentElement.clientHeight||window.innerHeight;"
-                                + "var x=px*vw/Math.max(1," + web.getWidth() + ");"
-                                + "var y=py*vh/Math.max(1," + web.getHeight() + ");"
+                                + "var vw=document.documentElement.clientWidth||window.innerWidth||1;"
+                                + "var vh=document.documentElement.clientHeight||window.innerHeight||1;"
+                                + "var sx=vw/Math.max(1," + web.getWidth() + ");"
+                                + "var sy=vh/Math.max(1," + web.getHeight() + ");"
+                                + "var x=px*sx,y=py*sy;"
+                                + "var cards=document.querySelectorAll('.class-card');"
+                                + "for(var i=0;i<cards.length;i++){var r=cards[i].getBoundingClientRect();"
+                                + "if(x>=r.left&&x<=r.right&&y>=r.top&&y<=r.bottom){"
+                                + "var o=cards[i].getAttribute('onclick')||'';"
+                                + "var m=o.match(/start\\(['\"]([^'\"]+)['\"]\\)/);"
+                                + "if(m&&typeof window.start==='function'){window.start(m[1]);return 'class';}" 
+                                + "}}"
                                 + "var e=document.elementFromPoint(x,y);"
                                 + "var b=e&&e.closest?e.closest('button'):null;"
-                                + "if(b&&!b.disabled){"
-                                + "var c=b.closest('.class-card');"
-                                + "if(c){var o=c.getAttribute('onclick')||'';var m=o.match(/start\\(['\"]([^'\"]+)['\"]\\)/);"
-                                + "if(m&&typeof window.start==='function'){window.__lastNativeAuditClick=Date.now();window.start(m[1]);return;}}"
-                                + "b.click();}"
+                                + "if(b&&!b.disabled){b.click();return 'button';}"
+                                + "return 'none';"
                                 + "})(" + x + "," + y + ")";
                         web.evaluateJavascript(js, null);
-                    }, 120L);
+                    }, 40L);
                 }
             }
+            // Не блокируем штатную обработку WebView.
             return false;
         });
 
         web.loadUrl("file:///android_asset/index.html");
         setContentView(web);
         new Handler(Looper.getMainLooper()).postDelayed(() -> webViewReady = true, 5000);
-    }
-
-    private void installClickAudit(WebView view) {
-        view.evaluateJavascript("(function(){if(window.__nativeTouchAudit)return;window.__nativeTouchAudit=true;document.addEventListener('click',function(){window.__lastNativeAuditClick=Date.now()},true)})()", null);
     }
 
     @Override
