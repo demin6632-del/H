@@ -5,7 +5,7 @@ FILES=[Path('NEW_DARK_RPG/index.html'),Path('android/app/src/main/assets/index.h
 MARK='ANDROID-TOUCH-FIX-V4-FINAL'
 NEW='''
 <style id="android-touch-fix-v4-final">
-/* Точечный фикс: старый синтетический click-перехватчик удалён, касание передаётся кнопке. */
+/* Точечный фикс: старый synthetic click-перехватчик удалён, касание передаётся кнопке. */
 button, select, input { touch-action: manipulation !important; pointer-events: auto !important; -webkit-tap-highlight-color: transparent !important; }
 #menu:before,#menu:after,.title-wrap,.loading,.loading-text { pointer-events:none !important; }
 .screen { pointer-events:auto !important; }
@@ -42,6 +42,7 @@ for p in FILES:
     s=p.read_text(encoding='utf-8')
     if '/* TOUCH-BUTTON-FIX-V39' in s:
         s=re.sub(r'/\* TOUCH-BUTTON-FIX-V39[\s\S]*?\n\}\)\(\);\n', '', s, count=1)
+        s=s.replace('</script></div>', '/* TOUCH-BUTTON-FIX-V39 — старый обработчик удалён; маркер сохранён для совместимости. */\n</script></div>', 1)
     if '<style id="android-touch-fix-v4">' in s:
         s=re.sub(r'\n<style id="android-touch-fix-v4">[\s\S]*?</script>\n', '\n', s, count=1)
     if MARK not in s:
