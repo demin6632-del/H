@@ -1,1 +1,1 @@
-Final Android touch-fix build trigger. No game logic.
+Final Android touch-fix build trigger. Direct class-selection handler V43. No game logic.
