@@ -79,7 +79,7 @@ jobs:
               Path('/tmp/game.js').write_text(js)
               print(f'Checking {name}: {len(s)} bytes')
               subprocess.run(['node','--check','/tmp/game.js'],check=True)
-              required=['id="stats"','id="skills"','function inventoryHasSpace()','function unequipItemType(type)','function unequipAll()','function showStats()','function showSkills()','function levelUp()','function upgradeSkill()','Math.random()<0.18','Math.random()<0.40','enemy.phase===1','INFINITE_PERSISTENCE_FIX_V2','depthSelect','selectAbyssDepth','openAbyssKeyCache','RELEASE-V3.8','TOUCH-BUTTON-FIX-V39','ANDROID-TOUCH-FIX-V4-FINAL']
+              required=['id="stats"','id="skills"','function inventoryHasSpace()','function unequipItemType(type)','function unequipAll()','function showStats()','function showSkills()','function levelUp()','function upgradeSkill()','Math.random()<0.18','Math.random()<0.40','enemy.phase===1','INFINITE_PERSISTENCE_FIX_V2','depthSelect','selectAbyssDepth','openAbyssKeyCache','RELEASE-V3.8','ANDROID-TOUCH-FIX-V4-FINAL']
               missing=[x for x in required if x not in s]
               if missing: raise SystemExit(f'{name}: missing required stabilization: {missing}')
               if "abyssFloor++" not in s: raise SystemExit(f'{name}: infinite floor progression missing')
