@@ -7,6 +7,7 @@ name: Build APK
 # BUILD-INFINITE-ABYSS-V2-TRIGGER — финальная проверка и APK
 # BUILD-INFINITE-ABYSS-V2-FIX — исправление перехода после 7-го этажа
 # BUILD-RELEASE-V3.8 — открытые глубины, расширенное снаряжение, ключевой тайник, настройки и баланс
+# BUILD-TOUCH-FIX-V3.9 — исправление касаний кнопок в Android WebView
 
 on:
   workflow_dispatch:
@@ -52,13 +53,14 @@ jobs:
           python tools/next_systems_patch.py
           python tools/fix_infinite_abyss_mode.py
           python tools/apply_release_v38.py
+          python tools/fix_touch_buttons_v39.py
           python - <<'PY'
           from pathlib import Path
           import re
           p=Path('android/app/build.gradle')
           s=p.read_text()
-          s=re.sub(r'versionCode\s+\d+', 'versionCode 25', s, count=1)
-          s=re.sub(r"versionName\s+'[^']+'", "versionName '3.8'", s, count=1)
+          s=re.sub(r'versionCode\s+\d+', 'versionCode 26', s, count=1)
+          s=re.sub(r"versionName\s+'[^']+'", "versionName '3.9'", s, count=1)
           p.write_text(s)
           PY
       - name: Static JavaScript syntax check
@@ -73,7 +75,7 @@ jobs:
               Path('/tmp/game.js').write_text(js)
               print(f'Checking {name}: {len(s)} bytes')
               subprocess.run(['node','--check','/tmp/game.js'],check=True)
-              required=['id="stats"','id="skills"','function inventoryHasSpace()','function unequipItemType(type)','function unequipAll()','function showStats()','function showSkills()','function levelUp()','function upgradeSkill()','Math.random()<0.18','Math.random()<0.40','enemy.phase===1','INFINITE_PERSISTENCE_FIX_V2','depthSelect','selectAbyssDepth','openAbyssKeyCache','RELEASE-V3.8']
+              required=['id="stats"','id="skills"','function inventoryHasSpace()','function unequipItemType(type)','function unequipAll()','function showStats()','function showSkills()','function levelUp()','function upgradeSkill()','Math.random()<0.18','Math.random()<0.40','enemy.phase===1','INFINITE_PERSISTENCE_FIX_V2','depthSelect','selectAbyssDepth','openAbyssKeyCache','RELEASE-V3.8','TOUCH-BUTTON-FIX-V39']
               missing=[x for x in required if x not in s]
               if missing: raise SystemExit(f'{name}: missing required stabilization: {missing}')
               if "abyssFloor++" not in s: raise SystemExit(f'{name}: infinite floor progression missing')
@@ -89,7 +91,7 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add NEW_DARK_RPG/index.html android/app/src/main/assets/index.html android/app/build.gradle
-          if git diff --cached --quiet; then echo "No source changes to commit."; else git commit -m "Apply ChroniclesOfTheAbyss v3.8 release upgrades [skip ci]"; git push origin HEAD:main; fi
+          if git diff --cached --quiet; then echo "No source changes to commit."; else git commit -m "Apply ChroniclesOfTheAbyss v3.9 touch fix [skip ci]"; git push origin HEAD:main; fi
       - name: Set up Java
         uses: actions/setup-java@v4
         with:
@@ -118,37 +120,37 @@ jobs:
           APK=app/build/outputs/apk/release/app-release.apk
           BUILD_TOOLS=$(find "$ANDROID_HOME/build-tools" -maxdepth 1 -mindepth 1 -type d | sort -V | tail -1)
           "$BUILD_TOOLS/apksigner" verify --verbose "$APK"
-          "$BUILD_TOOLS/aapt" dump badging "$APK" | grep -E "package: name='com.chronicles.abyss'|versionName='3.8'|versionCode='25'"
+          "$BUILD_TOOLS/aapt" dump badging "$APK" | grep -E "package: name='com.chronicles.abyss'|versionName='3.9'|versionCode='26'"
       - name: Package APK ZIP
         working-directory: android
         run: |
           mkdir -p release-package
-          cp app/build/outputs/apk/release/app-release.apk release-package/ChroniclesOfTheAbyss-v3.8.apk
-          sha256sum release-package/ChroniclesOfTheAbyss-v3.8.apk > release-package/SHA256SUMS.txt
+          cp app/build/outputs/apk/release/app-release.apk release-package/ChroniclesOfTheAbyss-v3.9.apk
+          sha256sum release-package/ChroniclesOfTheAbyss-v3.9.apk > release-package/SHA256SUMS.txt
           cd release-package
-          zip -9 ../ChroniclesOfTheAbyss-v3.8-APK.zip *
+          zip -9 ../ChroniclesOfTheAbyss-v3.9-APK.zip *
       - name: Package normal PROJECT ZIP
         run: |
           rm -rf /tmp/ChroniclesOfTheAbyss_PROJECT
           mkdir -p /tmp/ChroniclesOfTheAbyss_PROJECT
           rsync -a --exclude='.git' --exclude='android/.gradle' --exclude='android/app/build' --exclude='android/release-package' ./ /tmp/ChroniclesOfTheAbyss_PROJECT/
           cd /tmp
-          zip -9 -r ChroniclesOfTheAbyss_PROJECT-v3.8.zip ChroniclesOfTheAbyss_PROJECT >/dev/null
+          zip -9 -r ChroniclesOfTheAbyss_PROJECT-v3.9.zip ChroniclesOfTheAbyss_PROJECT >/dev/null
       - name: Upload signed APK
         uses: actions/upload-artifact@v4
         with:
-          name: ChroniclesOfTheAbyss-v3.8-apk
+          name: ChroniclesOfTheAbyss-v3.9-apk
           path: android/app/build/outputs/apk/release/app-release.apk
           if-no-files-found: error
       - name: Upload APK ZIP
         uses: actions/upload-artifact@v4
         with:
-          name: ChroniclesOfTheAbyss-v3.8-apk-zip
-          path: android/ChroniclesOfTheAbyss-v3.8-APK.zip
+          name: ChroniclesOfTheAbyss-v3.9-apk-zip
+          path: android/ChroniclesOfTheAbyss-v3.9-APK.zip
           if-no-files-found: error
       - name: Upload normal PROJECT ZIP
         uses: actions/upload-artifact@v4
         with:
-          name: ChroniclesOfTheAbyss-v3.8-project
-          path: /tmp/ChroniclesOfTheAbyss_PROJECT-v3.8.zip
+          name: ChroniclesOfTheAbyss-v3.9-project
+          path: /tmp/ChroniclesOfTheAbyss_PROJECT-v3.9.zip
           if-no-files-found: error
