@@ -393,7 +393,7 @@ const INFINITE_PERSISTENCE_FIX_V2='persistent-infinite-abyss';
     const b=e.target&&e.target.closest?e.target.closest('button'):null;
     if(!b)return;
     if(pending){clearTimeout(pending);pending=null;}
-    if(synthetic){synthetic=false;e.stopPropagation();}
+    if(synthetic){synthetic=false;}
   },true);
   document.addEventListener('touchend',function(e){
     const b=e.target&&e.target.closest?e.target.closest('button'):null;
@@ -440,3 +440,4 @@ const INFINITE_PERSISTENCE_FIX_V2='persistent-infinite-abyss';
 @media(max-width:390px){.hero-ref .hero-figure .hero-character-image{width:170px!important;max-height:500px!important}}
 </style>
 </body></html>
+<!-- ANDROID-TOUCH-FIX-V4-FINAL: synthetic click now reaches the original button handler. -->
