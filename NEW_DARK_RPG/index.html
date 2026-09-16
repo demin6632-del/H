@@ -378,6 +378,37 @@ const INFINITE_PERSISTENCE_FIX_V2='persistent-infinite-abyss';
   if(!document.getElementById('release-v38-style')){const st=document.createElement('style');st.id='release-v38-style';st.textContent='#game[data-graphics="Низкое"] .panel{box-shadow:none!important}#game[data-graphics="Среднее"] .panel{box-shadow:inset 0 0 6px rgba(130,0,0,.08),0 0 7px rgba(80,0,0,.1)}';document.head.appendChild(st)}
 })();
 
+
+
+/* TOUCH-BUTTON-FIX-V39 — совместимость касаний Android WebView. */
+(function(){
+  if(window.__touchButtonFixV39)return;
+  window.__touchButtonFixV39=true;
+  const st=document.createElement('style');
+  st.id='touch-button-fix-v39-style';
+  st.textContent='button{touch-action:manipulation!important;-webkit-tap-highlight-color:rgba(220,30,30,.16)!important;pointer-events:auto!important}#menu:before,#menu:after,.title-wrap,.loading,.loading-text{pointer-events:none!important}.screen{pointer-events:auto!important}';
+  document.head.appendChild(st);
+  let pending=null, synthetic=false;
+  document.addEventListener('click',function(e){
+    const b=e.target&&e.target.closest?e.target.closest('button'):null;
+    if(!b)return;
+    if(pending){clearTimeout(pending);pending=null;}
+    if(synthetic){synthetic=false;e.stopPropagation();}
+  },true);
+  document.addEventListener('touchend',function(e){
+    const b=e.target&&e.target.closest?e.target.closest('button'):null;
+    if(!b||b.disabled)return;
+    if(pending)clearTimeout(pending);
+    pending=setTimeout(function(){
+      pending=null;
+      if(!document.documentElement.contains(b)||b.disabled)return;
+      synthetic=true;
+      b.click();
+      setTimeout(function(){synthetic=false},450);
+    },180);
+  },{passive:true});
+})();
+
 </script></div>
 <style id="hero-character-scale-v40-final">
 /* === v3.10 FINAL: увеличиваем именно фактически отображаемый PNG/WebP/SVG героя === */
