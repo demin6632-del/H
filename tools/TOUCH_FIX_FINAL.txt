@@ -1,1 +1,1 @@
-Final Android touch-fix build trigger V45. Native class-card hit-test bypasses HTML touch event dependency. No game logic.
+Final Android touch-fix build trigger V46. Activity dispatchTouchEvent now handles class-card hit testing before WebView. No game logic.
