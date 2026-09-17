@@ -9,22 +9,21 @@ for p in FILES:
     s = s.replace('<script src="art-atlas-v4.js">', '<script src="art-atlas-v4.js"></script><script>')
     p.write_text(s, encoding='utf-8')
 
-# Удаляем native touch fallback: он не должен генерировать click при прокрутке.
+# Перед установкой финального V60 удаляем любой старый native touch bridge.
 p = Path('android/app/src/main/java/com/chronicles/abyss/MainActivity.java')
 s = p.read_text(encoding='utf-8')
 s = s.replace('import android.view.MotionEvent;\n', '')
-for token in ['\n        // Не перехватываем штатное касание WebView.', '\n        // Не блокируем штатное касание WebView.']:
-    start = s.find(token)
-    if start >= 0:
-        end = s.find('\n        root.addView(web,', start)
-        if end < 0: raise SystemExit('MainActivity root.addView marker not found')
-        s = s[:start] + s[end:]
-        break
-method_start = s.find('\n    /**\n     * Резерв для Android WebView:')
-if method_start >= 0:
-    method_end = s.find('\n    @Override\n    public void onBackPressed()', method_start)
-    if method_end < 0: raise SystemExit('MainActivity onBackPressed marker not found')
-    s = s[:method_start] + s[method_end:]
+start = s.find('    /* ANDROID-NATIVE-TOUCH-FALLBACK-V60')
+if start >= 0:
+    class_start = s.find('    private static final class TouchWebView', start)
+    class_end = s.find('\n    @Override\n    protected void onCreate', class_start)
+    if class_start < 0 or class_end < 0:
+        raise SystemExit('MainActivity V60 TouchWebView block found but could not be removed')
+    s = s[:start] + s[class_end:]
+    s = s.replace('    private TouchWebView web;\n', '    private WebView web;\n')
+    s = s.replace('        web = new TouchWebView(this);\n', '        web = new WebView(this);\n')
+for token in ['import android.os.Handler;\n','import android.os.Looper;\n','import android.view.ViewConfiguration;\n']:
+    s=s.replace(token,'')
 p.write_text(s, encoding='utf-8')
 
 # V4 exact crop. В исходной игре .scene имеет background-size/position: ... !important,
@@ -57,7 +56,7 @@ function roomKeyV4"""
     p.write_text(s,encoding='utf-8')
 
 ma=Path('android/app/src/main/java/com/chronicles/abyss/MainActivity.java').read_text(encoding='utf-8')
-if any(x in ma for x in ['dispatchTouchFallback','setOnTouchListener','MotionEvent']):
+if any(x in ma for x in ['dispatchTouchFallback','setOnTouchListener','MotionEvent','ANDROID-NATIVE-TOUCH-FALLBACK-V60']):
     raise SystemExit('MainActivity native duplicate touch fallback still present')
 for p in [Path('NEW_DARK_RPG/art-atlas-v4.js'),Path('android/app/src/main/assets/art-atlas-v4.js')]:
     s=p.read_text(encoding='utf-8')
