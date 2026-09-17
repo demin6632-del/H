@@ -6,7 +6,6 @@ name: Build APK
 # BUILD-RELEASE-V3.8
 # BUILD-TOUCH-STABILIZATION-V56 — прямой Android WebView touch fallback
 # BUILD-FULL-AUDIT-V56 — финальная проверка перед подписью APK
-# BUILD-ART-ATLAS-V4 — новый dark-fantasy визуальный слой по референсу
 
 on:
   workflow_dispatch:
@@ -58,7 +57,6 @@ jobs:
           python tools/install_art_atlas_v2.py
           python tools/final_stabilization_v55.py
           python tools/fix_android_touch_v56.py
-          python tools/install_art_atlas_v4.py
           python - <<'PY'
           from pathlib import Path
           import re
@@ -72,7 +70,7 @@ jobs:
         run: |
           python - <<'PY'
           from pathlib import Path
-          import re, subprocess, html, base64
+          import re, subprocess, html
           files=['NEW_DARK_RPG/index.html','android/app/src/main/assets/index.html']
           for name in files:
               s=Path(name).read_text(encoding='utf-8')
@@ -103,23 +101,15 @@ jobs:
                   if bad in s: raise SystemExit(f'{name}: obsolete/broken marker remains {bad}')
               if 'abyssFloor++' not in s: raise SystemExit(f'{name}: infinite floor progression missing')
               if 'resetAbyss();hero.hp=hero.maxHp' in s: raise SystemExit(f'{name}: death still resets Abyss progress')
-              atlas=Path(name).parent/'art-atlas-v4.js'
-              if not atlas.exists(): raise SystemExit(f'{name}: art-atlas-v4.js missing')
-              a=atlas.read_text(encoding='utf-8')
-              if 'ART-ATLAS-V4' not in a or 'data:image/webp;base64,' not in a: raise SystemExit(f'{name}: invalid V4 atlas')
-              payload=a.split('data:image/webp;base64,',1)[1].split("';",1)[0]
-              raw=base64.b64decode(payload,validate=True)
-              if raw[:4]!=b'RIFF' or raw[8:12]!=b'WEBP': raise SystemExit(f'{name}: V4 atlas is not valid WEBP')
-              print(f'{name}: V4 atlas OK {len(raw)} bytes')
           if Path(files[0]).read_bytes()!=Path(files[1]).read_bytes(): raise SystemExit('Web and Android game sources differ')
-          print('FULL GAME AUDIT V56 + ART-ATLAS-V4: PASS')
+          print('FULL GAME AUDIT V56: PASS')
           PY
       - name: Commit permanent source fixes
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot].noreply.github.com"
-          git add NEW_DARK_RPG/index.html NEW_DARK_RPG/art-atlas-v3.js NEW_DARK_RPG/art-atlas-v4.js android/app/src/main/assets/index.html android/app/src/main/assets/art-atlas-v2.js android/app/src/main/assets/art-atlas-v3.js android/app/src/main/assets/art-atlas-v4.js android/app/build.gradle android/app/src/main/java/com/chronicles/abyss/MainActivity.java tools/fix_android_touch_v42.py tools/fix_android_touch_v56.py tools/final_stabilization_v55.py tools/install_art_atlas_v2.py tools/install_art_atlas_v4.py .github/workflows/build-apk.yml
-          if git diff --cached --quiet; then echo "No source changes to commit."; else git commit -m "Install art atlas v4 and rebuild release [skip ci]"; git push origin HEAD:main; fi
+          git add NEW_DARK_RPG/index.html android/app/src/main/assets/index.html android/app/build.gradle android/app/src/main/java/com/chronicles/abyss/MainActivity.java tools/fix_android_touch_v42.py tools/fix_android_touch_v56.py tools/final_stabilization_v55.py tools/install_art_atlas_v2.py .github/workflows/build-apk.yml
+          if git diff --cached --quiet; then echo "No source changes to commit."; else git commit -m "Install hardened class touch fix [skip ci]"; git push origin HEAD:main; fi
       - name: Set up Java
         uses: actions/setup-java@v4
         with:
