@@ -50,10 +50,12 @@ NEW_JS = r'''/* ANDROID-TOUCH-STABLE-V56 — прямой и не блокиру
     if(!b||b.disabled)return false;
     cancel(b);b.click();lastNative.set(b,Date.now());return true;
   };
-  // Явно экспортируем обработчик выбора глубины как function-обёртку,
-  // чтобы Android/WebView и статический аудит видели его одинаково.
+  // Явно экспортируем обработчики, которые вызываются inline-атрибутами.
   if(typeof selectAbyssDepth==='function'){
     window.selectAbyssDepth=function(){return selectAbyssDepth.apply(this,arguments);};
+  }
+  if(typeof openAbyssKeyCache==='function'){
+    window.openAbyssKeyCache=function(){return openAbyssKeyCache.apply(this,arguments);};
   }
 })();
 '''
@@ -105,18 +107,7 @@ def patch_java():
     end = s.find('        root.addView(web, new FrameLayout.LayoutParams(', start)
     if start < 0 or end < 0:
         raise SystemExit('MainActivity touch section not found')
-    replacement = '''        // Не перехватываем штатное касание WebView. На ACTION_UP лишь ставим
-        // отложенный JS-fallback, чтобы дать WebView закончить собственный tap/click.
-        web.setOnTouchListener((v, event) -> {
-            if (webViewReady && event.getAction() == MotionEvent.ACTION_UP) {
-                final float px = event.getX();
-                final float py = event.getY();
-                web.postDelayed(() -> dispatchTouchFallback(px, py), 90);
-            }
-            return false;
-        });
-
-'''
+    replacement = '''        // Не перехватываем штатное касание WebView. На ACTION_UP лишь ставим\n        // отложенный JS-fallback, чтобы дать WebView закончить собственный tap/click.\n        web.setOnTouchListener((v, event) -> {\n            if (webViewReady && event.getAction() == MotionEvent.ACTION_UP) {\n                final float px = event.getX();\n                final float py = event.getY();\n                web.postDelayed(() -> dispatchTouchFallback(px, py), 90);\n            }\n            return false;\n        });\n\n'''
     s = s[:start] + replacement + s[end:]
 
     mstart = s.find('    /**\n     * Резерв для Android WebView:')
