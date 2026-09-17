@@ -56,6 +56,7 @@ jobs:
           python tools/fix_android_touch_v41.py
           python tools/install_art_atlas_v2.py
           python tools/install_art_atlas_v4.py
+          python tools/fix_v4_runtime_and_touch.py
           python tools/final_stabilization_v55.py
           python tools/fix_android_touch_v56.py
           python - <<'PY'
@@ -63,20 +64,20 @@ jobs:
           import re
           p=Path('android/app/build.gradle')
           s=p.read_text()
-          s=re.sub(r'versionCode\s+\d+', 'versionCode 34', s, count=1)
-          s=re.sub(r"versionName\s+'[^']+'", "versionName '4.2.3'", s, count=1)
+          s=re.sub(r'versionCode\s+\d+', 'versionCode 35', s, count=1)
+          s=re.sub(r"versionName\s+'[^']+'", "versionName '4.2.4'", s, count=1)
           p.write_text(s)
           PY
       - name: Full source audit
         run: |
           python - <<'PY'
           from pathlib import Path
-          import re, subprocess, html, base64
+          import re, subprocess, html
           files=['NEW_DARK_RPG/index.html','android/app/src/main/assets/index.html']
           for name in files:
               s=Path(name).read_text(encoding='utf-8')
-              if 'art-atlas-v4.js' not in s:
-                  raise SystemExit(f'{name}: V4 art script reference missing')
+              if '<script src="art-atlas-v4.js"></script>' not in s:
+                  raise SystemExit(f'{name}: V4 art script reference is not correctly closed')
               js='\n'.join(m.group(1) for m in re.finditer(r'<script[^>]*>(.*?)</script>',s,re.S))
               Path('/tmp/game.js').write_text(js,encoding='utf-8')
               subprocess.run(['node','--check','/tmp/game.js'],check=True)
@@ -107,15 +108,19 @@ jobs:
           if Path(files[0]).read_bytes()!=Path(files[1]).read_bytes(): raise SystemExit('Web and Android game sources differ')
           v4=Path('NEW_DARK_RPG/art-atlas-v4.js').read_text(encoding='utf-8')
           if 'UklGR' not in v4: raise SystemExit('V4 atlas is not embedded as WebP')
+          if "backgroundSize='400% 600%'" not in v4: raise SystemExit('V4 atlas tile sizing is missing')
           if not Path('android/app/src/main/assets/art-atlas-v4.js').exists(): raise SystemExit('Android V4 atlas asset missing')
-          print('FULL GAME AUDIT V4: PASS')
+          ma=Path('android/app/src/main/java/com/chronicles/abyss/MainActivity.java').read_text(encoding='utf-8')
+          if 'dispatchTouchFallback' in ma or 'setOnTouchListener' in ma or 'MotionEvent' in ma:
+              raise SystemExit('MainActivity still contains duplicate native touch fallback')
+          print('FULL GAME AUDIT V4.1 + TOUCH: PASS')
           PY
       - name: Commit permanent source fixes
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot].noreply.github.com"
-          git add NEW_DARK_RPG/index.html NEW_DARK_RPG/art-atlas-v4.js android/app/src/main/assets/index.html android/app/src/main/assets/art-atlas-v4.js android/app/build.gradle android/app/src/main/java/com/chronicles/abyss/MainActivity.java tools/fix_android_touch_v42.py tools/fix_android_touch_v56.py tools/final_stabilization_v55.py tools/install_art_atlas_v2.py tools/install_art_atlas_v4.py .github/workflows/build-apk.yml
-          if git diff --cached --quiet; then echo "No source changes to commit."; else git commit -m "Enable V4 visual atlas in release build [skip ci]"; git push origin HEAD:main; fi
+          git add NEW_DARK_RPG/index.html NEW_DARK_RPG/art-atlas-v4.js android/app/src/main/assets/index.html android/app/src/main/assets/art-atlas-v4.js android/app/build.gradle android/app/src/main/java/com/chronicles/abyss/MainActivity.java tools/fix_v4_runtime_and_touch.py tools/fix_android_touch_v42.py tools/fix_android_touch_v56.py tools/final_stabilization_v55.py tools/install_art_atlas_v2.py tools/install_art_atlas_v4.py .github/workflows/build-apk.yml
+          if git diff --cached --quiet; then echo "No source changes to commit."; else git commit -m "Fix V4 runtime and duplicate Android taps [skip ci]"; git push origin HEAD:main; fi
       - name: Set up Java
         uses: actions/setup-java@v4
         with:
@@ -144,38 +149,38 @@ jobs:
           APK=app/build/outputs/apk/release/app-release.apk
           BUILD_TOOLS=$(find "$ANDROID_HOME/build-tools" -maxdepth 1 -mindepth 1 -type d | sort -V | tail -1)
           "$BUILD_TOOLS/apksigner" verify --verbose "$APK"
-          "$BUILD_TOOLS/aapt" dump badging "$APK" | grep -E "package: name='com.chronicles.abyss'|versionName='4.2.3'|versionCode='34'"
+          "$BUILD_TOOLS/aapt" dump badging "$APK" | grep -E "package: name='com.chronicles.abyss'|versionName='4.2.4'|versionCode='35'"
           unzip -l "$APK" | grep -E 'assets/(index.html|art-atlas-v4.js)$'
       - name: Package APK ZIP
         working-directory: android
         run: |
           mkdir -p release-package
-          cp app/build/outputs/apk/release/app-release.apk release-package/ChroniclesOfTheAbyss-v4.2.3.apk
-          sha256sum release-package/ChroniclesOfTheAbyss-v4.2.3.apk > release-package/SHA256SUMS.txt
+          cp app/build/outputs/apk/release/app-release.apk release-package/ChroniclesOfTheAbyss-v4.2.4.apk
+          sha256sum release-package/ChroniclesOfTheAbyss-v4.2.4.apk > release-package/SHA256SUMS.txt
           cd release-package
-          zip -9 ../ChroniclesOfTheAbyss-v4.2.3-APK.zip *
+          zip -9 ../ChroniclesOfTheAbyss-v4.2.4-APK.zip *
       - name: Package normal PROJECT ZIP
         run: |
           rm -rf /tmp/ChroniclesOfTheAbyss_PROJECT
           mkdir -p /tmp/ChroniclesOfTheAbyss_PROJECT
           rsync -a --exclude='.git' --exclude='android/.gradle' --exclude='android/app/build' --exclude='android/release-package' ./ /tmp/ChroniclesOfTheAbyss_PROJECT/
           cd /tmp
-          zip -9 -r ChroniclesOfTheAbyss_PROJECT-v4.2.3.zip ChroniclesOfTheAbyss_PROJECT >/dev/null
+          zip -9 -r ChroniclesOfTheAbyss_PROJECT-v4.2.4.zip ChroniclesOfTheAbyss_PROJECT >/dev/null
       - name: Upload signed APK
         uses: actions/upload-artifact@v4
         with:
-          name: ChroniclesOfTheAbyss-v4.2.3-apk
+          name: ChroniclesOfTheAbyss-v4.2.4-apk
           path: android/app/build/outputs/apk/release/app-release.apk
           if-no-files-found: error
       - name: Upload APK ZIP
         uses: actions/upload-artifact@v4
         with:
-          name: ChroniclesOfTheAbyss-v4.2.3-apk-zip
-          path: android/ChroniclesOfTheAbyss-v4.2.3-APK.zip
+          name: ChroniclesOfTheAbyss-v4.2.4-apk-zip
+          path: android/ChroniclesOfTheAbyss-v4.2.4-APK.zip
           if-no-files-found: error
       - name: Upload normal PROJECT ZIP
         uses: actions/upload-artifact@v4
         with:
-          name: ChroniclesOfTheAbyss-v4.2.3-project
-          path: /tmp/ChroniclesOfTheAbyss_PROJECT-v4.2.3.zip
+          name: ChroniclesOfTheAbyss-v4.2.4-project
+          path: /tmp/ChroniclesOfTheAbyss_PROJECT-v4.2.4.zip
           if-no-files-found: error
