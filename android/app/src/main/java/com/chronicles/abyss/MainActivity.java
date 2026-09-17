@@ -26,13 +26,12 @@ public class MainActivity extends Activity {
     private final Runnable classHitboxUpdater = new Runnable() {
         @Override public void run() {
             updateNativeClassHitboxes();
-            uiHandler.postDelayed(this, 250L);
+            uiHandler.postDelayed(this, 300L);
         }
     };
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
-        // Важно: SplashScreen подключается до super.onCreate().
         SplashScreen splashScreen = SplashScreen.installSplashScreen(this);
         splashScreen.setKeepOnScreenCondition(() -> !webViewReady);
         super.onCreate(savedInstanceState);
@@ -48,14 +47,11 @@ public class MainActivity extends Activity {
         settings.setAllowContentAccess(true);
 
         web.setWebViewClient(new WebViewClient() {
-            @Override
-            public void onPageCommitVisible(WebView view, String url) {
+            @Override public void onPageCommitVisible(WebView view, String url) {
                 webViewReady = true;
                 super.onPageCommitVisible(view, url);
             }
-
-            @Override
-            public void onPageFinished(WebView view, String url) {
+            @Override public void onPageFinished(WebView view, String url) {
                 webViewReady = true;
                 super.onPageFinished(view, url);
             }
@@ -65,8 +61,8 @@ public class MainActivity extends Activity {
                 ViewGroup.LayoutParams.MATCH_PARENT,
                 ViewGroup.LayoutParams.MATCH_PARENT));
 
-        // Нативный прозрачный слой находится поверх WebView только для четырёх карточек классов.
-        // Он не изменяет внешний вид игры и не вмешивается в остальные кнопки.
+        // V48: отдельный нативный слой только для выбора класса.
+        // Позиции рассчитываются от фактического размера Activity, а не от CSS/WebView-координат.
         classHitLayer = new FrameLayout(this);
         classHitLayer.setBackgroundColor(Color.TRANSPARENT);
         classHitLayer.setVisibility(View.GONE);
@@ -80,12 +76,11 @@ public class MainActivity extends Activity {
             hit.setBackgroundColor(Color.TRANSPARENT);
             hit.setClickable(true);
             hit.setFocusable(false);
-            hit.setOnClickListener(v -> {
-                if (web == null || !webViewReady) return;
-                // Вызывается существующая игровая функция выбора класса.
-                String cls = classNames[index].replace("'", "\\'");
-                web.evaluateJavascript("(function(){if(typeof window.start==='function'){window.start('" + cls + "');}})()", null);
-                classHitLayer.setVisibility(View.GONE);
+            hit.setOnTouchListener((v, event) -> {
+                if (event.getAction() == android.view.MotionEvent.ACTION_UP) {
+                    selectNativeClass(index);
+                }
+                return true;
             });
             classHitBoxes[i] = hit;
             classHitLayer.addView(hit, new FrameLayout.LayoutParams(1, 1));
@@ -93,78 +88,70 @@ public class MainActivity extends Activity {
 
         web.loadUrl("file:///android_asset/index.html");
         setContentView(root);
-        uiHandler.post(classHitboxUpdater);
-        uiHandler.postDelayed(() -> webViewReady = true, 5000L);
+        root.post(classHitboxUpdater);
     }
 
     /**
-     * ANDROID-NATIVE-CLASS-HITBOX-V47:
-     * Нативные прозрачные области поверх карточек классов.
-     * Это полностью обходит проблемную HTML-цепочку touch/pointer/click.
-     * Игровая логика не дублируется: Android вызывает существующий window.start().
+     * ANDROID-NATIVE-CLASS-HITBOX-V48
+     * Фикс не использует DOM rect, density или координаты WebView.
+     * Четыре реальные Android View получают касание напрямую.
      */
     private void updateNativeClassHitboxes() {
-        if (web == null || classHitLayer == null || !webViewReady) return;
+        if (root == null || classHitLayer == null || web == null || !webViewReady) return;
 
-        String js = "(function(){"
-                + "var s=document.getElementById('classes');"
-                + "if(!s||s.classList.contains('hidden'))return 'H';"
-                + "var a=s.querySelectorAll('.class-card');"
-                + "if(a.length<4)return 'H';"
-                + "var vw=document.documentElement.clientWidth||window.innerWidth||1;"
-                + "var vh=document.documentElement.clientHeight||window.innerHeight||1;"
-                + "var out=vw+','+vh;"
-                + "for(var i=0;i<4;i++){var r=a[i].getBoundingClientRect();"
-                + "out+='|'+r.left+','+r.top+','+r.width+','+r.height;}"
-                + "return out;"
-                + "})()";
-
-        web.evaluateJavascript(js, value -> {
-            if (value == null) return;
-            String data = value;
-            if (data.length() >= 2 && data.charAt(0) == '"' && data.charAt(data.length() - 1) == '"') {
-                data = data.substring(1, data.length() - 1).replace("\\\"", "\"");
-            }
-            if ("H".equals(data)) {
+        web.evaluateJavascript("(function(){var s=document.getElementById('classes');return s&&!s.classList.contains('hidden')?'SHOW':'HIDE';})()", value -> {
+            boolean show = value != null && value.contains("SHOW");
+            if (!show) {
                 classHitLayer.setVisibility(View.GONE);
                 return;
             }
+            layoutNativeClassHitboxes();
+        });
+    }
 
-            try {
-                String[] parts = data.split("\\|");
-                if (parts.length < 5) return;
-                String[] viewport = parts[0].split(",");
-                float cssW = Float.parseFloat(viewport[0]);
-                float cssH = Float.parseFloat(viewport[1]);
-                float scaleX = web.getWidth() / Math.max(1f, cssW);
-                float scaleY = web.getHeight() / Math.max(1f, cssH);
+    private void layoutNativeClassHitboxes() {
+        int w = root.getWidth();
+        int h = root.getHeight();
+        if (w <= 0 || h <= 0) return;
 
-                for (int i = 0; i < 4; i++) {
-                    String[] r = parts[i + 1].split(",");
-                    if (r.length < 4) continue;
-                    float left = Float.parseFloat(r[0]) * scaleX;
-                    float top = Float.parseFloat(r[1]) * scaleY;
-                    float width = Float.parseFloat(r[2]) * scaleX;
-                    float height = Float.parseFloat(r[3]) * scaleY;
+        // Пропорции соответствуют сетке четырёх карточек на экране выбора класса.
+        // Небольшой запас по краям делает касание надёжным, не затрагивая кнопку "Назад".
+        float leftX = w * 0.055f;
+        float rightX = w * 0.505f;
+        float cardW = w * 0.440f;
+        float topY = h * 0.155f;
+        float secondY = h * 0.385f;
+        float cardH = h * 0.215f;
 
-                    FrameLayout.LayoutParams lp = new FrameLayout.LayoutParams(
-                            Math.max(1, Math.round(width)),
-                            Math.max(1, Math.round(height)));
-                    lp.leftMargin = Math.round(left);
-                    lp.topMargin = Math.round(top);
-                    classHitBoxes[i].setLayoutParams(lp);
-                }
-                classHitLayer.setVisibility(View.VISIBLE);
-                classHitLayer.bringToFront();
-            } catch (Exception ignored) {
-                // При временно некорректных координатах слой просто не активируется.
-            }
+        setHitBox(classHitBoxes[0], leftX, topY, cardW, cardH);
+        setHitBox(classHitBoxes[1], rightX, topY, cardW, cardH);
+        setHitBox(classHitBoxes[2], leftX, secondY, cardW, cardH);
+        setHitBox(classHitBoxes[3], rightX, secondY, cardW, cardH);
+
+        classHitLayer.setVisibility(View.VISIBLE);
+        classHitLayer.bringToFront();
+    }
+
+    private void setHitBox(View v, float x, float y, float width, float height) {
+        FrameLayout.LayoutParams lp = new FrameLayout.LayoutParams(
+                Math.max(1, Math.round(width)), Math.max(1, Math.round(height)));
+        lp.leftMargin = Math.round(x);
+        lp.topMargin = Math.round(y);
+        v.setLayoutParams(lp);
+    }
+
+    private void selectNativeClass(int index) {
+        if (index < 0 || index >= classNames.length || web == null || !webViewReady) return;
+        String cls = classNames[index].replace("'", "\\'");
+        // Используется существующая игровая функция. Игровые характеристики и логика не дублируются.
+        web.evaluateJavascript("(function(){if(typeof window.start==='function'){window.start('" + cls + "');return 'OK';}return 'NO_START';})()", value -> {
+            classHitLayer.setVisibility(View.GONE);
+            updateNativeClassHitboxes();
         });
     }
 
     @Override
     public void onBackPressed() {
-        // Сначала возвращаемся внутри игры через её собственную кнопку/историю.
         if (web != null) {
             web.evaluateJavascript("(function(){if(typeof goBack==='function'){goBack();return 'game';}return 'none';})()", value -> {
                 if (value == null || value.contains("none")) {
@@ -178,9 +165,7 @@ public class MainActivity extends Activity {
     }
 
     @SuppressWarnings("deprecation")
-    private void superOnBackPressed() {
-        super.onBackPressed();
-    }
+    private void superOnBackPressed() { super.onBackPressed(); }
 
     @Override
     protected void onDestroy() {
