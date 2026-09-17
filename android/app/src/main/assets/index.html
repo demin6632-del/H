@@ -437,15 +437,23 @@ const INFINITE_PERSISTENCE_FIX_V2='persistent-infinite-abyss';
   window.addEventListener('unhandledrejection',e=>{try{if(typeof logEvent==='function')logEvent('СИСТЕМА','Ошибка операции: '+String(e&&e.reason||'неизвестная ошибка').slice(0,180))}catch(_){}});
 })();
 
-/* ANDROID-TOUCH-STABLE-V57 — короткий tap работает на Android, прокрутка не нажимает кнопки. */
+/* ANDROID-TOUCH-STABLE-V58 — надёжный tap без кликов при прокрутке. */
 (function(){
-  if(window.__androidTouchStableV57)return;
-  window.__androidTouchStableV57=true;
+  if(window.__androidTouchStableV58)return;
+  window.__androidTouchStableV58=true;
   let touchButton=null,touchX=0,touchY=0,touchMoved=false;
+  let syntheticClick=false,suppressNativeClick=false;
   const MOVE_LIMIT=14;
   const findButton=(node)=>{
     if(!node)return null;
-    if(node.closest)return node.closest('button');
+    if(node.closest){const b=node.closest('button');if(b&&!b.disabled)return b;}
+    return null;
+  };
+  const findButtonAt=(x,y)=>{
+    try{
+      const list=document.elementsFromPoint?document.elementsFromPoint(x,y):[document.elementFromPoint(x,y)];
+      for(const node of list){const b=findButton(node);if(b)return b;}
+    }catch(_){ }
     return null;
   };
   document.addEventListener('touchstart',function(e){
@@ -455,7 +463,6 @@ const INFINITE_PERSISTENCE_FIX_V2='persistent-infinite-abyss';
     if(t){touchX=t.clientX;touchY=t.clientY;}
   },{capture:true,passive:true});
   document.addEventListener('touchmove',function(e){
-    if(!touchButton)return;
     const t=e.touches&&e.touches[0];
     if(!t)return;
     if(Math.abs(t.clientX-touchX)>MOVE_LIMIT || Math.abs(t.clientY-touchY)>MOVE_LIMIT){
@@ -463,16 +470,30 @@ const INFINITE_PERSISTENCE_FIX_V2='persistent-infinite-abyss';
       touchButton=null;
     }
   },{capture:true,passive:true});
+  document.addEventListener('click',function(e){
+    if(syntheticClick)return;
+    if(suppressNativeClick){
+      suppressNativeClick=false;
+      e.preventDefault();
+      e.stopImmediatePropagation();
+    }
+  },{capture:true});
   document.addEventListener('touchend',function(e){
-    const b=touchButton;
+    let b=touchButton;
     touchButton=null;
-    if(!b||touchMoved)return;
     const t=e.changedTouches&&e.changedTouches[0];
-    if(!t)return;
+    if(!t||touchMoved)return;
     if(Math.abs(t.clientX-touchX)>MOVE_LIMIT || Math.abs(t.clientY-touchY)>MOVE_LIMIT)return;
-    e.preventDefault();
-    try{b.click();}catch(_){ }
-  },{capture:true,passive:false});
+    if(!b)b=findButtonAt(t.clientX,t.clientY);
+    if(!b)return;
+    try{
+      syntheticClick=true;
+      b.click();
+      syntheticClick=false;
+      suppressNativeClick=true;
+      setTimeout(function(){suppressNativeClick=false;},350);
+    }catch(_){syntheticClick=false;}
+  },{capture:true,passive:true});
   document.addEventListener('touchcancel',function(){touchButton=null;touchMoved=true;},{capture:true,passive:true});
   if(typeof selectAbyssDepth==='function' && !window.selectAbyssDepth){
     window.selectAbyssDepth=function(){return selectAbyssDepth.apply(this,arguments);};
