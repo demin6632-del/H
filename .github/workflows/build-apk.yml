@@ -31,6 +31,10 @@ jobs:
           s=re.sub(r"versionName\s+'[^']+'","versionName '4.3.1'",s,count=1)
           p.write_text(s)
           PY
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot].noreply.github.com"
+          git add NEW_DARK_RPG/index.html android/app/src/main/assets/index.html android/app/src/main/assets/art-atlas-v4-fix.js android/app/build.gradle
+          if ! git diff --cached --quiet; then git commit -m "Persist release source repair [skip ci]"; git push origin HEAD:main; fi
       - name: Full source audit
         run: |
           python - <<'PY'
