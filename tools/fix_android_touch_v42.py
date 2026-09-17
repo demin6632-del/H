@@ -45,4 +45,4 @@ for p in FILES:
     s=s[:pos]+'\n'+PATCH+'\n'+s[pos:]
     s += f'\n<!-- {MARK}: native class bridge is primary; ordinary buttons keep duplicate-safe touch fallback. -->\n'
     p.write_text(s,encoding='utf-8')
-print(MARK)
+print(MARK+' trigger')
