@@ -5,8 +5,7 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
 import android.graphics.Color;
-import android.view.KeyEvent;
-import android.view.View;
+import android.view.MotionEvent;
 import android.view.ViewGroup;
 import android.widget.FrameLayout;
 import android.webkit.WebSettings;
@@ -19,16 +18,10 @@ public class MainActivity extends Activity {
     private volatile boolean webViewReady = false;
     private WebView web;
     private FrameLayout root;
-    private FrameLayout classHitLayer;
     private final Handler uiHandler = new Handler(Looper.getMainLooper());
-    private final View[] classHitBoxes = new View[4];
-    private final String[] classNames = {"Воин", "Разбойник", "Маг", "Охотник"};
-    private final Runnable classHitboxUpdater = new Runnable() {
-        @Override public void run() {
-            updateNativeClassHitboxes();
-            uiHandler.postDelayed(this, 300L);
-        }
-    };
+    private boolean classScreenVisible = false;
+    private boolean classTouchHandled = false;
+    private long classTouchLockUntil = 0L;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -45,6 +38,9 @@ public class MainActivity extends Activity {
         settings.setDomStorageEnabled(true);
         settings.setAllowFileAccess(true);
         settings.setAllowContentAccess(true);
+        settings.setBuiltInZoomControls(false);
+        settings.setDisplayZoomControls(false);
+        settings.setSupportZoom(false);
 
         web.setWebViewClient(new WebViewClient() {
             @Override public void onPageCommitVisible(WebView view, String url) {
@@ -53,100 +49,89 @@ public class MainActivity extends Activity {
             }
             @Override public void onPageFinished(WebView view, String url) {
                 webViewReady = true;
+                installNativeTouchBridge();
                 super.onPageFinished(view, url);
             }
+        });
+
+        // V49: нативный перехватчик работает непосредственно на WebView.
+        // Прозрачные View поверх HTML больше не используются, поэтому они не могут перекрыть неверную область экрана.
+        web.setOnTouchListener((v, event) -> {
+            if (!webViewReady) return false;
+            if (event.getAction() == MotionEvent.ACTION_DOWN) {
+                classTouchHandled = false;
+                if (classScreenVisible && System.currentTimeMillis() >= classTouchLockUntil) {
+                    classTouchHandled = true;
+                    dispatchNativeClassTouch(event.getX(), event.getY());
+                    return true;
+                }
+            }
+            if (classTouchHandled && (event.getAction() == MotionEvent.ACTION_MOVE
+                    || event.getAction() == MotionEvent.ACTION_UP
+                    || event.getAction() == MotionEvent.ACTION_CANCEL)) {
+                if (event.getAction() == MotionEvent.ACTION_UP || event.getAction() == MotionEvent.ACTION_CANCEL) {
+                    classTouchHandled = false;
+                }
+                return true;
+            }
+            return false;
         });
 
         root.addView(web, new FrameLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT,
                 ViewGroup.LayoutParams.MATCH_PARENT));
 
-        // V48: отдельный нативный слой только для выбора класса.
-        // Позиции рассчитываются от фактического размера Activity, а не от CSS/WebView-координат.
-        classHitLayer = new FrameLayout(this);
-        classHitLayer.setBackgroundColor(Color.TRANSPARENT);
-        classHitLayer.setVisibility(View.GONE);
-        root.addView(classHitLayer, new FrameLayout.LayoutParams(
-                ViewGroup.LayoutParams.MATCH_PARENT,
-                ViewGroup.LayoutParams.MATCH_PARENT));
-
-        for (int i = 0; i < classHitBoxes.length; i++) {
-            final int index = i;
-            View hit = new View(this);
-            hit.setBackgroundColor(Color.TRANSPARENT);
-            hit.setClickable(true);
-            hit.setFocusable(false);
-            hit.setOnTouchListener((v, event) -> {
-                if (event.getAction() == android.view.MotionEvent.ACTION_UP) {
-                    selectNativeClass(index);
-                }
-                return true;
-            });
-            classHitBoxes[i] = hit;
-            classHitLayer.addView(hit, new FrameLayout.LayoutParams(1, 1));
-        }
-
         web.loadUrl("file:///android_asset/index.html");
         setContentView(root);
-        root.post(classHitboxUpdater);
     }
 
     /**
-     * ANDROID-NATIVE-CLASS-HITBOX-V48
-     * Фикс не использует DOM rect, density или координаты WebView.
-     * Четыре реальные Android View получают касание напрямую.
+     * V49: нормализует реальные координаты MotionEvent относительно WebView.
+     * Затем DOM сам определяет, какая карточка класса находится под пальцем.
      */
-    private void updateNativeClassHitboxes() {
-        if (root == null || classHitLayer == null || web == null || !webViewReady) return;
-
-        web.evaluateJavascript("(function(){var s=document.getElementById('classes');return s&&!s.classList.contains('hidden')?'SHOW':'HIDE';})()", value -> {
-            boolean show = value != null && value.contains("SHOW");
-            if (!show) {
-                classHitLayer.setVisibility(View.GONE);
-                return;
+    private void dispatchNativeClassTouch(float px, float py) {
+        if (web == null) return;
+        final float vw = Math.max(1f, web.getWidth());
+        final float vh = Math.max(1f, web.getHeight());
+        final float nx = Math.max(0f, Math.min(1f, px / vw));
+        final float ny = Math.max(0f, Math.min(1f, py / vh));
+        final String js = "(function(){"
+                + "var s=document.getElementById('classes');"
+                + "if(!s||s.classList.contains('hidden'))return 'HIDE';"
+                + "var x=" + nx + "*window.innerWidth,y=" + ny + "*window.innerHeight;"
+                + "var e=document.elementFromPoint(x,y);"
+                + "var b=e&&e.closest?e.closest('.class-card'):null;"
+                + "if(!b)return 'NONE';"
+                + "var o=b.getAttribute('onclick')||'';"
+                + "var m=o.match(/start\\(['\"]([^'\"]+)['\"]\\)/);"
+                + "if(!m||typeof window.start!=='function')return 'BAD';"
+                + "window.__nativeClassTouchV49=true;"
+                + "window.start(m[1]);return 'OK:'+m[1];"
+                + "})()";
+        web.evaluateJavascript(js, value -> {
+            if (value != null && value.contains("OK:")) {
+                classTouchLockUntil = System.currentTimeMillis() + 900L;
             }
-            layoutNativeClassHitboxes();
         });
     }
 
-    private void layoutNativeClassHitboxes() {
-        int w = root.getWidth();
-        int h = root.getHeight();
-        if (w <= 0 || h <= 0) return;
-
-        // Пропорции соответствуют сетке четырёх карточек на экране выбора класса.
-        // Небольшой запас по краям делает касание надёжным, не затрагивая кнопку "Назад".
-        float leftX = w * 0.055f;
-        float rightX = w * 0.505f;
-        float cardW = w * 0.440f;
-        float topY = h * 0.155f;
-        float secondY = h * 0.385f;
-        float cardH = h * 0.215f;
-
-        setHitBox(classHitBoxes[0], leftX, topY, cardW, cardH);
-        setHitBox(classHitBoxes[1], rightX, topY, cardW, cardH);
-        setHitBox(classHitBoxes[2], leftX, secondY, cardW, cardH);
-        setHitBox(classHitBoxes[3], rightX, secondY, cardW, cardH);
-
-        classHitLayer.setVisibility(View.VISIBLE);
-        classHitLayer.bringToFront();
+    /** V49: обновляет только признак экрана выбора класса. */
+    private void installNativeTouchBridge() {
+        if (web == null) return;
+        web.evaluateJavascript(
+                "(function(){if(window.__nativeTouchBridgeV49)return 'READY';"
+                        + "window.__nativeTouchBridgeV49=true;"
+                        + "setInterval(function(){var s=document.getElementById('classes');"
+                        + "window.__classesVisibleV49=!!(s&&!s.classList.contains('hidden'));},150);"
+                        + "return 'READY';})()",
+                value -> pollClassVisibility());
     }
 
-    private void setHitBox(View v, float x, float y, float width, float height) {
-        FrameLayout.LayoutParams lp = new FrameLayout.LayoutParams(
-                Math.max(1, Math.round(width)), Math.max(1, Math.round(height)));
-        lp.leftMargin = Math.round(x);
-        lp.topMargin = Math.round(y);
-        v.setLayoutParams(lp);
-    }
-
-    private void selectNativeClass(int index) {
-        if (index < 0 || index >= classNames.length || web == null || !webViewReady) return;
-        String cls = classNames[index].replace("'", "\\'");
-        // Используется существующая игровая функция. Игровые характеристики и логика не дублируются.
-        web.evaluateJavascript("(function(){if(typeof window.start==='function'){window.start('" + cls + "');return 'OK';}return 'NO_START';})()", value -> {
-            classHitLayer.setVisibility(View.GONE);
-            updateNativeClassHitboxes();
+    private void pollClassVisibility() {
+        if (web == null || !webViewReady) return;
+        web.evaluateJavascript("!!window.__classesVisibleV49", value -> {
+            classScreenVisible = "true".equals(value);
+            uiHandler.postDelayed(this::pollClassVisibility, 150L);
         });
     }
 
@@ -161,7 +146,7 @@ public class MainActivity extends Activity {
             });
             return;
         }
-        superOnBackPressed();
+        super.onBackPressed();
     }
 
     @SuppressWarnings("deprecation")
@@ -169,7 +154,7 @@ public class MainActivity extends Activity {
 
     @Override
     protected void onDestroy() {
-        uiHandler.removeCallbacks(classHitboxUpdater);
+        uiHandler.removeCallbacksAndMessages(null);
         if (web != null) web.destroy();
         super.onDestroy();
     }
