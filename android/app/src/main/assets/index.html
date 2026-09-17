@@ -141,7 +141,7 @@
 </style>
 <style id="abyss-room-info-v1">#abyssRoomInfo b{color:#e22;font-size:13px}#abyssRoomInfo .muted{display:inline-block;margin-top:2px}</style></head>
 <body><div id="game">
-<div id="menu"><div class="title-wrap"><div class="title-main">ХРОНИКИ<span>БЕЗДНЫ</span></div><div class="subtitle">ТЕКСТОВАЯ ROGUELIKE-RPG</div></div><button class="start-hit" onclick="showClasses()">Начать игру</button><button id="continueHit" class="continue-hit hidden" onclick="continueGame()">Продолжить</button><div class="loading"><span></span></div><div class="loading-text">Загрузка...</div></div>
+<div id="menu"><div class="title-wrap"><div class="title-main">ХРОНИКИ<span>БЕЗДНЫ</span></div><div class="subtitle">ТЕКСТОВАЯ ROGUELIKE-RPG</div></div><button class="start-hit" onclick="showClasses()">Начать игру</button><button id="continueHit" class="continue-hit" onclick="continueGame()">Продолжить</button><div class="loading"><span></span></div><div class="loading-text">Загрузка...</div></div>
 <div id="classes" class="screen hidden"><div class="screen-title"><button class="back-mini" onclick="goBack()">← Назад</button><h2>Выбор класса</h2></div><div class="panel"><div class="muted" style="text-align:center;margin-bottom:8px">Выбери путь, который проведёт тебя через Бездну.</div><div class="class-grid"><button class="class-card" onclick="start('Воин')"><span class="class-icon">⚔️</span><strong>Воин</strong><small>Сила и выносливость.<br>Выдерживает бой.</small><small>❤️ 130 · ✨ 40<br>⚔️ 12 · 🛡️ 9</small></button><button class="class-card" onclick="start('Разбойник')"><span class="class-icon">🗡️</span><strong>Разбойник</strong><small>Ловкость и скорость.<br>Критические удары.</small><small>❤️ 95 · ✨ 65<br>⚔️ 14 · 🛡️ 5</small></button><button class="class-card" onclick="start('Маг')"><span class="class-icon">🔮</span><strong>Маг</strong><small>Мана и заклинания.<br>Дальний бой.</small><small>❤️ 80 · ✨ 100<br>⚔️ 16 · 🛡️ 3</small></button><button class="class-card" onclick="start('Охотник')"><span class="class-icon">🏹</span><strong>Охотник</strong><small>Точный выстрел.<br>Держит дистанцию.</small><small>❤️ 105 · ✨ 60<br>⚔️ 15 · 🛡️ 6</small></button></div><button onclick="goBack()">← Назад</button></div></div>
 <div id="main" class="screen hidden"><div class="top-hud"><div class="hud-cell">❤️ HP <b id="hudHp">100/100</b><div class="bar"><i id="hudHpBar"></i></div></div><div class="hud-cell">💧 MP <b id="hudMp">50/50</b><div class="bar blue"><i id="hudMpBar"></i></div></div><div class="hud-cell">⚡ XP <b id="hudXp">0/100</b><div class="bar gold"><i id="hudXpBar"></i></div></div><div class="hud-cell gold">🪙 <b id="hudGold">100</b></div></div><div class="screen-title"><button class="back-mini" onclick="goBack()">← Назад</button><h2>Город</h2></div><div class="panel"><div class="scene"><div style="position:absolute;left:10px;bottom:8px;z-index:2;font-size:13px">Мёртвый город · Красная Луна</div></div><div class="info-card"><div class="info-row"><span>Путник</span><b id="name">Странник</b></div><div class="info-row"><span>Класс</span><b id="className">—</b></div><div class="info-row"><span>Уровень</span><b id="levelText">1</b></div></div></div><div class="panel city-list"><button onclick="showAbyss()"><span>☠</span>Отправиться в Бездну</button><button onclick="showShop()"><span>▣</span>Магазин</button><button onclick="showTavern()"><span>♟</span>Таверна</button><button onclick="showEquipment()"><span>⚒</span>Кузнец</button><button onclick="showHero()"><span>♙</span>Герой</button><button onclick="showStats()"><span>◈</span>Статистика</button><button onclick="showSettings()"><span>⚙</span>Настройки</button></div><div class="bottom-nav"><button onclick="showHero()"><b>♙</b>Герой</button><button onclick="showInventory()"><b>▣</b>Инвентарь</button><button onclick="showJournal()"><b>☷</b>Журнал</button><button onclick="showExit()"><b>×</b>Выход</button></div><div class="panel"><div id="out">Готово</div></div></div>
 <div id="abyss" class="screen hidden"><div class="screen-title"><button class="back-mini" onclick="goBack()">← Назад</button><h2>Бездна</h2></div><div class="panel"><div class="scene abyss"></div><div class="info-card"><div class="info-row"><span>Этаж</span><b id="abyssFloor">1/7</b></div><div class="info-row"><span>Комнаты</span><b id="abyssRooms">0/5</b></div></div><div class="info-card" id="abyssRoomInfo" style="margin-top:7px;line-height:1.55">Комната 1/5<br><span class="muted">Новая комната ещё не исследована.</span></div><div class="info-card" id="depthSelectPanel" style="margin-top:7px"><div class="info-row"><span>Открытая глубина</span><b id="bestDepthValue">1</b></div><select id="depthSelect" style="width:100%;min-height:40px;margin:5px 0;background:#080808;color:#eee;border:1px solid #6b1717;border-radius:4px;padding:7px"></select><button onclick="selectAbyssDepth()">Перейти на глубину</button></div><button id="exploreBtn" onclick="explore()">Войти в комнату</button><button id="abyssKeyBtn" onclick="openAbyssKeyCache()" style="display:none">🔑 Открыть запечатанный тайник</button></div></div>
@@ -405,27 +405,26 @@ const INFINITE_PERSISTENCE_FIX_V2='persistent-infinite-abyss';
   document.addEventListener('touchend',arm,{passive:true});
 })();
 
-/* ANDROID-TOUCH-FIX-V42 — единый резервный обработчик касаний. */
+/* ANDROID-TOUCH-FIX-V54 — прямое безопасное касание кнопок Android WebView. */
 (function(){
-  if(window.__androidTouchFixV42)return;
-  window.__androidTouchFixV42=true;
+  if(window.__androidTouchFixV54)return;
+  window.__androidTouchFixV54=true;
   const st=document.createElement('style');
   st.textContent='button{touch-action:manipulation!important;-webkit-tap-highlight-color:rgba(220,30,30,.16)!important;pointer-events:auto!important}.class-card:before,.class-icon{pointer-events:none!important}';
   document.head.appendChild(st);
-  let pending=null;
-  document.addEventListener('click',function(){if(pending){clearTimeout(pending);pending=null;}},true);
-  function arm(e){
+  let lock=false;
+  function activate(e){
     const b=e.target&&e.target.closest?e.target.closest('button'):null;
-    if(!b||b.disabled)return;
-    if(pending)clearTimeout(pending);
-    pending=setTimeout(function(){
-      pending=null;
-      if(!document.documentElement.contains(b)||b.disabled)return;
-      b.click();
-    },260);
+    if(!b||b.disabled||lock)return;
+    lock=true;
+    if(e.cancelable)e.preventDefault();
+    if(e.stopImmediatePropagation)e.stopImmediatePropagation();
+    if(e.stopPropagation)e.stopPropagation();
+    b.click();
+    setTimeout(function(){lock=false;},700);
   }
-  document.addEventListener('pointerup',arm,{passive:true});
-  document.addEventListener('touchend',arm,{passive:true});
+  document.addEventListener('touchstart',activate,{capture:true,passive:false});
+  document.addEventListener('pointerdown',function(e){if(e.pointerType==='touch')activate(e);},{capture:true,passive:false});
 })();
 
 </script></div>
@@ -464,4 +463,4 @@ const INFINITE_PERSISTENCE_FIX_V2='persistent-infinite-abyss';
 </body></html>
 <!-- ANDROID-TOUCH-FIX-V4-FINAL: native click is primary; delayed pointer/touch fallback is duplicate-safe. -->
 
-<!-- ANDROID-TOUCH-FIX-V44-NATIVE-CLASS: native class bridge is primary; ordinary buttons keep duplicate-safe touch fallback. -->
+<!-- ANDROID-TOUCH-FIX-V54: direct touch activation for Android buttons; Continue is always visible. -->
