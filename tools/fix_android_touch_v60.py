@@ -14,7 +14,8 @@ NEW_JS = r'''/* ANDROID-TOUCH-STABLE-V60 — pointer tap + native fallback, scro
 (function(){
   if(window.__androidTouchStableV60)return;
   window.__androidTouchStableV60=true;
-  let activeButton=null,downX=0,downY=0,moved=false,suppressNativeClick=false;
+  let activeButton=null,downX=0,downY=0,moved=false;
+  let syntheticClickInProgress=false,ignoreNativeClickUntil=0;
   const MOVE_LIMIT=14;
   const findButton=node=>{
     try{
@@ -33,11 +34,15 @@ NEW_JS = r'''/* ANDROID-TOUCH-STABLE-V60 — pointer tap + native fallback, scro
     if(!b||b.disabled)return false;
     try{
       window.__nativeTapConsumed=true;
-      suppressNativeClick=true;
+      syntheticClickInProgress=true;
       b.click();
-      setTimeout(()=>{suppressNativeClick=false;},350);
+      syntheticClickInProgress=false;
+      ignoreNativeClickUntil=Date.now()+350;
       return true;
-    }catch(_){return false;}
+    }catch(_){
+      syntheticClickInProgress=false;
+      return false;
+    }
   };
   window.__nativeTapConsumed=false;
   window.__nativeTapFallbackAt=function(x,y){
@@ -46,10 +51,12 @@ NEW_JS = r'''/* ANDROID-TOUCH-STABLE-V60 — pointer tap + native fallback, scro
     return fire(b);
   };
   document.addEventListener('click',function(e){
-    if(suppressNativeClick){
+    if(syntheticClickInProgress)return;
+    if(e.isTrusted===false)return;
+    if(ignoreNativeClickUntil>Date.now()){
       e.preventDefault();
       e.stopImmediatePropagation();
-      suppressNativeClick=false;
+      ignoreNativeClickUntil=0;
       return;
     }
     const b=findButton(e.target);
@@ -263,4 +270,4 @@ public class MainActivity extends Activity {
 }
 '''
 JAVA.write_text(JAVA_TEXT,encoding='utf-8')
-print('ANDROID TOUCH V60: pointer tap + native fallback, scroll safe')
+print('ANDROID TOUCH V60: synthetic tap allowed, native duplicate suppressed, scroll safe')
