@@ -5,9 +5,9 @@ FILES=[Path('NEW_DARK_RPG/index.html'),Path('android/app/src/main/assets/index.h
 MARK='ANDROID-TOUCH-FIX-V54'
 
 # Удаляем накопленные обработчики старых touch-фиксов.
-V39_RE=re.compile(r'/\\* TOUCH-BUTTON-FIX-V39.*?\\(\\)\\);\\s*',re.S)
-V42_RE=re.compile(r'/\\* ANDROID-TOUCH-FIX-V42.*?\\(\\)\\);\\s*',re.S)
-CLASS_RE=re.compile(r'/\\* ANDROID-CLASS-SELECT-FIX-V43.*?\\(\\)\\);\\s*',re.S)
+V39_RE=re.compile(r'/\* TOUCH-BUTTON-FIX-V39.*?\(\)\);\s*',re.S)
+V42_RE=re.compile(r'/\* ANDROID-TOUCH-FIX-V42.*?\(\)\);\s*',re.S)
+CLASS_RE=re.compile(r'/\* ANDROID-CLASS-SELECT-FIX-V43.*?\(\)\);\s*',re.S)
 PATCH=r'''/* ANDROID-TOUCH-FIX-V54 — прямое безопасное касание кнопок Android WebView. */
 (function(){
   if(window.__androidTouchFixV54)return;
