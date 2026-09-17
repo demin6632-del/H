@@ -56,6 +56,7 @@ function roomKeyV4"""
         s=s.replace(marker,style+marker,1)
     # Точное отображение клетки существа без cover, который растягивал весь атлас.
     s=s.replace("e.style.backgroundSize='400% 600%';", "e.style.setProperty('background-size','400% 600%','important');e.style.setProperty('background-position',((idx[k]%4)*100/3)+'% '+(Math.floor(idx[k]/4)*100/5)+'%','important');")
+    s=s.replace("e.style.backgroundSize='cover';", "e.style.setProperty('background-size','400% 600%','important');e.style.setProperty('background-position',((idx[k]%4)*100/3)+'% '+(Math.floor(idx[k]/4)*100/5)+'%','important');")
     p.write_text(s,encoding='utf-8')
 
 # Улучшаем разрешение V4-атласа. CI-образ Ubuntu не содержит Pillow,
