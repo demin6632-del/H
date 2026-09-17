@@ -69,13 +69,13 @@ public class MainActivity extends Activity {
                 "var t=e.target;var card=t&&t.closest?t.closest('#classes .class-card'):null;" +
                 "if(!card||lock)return;" +
                 "var o=card.getAttribute('onclick')||'';" +
-                "var m=o.match(/start\\\\(['\\\"]([^'\\\"]+)['\\\"]\\\\)/);" +
+                "var m=o.match(/start\\((['\\\"])(.*?)\\1\\)/);" +
                 "if(!m||typeof window.start!=='function')return;" +
                 "lock=true;" +
                 "if(e.cancelable)e.preventDefault();" +
                 "if(e.stopImmediatePropagation)e.stopImmediatePropagation();" +
                 "if(e.stopPropagation)e.stopPropagation();" +
-                "window.start(m[1]);" +
+                "window.start(m[2]);" +
                 "setTimeout(function(){lock=false;},700);" +
                 "}" +
                 "document.addEventListener('touchend',activate,{capture:true,passive:false});" +
