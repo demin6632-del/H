@@ -39,6 +39,7 @@ jobs:
           web=Path('NEW_DARK_RPG/index.html'); android=Path('android/app/src/main/assets/index.html')
           v4=Path('NEW_DARK_RPG/art-atlas-v4.js'); fix=Path('NEW_DARK_RPG/art-atlas-v4-fix.js')
           av4=Path('android/app/src/main/assets/art-atlas-v4.js'); afix=Path('android/app/src/main/assets/art-atlas-v4-fix.js')
+          fix_text=fix.read_text(encoding='utf-8')
           if web.read_bytes()!=android.read_bytes(): raise SystemExit('Web/Android HTML mismatch')
           if v4.read_bytes()!=av4.read_bytes(): raise SystemExit('V4 atlas mismatch')
           if fix.read_bytes()!=afix.read_bytes(): raise SystemExit('V4 fix mismatch')
@@ -52,9 +53,9 @@ jobs:
           dup=sorted({x for x in ids if ids.count(x)>1})
           if dup: raise SystemExit(f'Duplicate IDs: {dup}')
           for x in ['function heroRefNav(id){','setScreen(id);',"function hasSave(){return !!localStorage.getItem(saveKey)||!!localStorage.getItem(saveKey+'_backup')}","abyssKeyCaches={};window.abyssKeyCaches=abyssKeyCaches",'INFINITE-ABYSS-PERSISTENT-RPG-V1','ART-ATLAS-V4-FIX']:
-            if x not in s and x not in fix: raise SystemExit('Missing fix: '+x)
+            if x not in s and x not in fix_text: raise SystemExit('Missing fix: '+x)
           for bad in ['dispatchTouchFallback','setOnTouchListener','TOUCH-BUTTON-FIX-V39','ANDROID-TOUCH-FIX-V42','ANDROID-TOUCH-FIX-V54','ANDROID-CLASS-SELECT-FIX-V43']:
-            if bad in s or bad in fix: raise SystemExit('Legacy touch code remains: '+bad)
+            if bad in s or bad in fix_text: raise SystemExit('Legacy touch code remains: '+bad)
           if 'versionCode 42' not in Path('android/app/build.gradle').read_text(): raise SystemExit('Bad versionCode')
           if "versionName '4.3.1'" not in Path('android/app/build.gradle').read_text(): raise SystemExit('Bad versionName')
           print('SOURCE AUDIT: PASS')
