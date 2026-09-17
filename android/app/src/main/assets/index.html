@@ -437,83 +437,74 @@ const INFINITE_PERSISTENCE_FIX_V2='persistent-infinite-abyss';
   window.addEventListener('unhandledrejection',e=>{try{if(typeof logEvent==='function')logEvent('СИСТЕМА','Ошибка операции: '+String(e&&e.reason||'неизвестная ошибка').slice(0,180))}catch(_){}});
 })();
 
-/* ANDROID-TOUCH-STABLE-V59 — надёжный tap без кликов при прокрутке. */
+
+
+/* ANDROID-TOUCH-STABLE-V60 — pointer tap + native fallback, scroll safe. */
 (function(){
-  if(window.__androidTouchStableV59)return;
-  window.__androidTouchStableV59=true;
-  let touchButton=null,touchX=0,touchY=0,touchMoved=false,touchTimer=null;
-  let syntheticClick=false,suppressNativeClick=false;
+  if(window.__androidTouchStableV60)return;
+  window.__androidTouchStableV60=true;
+  let activeButton=null,downX=0,downY=0,moved=false,suppressNativeClick=false;
   const MOVE_LIMIT=14;
-  const clearPending=()=>{if(touchTimer){clearTimeout(touchTimer);touchTimer=null;}};
-  const findButton=(node)=>{
-    if(!node)return null;
-    if(node.closest){const b=node.closest('button');if(b&&!b.disabled)return b;}
-    return null;
+  const findButton=node=>{
+    try{
+      const b=node&&node.closest?node.closest('button'):null;
+      return b&&!b.disabled?b:null;
+    }catch(_){return null;}
   };
   const findButtonAt=(x,y)=>{
     try{
-      const list=document.elementsFromPoint?document.elementsFromPoint(x,y):[document.elementFromPoint(x,y)];
-      for(const node of list){const b=findButton(node);if(b)return b;}
+      const nodes=document.elementsFromPoint?document.elementsFromPoint(x,y):[document.elementFromPoint(x,y)];
+      for(const n of nodes){const b=findButton(n);if(b)return b;}
     }catch(_){ }
     return null;
   };
-  const fire=(b)=>{
-    if(!b||b.disabled)return;
+  const fire=b=>{
+    if(!b||b.disabled)return false;
     try{
-      syntheticClick=true;
-      b.click();
-      syntheticClick=false;
+      window.__nativeTapConsumed=true;
       suppressNativeClick=true;
-      setTimeout(function(){suppressNativeClick=false;},350);
-    }catch(_){syntheticClick=false;}
+      b.click();
+      setTimeout(()=>{suppressNativeClick=false;},350);
+      return true;
+    }catch(_){return false;}
+  };
+  window.__nativeTapConsumed=false;
+  window.__nativeTapFallbackAt=function(x,y){
+    if(window.__nativeTapConsumed)return false;
+    const b=findButtonAt(Number(x),Number(y));
+    return fire(b);
   };
   document.addEventListener('click',function(e){
-    if(syntheticClick)return;
     if(suppressNativeClick){
-      suppressNativeClick=false;
       e.preventDefault();
       e.stopImmediatePropagation();
+      suppressNativeClick=false;
+      return;
     }
+    const b=findButton(e.target);
+    if(b)window.__nativeTapConsumed=true;
   },{capture:true});
-  document.addEventListener('touchstart',function(e){
-    clearPending();
-    const t=e.touches&&e.touches[0];
-    touchButton=findButton(e.target)|| (t?findButtonAt(t.clientX,t.clientY):null);
-    touchMoved=false;
-    if(t){touchX=t.clientX;touchY=t.clientY;}
-    if(touchButton){
-      touchTimer=setTimeout(function(){
-        touchTimer=null;
-        if(!touchMoved){const b=touchButton;touchButton=null;fire(b);}
-      },160);
+  document.addEventListener('pointerdown',function(e){
+    if(e.pointerType==='mouse'&&e.button!==0)return;
+    activeButton=findButton(e.target)||findButtonAt(e.clientX,e.clientY);
+    downX=e.clientX;downY=e.clientY;moved=false;
+    window.__nativeTapConsumed=false;
+  },{capture:true,passive:true});
+  document.addEventListener('pointermove',function(e){
+    if(!activeButton)return;
+    if(Math.abs(e.clientX-downX)>MOVE_LIMIT||Math.abs(e.clientY-downY)>MOVE_LIMIT){
+      moved=true;activeButton=null;
     }
   },{capture:true,passive:true});
-  document.addEventListener('touchmove',function(e){
-    const t=e.touches&&e.touches[0];
-    if(!t)return;
-    if(Math.abs(t.clientX-touchX)>MOVE_LIMIT || Math.abs(t.clientY-touchY)>MOVE_LIMIT){
-      touchMoved=true;
-      touchButton=null;
-      clearPending();
-    }
+  document.addEventListener('pointerup',function(e){
+    if(e.pointerType==='mouse'&&e.button!==0)return;
+    const b=activeButton;activeButton=null;
+    if(moved)return;
+    if(Math.abs(e.clientX-downX)>MOVE_LIMIT||Math.abs(e.clientY-downY)>MOVE_LIMIT)return;
+    fire(b||findButtonAt(e.clientX,e.clientY));
   },{capture:true,passive:true});
-  document.addEventListener('touchend',function(e){
-    clearPending();
-    let b=touchButton;
-    touchButton=null;
-    const t=e.changedTouches&&e.changedTouches[0];
-    if(!t||touchMoved)return;
-    if(Math.abs(t.clientX-touchX)>MOVE_LIMIT || Math.abs(t.clientY-touchY)>MOVE_LIMIT)return;
-    if(!b)b=findButtonAt(t.clientX,t.clientY);
-    fire(b);
-  },{capture:true,passive:true});
-  document.addEventListener('touchcancel',function(){touchButton=null;touchMoved=true;clearPending();},{capture:true,passive:true});
-  if(typeof selectAbyssDepth==='function' && !window.selectAbyssDepth){
-    window.selectAbyssDepth=function(){return selectAbyssDepth.apply(this,arguments);};
-  }
-  if(typeof openAbyssKeyCache==='function' && !window.openAbyssKeyCache){
-    window.openAbyssKeyCache=function(){return openAbyssKeyCache.apply(this,arguments);};
-  }
+  document.addEventListener('pointercancel',function(){activeButton=null;moved=true;},{capture:true,passive:true});
+  document.addEventListener('touchcancel',function(){activeButton=null;moved=true;},{capture:true,passive:true});
 })();
 </script>
 </body></html>
