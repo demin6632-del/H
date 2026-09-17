@@ -1,5 +1,4 @@
 from pathlib import Path
-import re
 
 ROOT = Path(__file__).resolve().parents[1]
 FILES = [ROOT / 'NEW_DARK_RPG' / 'index.html', ROOT / 'android' / 'app' / 'src' / 'main' / 'assets' / 'index.html']
@@ -11,19 +10,45 @@ OLD_MARKERS = [
     'ANDROID-CLASS-SELECT-FIX-V43', 'TOUCH-BUTTON-FIX-V39',
 ]
 
-# ВАЖНО: никаких pointerup/touchend -> click. Такой отложенный fallback
-# ошибочно превращает окончание прокрутки страницы в нажатие кнопки.
-NEW_JS = r'''/* ANDROID-TOUCH-STABLE-V56 — только защита от повторных действий; штатный WebView tap не перехватывается. */
+# Безопасный Android fallback: обычный короткий tap превращается в click,
+# но любое заметное движение считается прокруткой и НЕ нажимает кнопку.
+NEW_JS = r'''/* ANDROID-TOUCH-STABLE-V57 — короткий tap работает на Android, прокрутка не нажимает кнопки. */
 (function(){
-  if(window.__androidTouchStableV56)return;
-  window.__androidTouchStableV56=true;
-  const lastClick=new WeakMap();
-  document.addEventListener('click',function(e){
-    const b=e.target&&e.target.closest?e.target.closest('button'):null;
-    if(b) lastClick.set(b,Date.now());
-  },true);
-  // Никаких обработчиков pointerup/touchend и никакого программного b.click().
-  // Прокрутка должна оставаться полностью нативной для WebView.
+  if(window.__androidTouchStableV57)return;
+  window.__androidTouchStableV57=true;
+  let touchButton=null,touchX=0,touchY=0,touchMoved=false;
+  const MOVE_LIMIT=14;
+  const findButton=(node)=>{
+    if(!node)return null;
+    if(node.closest)return node.closest('button');
+    return null;
+  };
+  document.addEventListener('touchstart',function(e){
+    const t=e.touches&&e.touches[0];
+    touchButton=findButton(e.target);
+    touchMoved=false;
+    if(t){touchX=t.clientX;touchY=t.clientY;}
+  },{capture:true,passive:true});
+  document.addEventListener('touchmove',function(e){
+    if(!touchButton)return;
+    const t=e.touches&&e.touches[0];
+    if(!t)return;
+    if(Math.abs(t.clientX-touchX)>MOVE_LIMIT || Math.abs(t.clientY-touchY)>MOVE_LIMIT){
+      touchMoved=true;
+      touchButton=null;
+    }
+  },{capture:true,passive:true});
+  document.addEventListener('touchend',function(e){
+    const b=touchButton;
+    touchButton=null;
+    if(!b||touchMoved)return;
+    const t=e.changedTouches&&e.changedTouches[0];
+    if(!t)return;
+    if(Math.abs(t.clientX-touchX)>MOVE_LIMIT || Math.abs(t.clientY-touchY)>MOVE_LIMIT)return;
+    e.preventDefault();
+    try{b.click();}catch(_){ }
+  },{capture:true,passive:false});
+  document.addEventListener('touchcancel',function(){touchButton=null;touchMoved=true;},{capture:true,passive:true});
   if(typeof selectAbyssDepth==='function' && !window.selectAbyssDepth){
     window.selectAbyssDepth=function(){return selectAbyssDepth.apply(this,arguments);};
   }
@@ -34,7 +59,6 @@ NEW_JS = r'''/* ANDROID-TOUCH-STABLE-V56 — только защита от по
 '''
 
 def remove_iife(s, marker):
-    # Удаляем IIFE, начинающийся с комментария marker.
     start = s.find(marker)
     while start >= 0:
         comment = s.rfind('/*', 0, start)
@@ -53,13 +77,15 @@ def remove_old_touch_blocks(s):
 def patch_html(path):
     s = path.read_text(encoding='utf-8')
     s = remove_old_touch_blocks(s)
+    for marker in ['ANDROID-TOUCH-STABLE-V57']:
+        s = remove_iife(s, marker)
     pos = s.rfind('</script>')
     if pos < 0:
         raise SystemExit(f'{path}: no script terminator')
     s = s[:pos] + '\n' + NEW_JS + s[pos:]
-    if s.count('ANDROID-TOUCH-STABLE-V56') != 1:
-        raise SystemExit(f'{path}: V56 insertion failed')
-    for bad in OLD_MARKERS[1:]:
+    if s.count('ANDROID-TOUCH-STABLE-V57') != 1:
+        raise SystemExit(f'{path}: V57 insertion failed')
+    for bad in OLD_MARKERS:
         if bad in s:
             raise SystemExit(f'{path}: obsolete marker remains: {bad}')
     path.write_text(s, encoding='utf-8')
@@ -67,7 +93,8 @@ def patch_html(path):
 for p in FILES:
     patch_html(p)
 
-# На случай, если предыдущие патчи успели добавить native fallback, удаляем его.
+# Никакого Java touch-перехвата: вся логика находится в WebView, где можно
+# отличить короткий tap от прокрутки по величине движения пальца.
 s = JAVA.read_text(encoding='utf-8')
 s = s.replace('import android.view.MotionEvent;\n', '')
 for token in ['\n        // Не перехватываем штатное касание WebView.', '\n        // Не блокируем штатное касание WebView.']:
@@ -84,4 +111,4 @@ if start >= 0:
     s = s[:start] + s[end:]
 JAVA.write_text(s, encoding='utf-8')
 
-print('ANDROID TOUCH V56 SCROLL-SAFE: PASS')
+print('ANDROID TOUCH V57: TAP WORKS + SCROLL SAFE: PASS')
