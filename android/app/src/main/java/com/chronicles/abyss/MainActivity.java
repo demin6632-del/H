@@ -72,8 +72,11 @@ public class MainActivity extends Activity {
     }
 
     /**
-     * Резерв для Android WebView: вызывает DOM-кнопку под фактическим пальцем.
-     * Координаты переводятся из координат WebView в CSS-пиксели.
+     * Резерв для Android WebView: самостоятельно определяет HTML-кнопку
+     * под фактическим пальцем и запускает её click().
+     * Сначала используется hit-test WebView, затем проверка геометрии DOM.
+     * Это закрывает случай, когда WebView возвращает не тот элемент из-за
+     * масштабирования или вложенного текста внутри карточки класса.
      */
     private void dispatchTouchFallback(float px, float py) {
         if (web == null || web.getWidth() <= 0 || web.getHeight() <= 0) return;
@@ -81,8 +84,21 @@ public class MainActivity extends Activity {
         final float cssX = Math.max(0f, px / scale);
         final float cssY = Math.max(0f, py / scale);
         final String js = "(function(){"
-                + "if(typeof window.__nativeButtonAt!=='function')return false;"
-                + "return window.__nativeButtonAt(" + cssX + "," + cssY + ");"
+                + "var now=Date.now();"
+                + "if(window.__lastNativeButtonAt && now-window.__lastNativeButtonAt<350)return true;"
+                + "var e=document.elementFromPoint(" + cssX + "," + cssY + ");"
+                + "var b=e&&e.closest?e.closest('button'):null;"
+                + "if(!b){"
+                + "var cs=document.querySelectorAll('#classes .class-card');"
+                + "for(var i=0;i<cs.length;i++){var r=cs[i].getBoundingClientRect();if(" + cssX + ">=r.left&&" + cssX + "<=r.right&&" + cssY + ">=r.top&&" + cssY + "<=r.bottom){b=cs[i];break;}}"
+                + "}"
+                + "if(!b){"
+                + "var bs=document.querySelectorAll('button');"
+                + "for(var j=0;j<bs.length;j++){var q=bs[j].getBoundingClientRect();if(" + cssX + ">=q.left&&" + cssX + "<=q.right&&" + cssY + ">=q.top&&" + cssY + "<=q.bottom){b=bs[j];break;}}"
+                + "}"
+                + "if(!b||b.disabled)return false;"
+                + "window.__lastNativeButtonAt=now;"
+                + "try{b.click();return true;}catch(err){console.error('ANDROID_TOUCH_FALLBACK',err);return false;}"
                 + "})()";
         web.evaluateJavascript(js, value -> { });
     }

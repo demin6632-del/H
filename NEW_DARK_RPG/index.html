@@ -430,8 +430,23 @@ const INFINITE_PERSISTENCE_FIX_V2='persistent-infinite-abyss';
   document.addEventListener('pointercancel',cancelTarget,{passive:true,capture:false});
   document.addEventListener('touchcancel',cancelTarget,{passive:true,capture:false});
   window.__nativeButtonAt=function(x,y){
-    const e=document.elementFromPoint(Number(x)||0,Number(y)||0);
-    const b=getButton(e);
+    const xx=Number(x)||0,yy=Number(y)||0;
+    const e=document.elementFromPoint(xx,yy);
+    let b=getButton(e);
+    if(!b){
+      const cs=document.querySelectorAll('#classes .class-card');
+      for(let i=0;i<cs.length;i++){
+        const r=cs[i].getBoundingClientRect();
+        if(xx>=r.left&&xx<=r.right&&yy>=r.top&&yy<=r.bottom){b=cs[i];break;}
+      }
+    }
+    if(!b){
+      const bs=document.querySelectorAll('button');
+      for(let i=0;i<bs.length;i++){
+        const r=bs[i].getBoundingClientRect();
+        if(xx>=r.left&&xx<=r.right&&yy>=r.top&&yy<=r.bottom){b=bs[i];break;}
+      }
+    }
     if(!b||b.disabled)return false;
     cancel(b);b.click();lastNative.set(b,Date.now());return true;
   };
