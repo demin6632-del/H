@@ -13,6 +13,7 @@ name: Build APK
 # BUILD-NATIVE-CLASS-HITBOX-V47 — нативные прозрачные hitbox поверх карточек классов
 # BUILD-ART-ATLAS-V2 — изображения существ и комнат из утверждённого атласа
 # BUILD-TOUCH-FIX-V51 — исправление: #classes является SPA-экраном и не меняет URL
+# BUILD-TOUCH-FIX-V54 — прямое безопасное касание кнопок + постоянная кнопка «Продолжить»
 
 on:
   workflow_dispatch:
@@ -67,7 +68,7 @@ jobs:
           import re
           p=Path('android/app/build.gradle')
           s=p.read_text()
-          s=re.sub(r'versionCode\s+\d+', 'versionCode 29', s, count=1)
+          s=re.sub(r'versionCode\s+\d+', 'versionCode 30', s, count=1)
           s=re.sub(r"versionName\s+'[^']+'", "versionName '4.2'", s, count=1)
           p.write_text(s)
           PY
@@ -128,7 +129,7 @@ jobs:
           APK=app/build/outputs/apk/release/app-release.apk
           BUILD_TOOLS=$(find "$ANDROID_HOME/build-tools" -maxdepth 1 -mindepth 1 -type d | sort -V | tail -1)
           "$BUILD_TOOLS/apksigner" verify --verbose "$APK"
-          "$BUILD_TOOLS/aapt" dump badging "$APK" | grep -E "package: name='com.chronicles.abyss'|versionName='4.2'|versionCode='29'"
+          "$BUILD_TOOLS/aapt" dump badging "$APK" | grep -E "package: name='com.chronicles.abyss'|versionName='4.2'|versionCode='30'"
       - name: Package APK ZIP
         working-directory: android
         run: |
