@@ -1,13 +1,16 @@
 from pathlib import Path
 
-# V4 runtime: исправляем подключение внешнего скрипта и не меняем игровую логику.
+# V4 runtime: подключаем атлас отдельным внешним script и сохраняем
+# последующие стабилизационные блоки V55/V56 внутри обычного script.
 FILES = [Path('NEW_DARK_RPG/index.html'), Path('android/app/src/main/assets/index.html')]
 for p in FILES:
     s = p.read_text(encoding='utf-8')
-    s = s.replace('<script src="art-atlas-v4.js">', '<script src="art-atlas-v4.js"></script>')
+    s = s.replace('<script src="art-atlas-v4.js">', '<script src="art-atlas-v4.js"></script><script>')
+    # Если уже исправлено, не создаём второй inline script.
+    s = s.replace('<script src="art-atlas-v4.js"></script><script></script>', '<script src="art-atlas-v4.js"></script><script>')
     p.write_text(s, encoding='utf-8')
 
-# В Android WebView V56 уже даёт JS-fallback. Старый native fallback в
+# В Android WebView V56 даёт JS-fallback. Старый native fallback в
 # MainActivity срабатывал параллельно со штатным click() и давал двойные taps.
 p = Path('android/app/src/main/java/com/chronicles/abyss/MainActivity.java')
 s = p.read_text(encoding='utf-8')
@@ -21,7 +24,6 @@ if start >= 0:
         raise SystemExit('MainActivity root.addView marker not found')
     s = s[:start] + s[end:]
 else:
-    # Безопасный повторный запуск: если комментария уже нет, удаляем listener по сигнатуре.
     start = s.find('\n        web.setOnTouchListener(')
     if start >= 0:
         end = s.find('\n        root.addView(web,', start)
