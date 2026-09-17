@@ -5,6 +5,7 @@ import android.os.Bundle;
 import android.graphics.Color;
 import android.view.MotionEvent;
 import android.view.ViewGroup;
+import android.webkit.JavascriptInterface;
 import android.widget.FrameLayout;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
@@ -17,7 +18,7 @@ public class MainActivity extends Activity {
     private WebView web;
     private FrameLayout root;
     private boolean classTouchHandled = false;
-    private boolean classScreenVisible = false;
+    private volatile boolean classScreenVisible = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -38,6 +39,9 @@ public class MainActivity extends Activity {
         settings.setDisplayZoomControls(false);
         settings.setSupportZoom(false);
 
+        // V52: реально подключаем мост, который V51 ожидал в JavaScript.
+        web.addJavascriptInterface(new AndroidTouchBridge(), "AndroidTouchBridge");
+
         web.setWebViewClient(new WebViewClient() {
             @Override public void onPageCommitVisible(WebView view, String url) {
                 webViewReady = true;
@@ -50,8 +54,7 @@ public class MainActivity extends Activity {
             }
         });
 
-        // V51: экран выбора класса — это SPA-экран, он НЕ меняет URL.
-        // Поэтому проверка #classes была ошибочной и отключала нативную обработку.
+        // V51/V52: экран выбора класса — SPA-экран и не меняет URL.
         web.setOnTouchListener((v, event) -> {
             if (!webViewReady) return false;
 
@@ -85,15 +88,15 @@ public class MainActivity extends Activity {
     }
 
     /**
-     * V51: регулярно узнаём фактическое состояние DOM-экрана #classes.
-     * URL для setScreen('classes') не меняется, поэтому определять экран по web.getUrl() нельзя.
+     * V51/V52: узнаём фактическое состояние DOM-экрана #classes.
+     * URL для setScreen('classes') не меняется.
      */
     private void installNativeTouchBridge() {
         if (web == null) return;
         web.evaluateJavascript(
-                "(function(){if(window.__nativeTouchBridgeV51)return 'EXISTS';" +
-                "window.__nativeTouchBridgeV51=true;" +
-                "window.__nativeTouchBridgeTimerV51=setInterval(function(){" +
+                "(function(){if(window.__nativeTouchBridgeV52)return 'EXISTS';" +
+                "window.__nativeTouchBridgeV52=true;" +
+                "window.__nativeTouchBridgeTimerV52=setInterval(function(){" +
                 "var s=document.getElementById('classes');" +
                 "var visible=!!s&&!s.classList.contains('hidden')&&getComputedStyle(s).display!=='none';" +
                 "if(window.AndroidTouchBridge&&window.AndroidTouchBridge.setClassScreenVisible)" +
@@ -103,7 +106,7 @@ public class MainActivity extends Activity {
 
     /**
      * Координаты MotionEvent переводятся в CSS-координаты WebView через долю фактического размера.
-     * Затем DOM сам проверяет реальные границы карточек класса.
+     * Затем DOM сам проверяет реальные границы карточек классов.
      */
     private void dispatchNativeClassTouch(float px, float py) {
         if (web == null) return;
@@ -123,13 +126,20 @@ public class MainActivity extends Activity {
                 + "var o=a[i].getAttribute('onclick')||'';"
                 + "var m=o.match(/start\\(['\"]([^'\"]+)['\"]\\)/);"
                 + "if(!m||typeof window.start!=='function')return 'BAD';"
-                + "if(window.__nativeClassSelectionLockV51)return 'LOCK';"
-                + "window.__nativeClassSelectionLockV51=true;"
+                + "if(window.__nativeClassSelectionLockV52)return 'LOCK';"
+                + "window.__nativeClassSelectionLockV52=true;"
                 + "window.start(m[1]);"
-                + "setTimeout(function(){window.__nativeClassSelectionLockV51=false;},1000);"
+                + "setTimeout(function(){window.__nativeClassSelectionLockV52=false;},1000);"
                 + "return 'OK:'+m[1];}}"
                 + "return 'NONE';})()";
         web.evaluateJavascript(js, value -> { });
+    }
+
+    private final class AndroidTouchBridge {
+        @JavascriptInterface
+        public void setClassScreenVisible(boolean visible) {
+            classScreenVisible = visible;
+        }
     }
 
     @Override
