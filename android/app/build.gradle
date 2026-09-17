@@ -8,8 +8,8 @@ android {
         applicationId 'com.chronicles.abyss'
         minSdk 24
         targetSdk 35
-        versionCode 40
-        versionName '4.2.9'
+        versionCode 42
+        versionName '4.3.1'
     }
 
     // Постоянная release-подпись берётся из переменных GitHub Actions.
@@ -22,39 +22,27 @@ android {
                 storePassword System.getenv('ANDROID_KEYSTORE_PASSWORD')
                 keyAlias System.getenv('ANDROID_KEY_ALIAS')
                 keyPassword System.getenv('ANDROID_KEY_PASSWORD')
-                // Включаем совместимую v1-подпись дополнительно к v2/v3.
-                // Это повышает совместимость установщика без изменения логики игры.
                 v1SigningEnabled true
                 v2SigningEnabled true
             }
         }
     }
 
-    // Иконка приложения остаётся прежней, но больше не хранится внутри экрана игры.
     def avatarGeneratedRes = file("$buildDir/generated/res/avatar")
-    sourceSets {
-        main.res.srcDir(avatarGeneratedRes)
-    }
+    sourceSets { main.res.srcDir(avatarGeneratedRes) }
 
     def generateAvatarResource = tasks.register('generateAvatarResource') {
         outputs.dir(avatarGeneratedRes)
         doLast {
             def drawableDir = new File(avatarGeneratedRes, 'drawable')
             drawableDir.mkdirs()
-
             def source = file('src/main/avatar_base64.txt').getText('UTF-8').replaceAll(/\s+/, '')
-            if (source.isEmpty()) {
-                throw new GradleException('Не найдена база данных аватарки для иконки приложения.')
-            }
-
-            def avatarFile = new File(drawableDir, 'game_avatar.jpg')
-            avatarFile.bytes = source.decodeBase64()
+            if (source.isEmpty()) throw new GradleException('Не найдена база данных аватарки для иконки приложения.')
+            new File(drawableDir, 'game_avatar.jpg').bytes = source.decodeBase64()
         }
     }
 
-    tasks.named('preBuild').configure {
-        dependsOn(generateAvatarResource)
-    }
+    tasks.named('preBuild').configure { dependsOn(generateAvatarResource) }
 
     buildTypes {
         release {
@@ -65,6 +53,5 @@ android {
 }
 
 dependencies {
-    // Полноценный системный SplashScreen с обратной совместимостью.
     implementation 'androidx.core:core-splashscreen:1.2.0'
 }
