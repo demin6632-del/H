@@ -12,6 +12,7 @@ name: Build APK
 # BUILD-TOUCH-FIX-V4.1 — удаление блокирующего V3.9 synthetic click interceptor
 # BUILD-NATIVE-CLASS-HITBOX-V47 — нативные прозрачные hitbox поверх карточек классов
 # BUILD-ART-ATLAS-V2 — изображения существ и комнат из утверждённого атласа
+# BUILD-TOUCH-FIX-V51 — исправление: #classes является SPA-экраном и не меняет URL
 
 on:
   workflow_dispatch:
