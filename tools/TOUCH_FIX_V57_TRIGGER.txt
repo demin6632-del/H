@@ -1,1 +1,1 @@
-Class-card Android touch fallback hardening trigger.
+Final class-card hit-test build trigger.
