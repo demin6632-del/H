@@ -1,0 +1,1 @@
+V49 native WebView touch rebuild trigger. Class selection uses direct WebView MotionEvent + DOM hit-test. Build only.
