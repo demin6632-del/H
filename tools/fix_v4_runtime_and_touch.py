@@ -2,6 +2,8 @@ from pathlib import Path
 import re
 import base64
 import io
+import subprocess
+import sys
 
 FILES = [Path('NEW_DARK_RPG/index.html'), Path('android/app/src/main/assets/index.html')]
 
@@ -62,23 +64,25 @@ function roomKeyV4"""
 # и применяем умеренное повышение резкости. Композиция и сами изображения не меняются.
 try:
     from PIL import Image, ImageFilter, ImageEnhance
-    for p in [Path('NEW_DARK_RPG/art-atlas-v4.js'), Path('android/app/src/main/assets/art-atlas-v4.js')]:
-        s=p.read_text(encoding='utf-8')
-        m=re.search(r"data:image/webp;base64,([^']+)'",s)
-        if not m:
-            raise SystemExit(f'{p}: V4 WebP not found')
-        im=Image.open(io.BytesIO(base64.b64decode(m.group(1)))).convert('RGB')
-        if im.width < 1024 or im.height < 1536:
-            im=im.resize((1024,1536),Image.Resampling.LANCZOS)
-            im=ImageEnhance.Contrast(im).enhance(1.025)
-            im=im.filter(ImageFilter.UnsharpMask(radius=1.15,percent=115,threshold=3))
-        out=io.BytesIO();im.save(out,'WEBP',quality=92,method=6)
-        b64=base64.b64encode(out.getvalue()).decode('ascii')
-        s=s[:m.start(1)]+b64+s[m.end(1):]
-        p.write_text(s,encoding='utf-8')
-        print(f'V4 atlas improved: {p} -> {im.width}x{im.height}, {len(out.getvalue())} bytes')
 except ImportError:
-    raise SystemExit('Pillow is required for V4 atlas improvement')
+    subprocess.run([sys.executable,'-m','pip','install','Pillow','-q'],check=True)
+    from PIL import Image, ImageFilter, ImageEnhance
+
+for p in [Path('NEW_DARK_RPG/art-atlas-v4.js'), Path('android/app/src/main/assets/art-atlas-v4.js')]:
+    s=p.read_text(encoding='utf-8')
+    m=re.search(r"data:image/webp;base64,([^']+)'",s)
+    if not m:
+        raise SystemExit(f'{p}: V4 WebP not found')
+    im=Image.open(io.BytesIO(base64.b64decode(m.group(1)))).convert('RGB')
+    if im.width < 1024 or im.height < 1536:
+        im=im.resize((1024,1536),Image.Resampling.LANCZOS)
+        im=ImageEnhance.Contrast(im).enhance(1.025)
+        im=im.filter(ImageFilter.UnsharpMask(radius=1.15,percent=115,threshold=3))
+    out=io.BytesIO();im.save(out,'WEBP',quality=92,method=6)
+    b64=base64.b64encode(out.getvalue()).decode('ascii')
+    s=s[:m.start(1)]+b64+s[m.end(1):]
+    p.write_text(s,encoding='utf-8')
+    print(f'V4 atlas improved: {p} -> {im.width}x{im.height}, {len(out.getvalue())} bytes')
 
 # Новая версия только для этой исправленной визуальной сборки.
 p=Path('android/app/build.gradle')
