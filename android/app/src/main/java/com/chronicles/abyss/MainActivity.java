@@ -72,10 +72,8 @@ public class MainActivity extends Activity {
     }
 
     /**
-     * Резерв для Android WebView: самостоятельно определяет HTML-кнопку
-     * под фактическим пальцем и запускает её click().
-     * Здесь нет зависимости от отдельной JS-функции в игре: весь fallback
-     * находится в Android-обёртке, поэтому работает даже на старой версии HTML.
+     * Резерв для Android WebView: вызывает DOM-кнопку под фактическим пальцем.
+     * Координаты переводятся из координат WebView в CSS-пиксели.
      */
     private void dispatchTouchFallback(float px, float py) {
         if (web == null || web.getWidth() <= 0 || web.getHeight() <= 0) return;
@@ -83,14 +81,8 @@ public class MainActivity extends Activity {
         final float cssX = Math.max(0f, px / scale);
         final float cssY = Math.max(0f, py / scale);
         final String js = "(function(){"
-                + "var now=Date.now();"
-                + "if(window.__lastNativeButtonAt && now-window.__lastNativeButtonAt<350)return true;"
-                + "var e=document.elementFromPoint(" + cssX + "," + cssY + ");"
-                + "var b=e&&e.closest?e.closest('button'):null;"
-                + "if(!b||b.disabled)return false;"
-                + "if(window.__lastDomButtonClick && now-window.__lastDomButtonClick<350)return true;"
-                + "window.__lastNativeButtonAt=now;"
-                + "try{b.click();return true;}catch(err){console.error('ANDROID_TOUCH_FALLBACK',err);return false;}"
+                + "if(typeof window.__nativeButtonAt!=='function')return false;"
+                + "return window.__nativeButtonAt(" + cssX + "," + cssY + ");"
                 + "})()";
         web.evaluateJavascript(js, value -> { });
     }
