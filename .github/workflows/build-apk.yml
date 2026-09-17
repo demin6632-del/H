@@ -102,8 +102,9 @@ jobs:
                   if x not in s: raise SystemExit(f'{name}: missing stabilization {x}')
               for bad in ['TOUCH-BUTTON-FIX-V39','ANDROID-TOUCH-FIX-V42','ANDROID-TOUCH-FIX-V54','ANDROID-CLASS-SELECT-FIX-V43','ANDROID-TOUCH-STABLE-V55','Завершить Бездну']:
                   if bad in s: raise SystemExit(f'{name}: obsolete/broken marker remains {bad}')
-              if 'pointerup' in s or 'touchend' in s or 'dispatchTouchFallback' in s or 'setOnTouchListener' in s:
-                  raise SystemExit(f'{name}: scroll-unsafe touch fallback remains')
+              # Запрещаем только реальные активные fallback-обработчики, а не слова в комментариях.
+              if re.search(r"addEventListener\(\s*['\"](?:pointerup|touchend)['\"]", s) or 'dispatchTouchFallback' in s or 'setOnTouchListener' in s:
+                  raise SystemExit(f'{name}: scroll-unsafe active touch fallback remains')
               if 'abyssFloor++' not in s: raise SystemExit(f'{name}: infinite floor progression missing')
               if 'resetAbyss();hero.hp=hero.maxHp' in s: raise SystemExit(f'{name}: death still resets Abyss progress')
           if Path(files[0]).read_bytes()!=Path(files[1]).read_bytes(): raise SystemExit('Web and Android game sources differ')
