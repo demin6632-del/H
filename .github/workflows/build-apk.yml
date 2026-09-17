@@ -1,6 +1,6 @@
 name: Build APK
 
-# Сборка с проверкой кнопок, экипировки и интерфейса
+# Сборка с проверкой кнопок, экипировки, интерфейса и визуального атласа
 # BUILD-RELEASE-TRIGGER-2026-09-16 — пересборка последних изменений
 # BUILD-BATTLE-FREQUENCY-2026-09-16 — более редкие обычные бои
 # BUILD-INFINITE-ABYSS-V2-2026-09-16 — настоящая бесконечная постоянная Бездна
@@ -11,6 +11,7 @@ name: Build APK
 # BUILD-TOUCH-FIX-V4 — резервная активация touchend/pointerup и защита слоёв
 # BUILD-TOUCH-FIX-V4.1 — удаление блокирующего V3.9 synthetic click interceptor
 # BUILD-NATIVE-CLASS-HITBOX-V47 — нативные прозрачные hitbox поверх карточек классов
+# BUILD-ART-ATLAS-V2 — изображения существ и комнат из утверждённого атласа
 
 on:
   workflow_dispatch:
@@ -59,13 +60,14 @@ jobs:
           python tools/fix_touch_buttons_v39.py
           python tools/fix_android_touch_v40.py
           python tools/fix_android_touch_v41.py
+          python tools/install_art_atlas_v2.py
           python - <<'PY'
           from pathlib import Path
           import re
           p=Path('android/app/build.gradle')
           s=p.read_text()
-          s=re.sub(r'versionCode\s+\d+', 'versionCode 28', s, count=1)
-          s=re.sub(r"versionName\s+'[^']+'", "versionName '4.1'", s, count=1)
+          s=re.sub(r'versionCode\s+\d+', 'versionCode 29', s, count=1)
+          s=re.sub(r"versionName\s+'[^']+'", "versionName '4.2'", s, count=1)
           p.write_text(s)
           PY
       - name: Static JavaScript syntax check
@@ -80,7 +82,7 @@ jobs:
               Path('/tmp/game.js').write_text(js)
               print(f'Checking {name}: {len(s)} bytes')
               subprocess.run(['node','--check','/tmp/game.js'],check=True)
-              required=['id="stats"','id="skills"','function inventoryHasSpace()','function unequipItemType(type)','function unequipAll()','function showStats()','function showSkills()','function levelUp()','function upgradeSkill()','Math.random()<0.18','Math.random()<0.40','enemy.phase===1','INFINITE_PERSISTENCE_FIX_V2','depthSelect','selectAbyssDepth','openAbyssKeyCache','RELEASE-V3.8','ANDROID-TOUCH-FIX-V4-FINAL']
+              required=['id="stats"','id="skills"','function inventoryHasSpace()','function unequipItemType(type)','function unequipAll()','function showStats()','function showSkills()','function levelUp()','function upgradeSkill()','Math.random()<0.18','Math.random()<0.40','enemy.phase===1','INFINITE_PERSISTENCE_FIX_V2','depthSelect','selectAbyssDepth','openAbyssKeyCache','RELEASE-V3.8','ANDROID-TOUCH-FIX-V4-FINAL','art-atlas-v2.js']
               missing=[x for x in required if x not in s]
               if missing: raise SystemExit(f'{name}: missing required stabilization: {missing}')
               if "abyssFloor++" not in s: raise SystemExit(f'{name}: infinite floor progression missing')
@@ -95,8 +97,8 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add NEW_DARK_RPG/index.html android/app/src/main/assets/index.html android/app/build.gradle
-          if git diff --cached --quiet; then echo "No source changes to commit."; else git commit -m "Apply ChroniclesOfTheAbyss v4.1 Android touch fix [skip ci]"; git push origin HEAD:main; fi
+          git add NEW_DARK_RPG/index.html NEW_DARK_RPG/art-atlas-v2.js android/app/src/main/assets/index.html android/app/src/main/assets/art-atlas-v2.js android/app/build.gradle tools/install_art_atlas_v2.py
+          if git diff --cached --quiet; then echo "No source changes to commit."; else git commit -m "Apply ChroniclesOfTheAbyss v4.2 art atlas [skip ci]"; git push origin HEAD:main; fi
       - name: Set up Java
         uses: actions/setup-java@v4
         with:
@@ -125,37 +127,37 @@ jobs:
           APK=app/build/outputs/apk/release/app-release.apk
           BUILD_TOOLS=$(find "$ANDROID_HOME/build-tools" -maxdepth 1 -mindepth 1 -type d | sort -V | tail -1)
           "$BUILD_TOOLS/apksigner" verify --verbose "$APK"
-          "$BUILD_TOOLS/aapt" dump badging "$APK" | grep -E "package: name='com.chronicles.abyss'|versionName='4.1'|versionCode='28'"
+          "$BUILD_TOOLS/aapt" dump badging "$APK" | grep -E "package: name='com.chronicles.abyss'|versionName='4.2'|versionCode='29'"
       - name: Package APK ZIP
         working-directory: android
         run: |
           mkdir -p release-package
-          cp app/build/outputs/apk/release/app-release.apk release-package/ChroniclesOfTheAbyss-v4.1.apk
-          sha256sum release-package/ChroniclesOfTheAbyss-v4.1.apk > release-package/SHA256SUMS.txt
+          cp app/build/outputs/apk/release/app-release.apk release-package/ChroniclesOfTheAbyss-v4.2.apk
+          sha256sum release-package/ChroniclesOfTheAbyss-v4.2.apk > release-package/SHA256SUMS.txt
           cd release-package
-          zip -9 ../ChroniclesOfTheAbyss-v4.1-APK.zip *
+          zip -9 ../ChroniclesOfTheAbyss-v4.2-APK.zip *
       - name: Package normal PROJECT ZIP
         run: |
           rm -rf /tmp/ChroniclesOfTheAbyss_PROJECT
           mkdir -p /tmp/ChroniclesOfTheAbyss_PROJECT
           rsync -a --exclude='.git' --exclude='android/.gradle' --exclude='android/app/build' --exclude='android/release-package' ./ /tmp/ChroniclesOfTheAbyss_PROJECT/
           cd /tmp
-          zip -9 -r ChroniclesOfTheAbyss_PROJECT-v4.1.zip ChroniclesOfTheAbyss_PROJECT >/dev/null
+          zip -9 -r ChroniclesOfTheAbyss_PROJECT-v4.2.zip ChroniclesOfTheAbyss_PROJECT >/dev/null
       - name: Upload signed APK
         uses: actions/upload-artifact@v4
         with:
-          name: ChroniclesOfTheAbyss-v4.1-apk
+          name: ChroniclesOfTheAbyss-v4.2-apk
           path: android/app/build/outputs/apk/release/app-release.apk
           if-no-files-found: error
       - name: Upload APK ZIP
         uses: actions/upload-artifact@v4
         with:
-          name: ChroniclesOfTheAbyss-v4.1-apk-zip
-          path: android/ChroniclesOfTheAbyss-v4.1-APK.zip
+          name: ChroniclesOfTheAbyss-v4.2-apk-zip
+          path: android/ChroniclesOfTheAbyss-v4.2-APK.zip
           if-no-files-found: error
       - name: Upload normal PROJECT ZIP
         uses: actions/upload-artifact@v4
         with:
-          name: ChroniclesOfTheAbyss-v4.1-project
-          path: /tmp/ChroniclesOfTheAbyss_PROJECT-v4.1.zip
+          name: ChroniclesOfTheAbyss-v4.2-project
+          path: /tmp/ChroniclesOfTheAbyss_PROJECT-v4.2.zip
           if-no-files-found: error
