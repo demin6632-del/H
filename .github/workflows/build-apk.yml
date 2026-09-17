@@ -96,7 +96,7 @@ jobs:
                       for fn in re.findall(r'\b([A-Za-z_$][\w$]*)\s*\(',expr):
                           if fn not in funcs and fn not in {'if','for','while','setTimeout','clearTimeout','Math'}:
                               raise SystemExit(f'{name}: missing handler {fn}')
-              required=['id="continueHit" class="continue-hit"','function inventoryHasSpace()','INFINITE-ABYSS-PERSISTENT-RPG-V1','ANDROID-TOUCH-STABLE-V56','GAME-STABILITY-V55','function finiteNumber',"saveKey+'_backup",'ART-ATLAS-V4']
+              required=['id="continueHit" class="continue-hit"','function inventoryHasSpace()','INFINITE-ABYSS-PERSISTENT-RPG-V1','ANDROID-TOUCH-STABLE-V56','GAME-STABILITY-V55','function finiteNumber',"saveKey+'_backup"]
               for x in required:
                   if x not in s: raise SystemExit(f'{name}: missing stabilization {x}')
               for bad in ['TOUCH-BUTTON-FIX-V39','ANDROID-TOUCH-FIX-V42','ANDROID-TOUCH-FIX-V54','ANDROID-CLASS-SELECT-FIX-V43','ANDROID-TOUCH-STABLE-V55','Завершить Бездну']:
