@@ -5,7 +5,7 @@ FILES = [ROOT / 'NEW_DARK_RPG' / 'index.html', ROOT / 'android' / 'app' / 'src' 
 JAVA = ROOT / 'android' / 'app' / 'src' / 'main' / 'java' / 'com' / 'chronicles' / 'abyss' / 'MainActivity.java'
 
 OLD_MARKERS = [
-    'ANDROID-TOUCH-STABLE-V56', 'ANDROID-TOUCH-STABLE-V57', 'ANDROID-TOUCH-STABLE-V58', 'ANDROID-TOUCH-STABLE-V59',
+    'ANDROID-TOUCH-STABLE-V56', 'ANDROID-TOUCH-STABLE-V57', 'ANDROID-TOUCH-STABLE-V58',
     'ANDROID-TOUCH-STABLE-V55', 'ANDROID-TOUCH-FIX-V42', 'ANDROID-TOUCH-FIX-V54',
     'ANDROID-CLASS-SELECT-FIX-V43', 'TOUCH-BUTTON-FIX-V39',
 ]
@@ -107,6 +107,7 @@ def patch_html(path):
     s = path.read_text(encoding='utf-8')
     for marker in OLD_MARKERS:
         s = remove_iife(s, marker)
+    s = remove_iife(s, 'ANDROID-TOUCH-STABLE-V59')
     pos = s.rfind('</script>')
     if pos < 0:
         raise SystemExit(f'{path}: no script terminator')
