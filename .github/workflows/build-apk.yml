@@ -69,29 +69,28 @@ jobs:
         run: |
           python - <<'PY'
           from pathlib import Path
-          from bs4 import BeautifulSoup
-          import re, subprocess
+          import re, subprocess, html
           files=['NEW_DARK_RPG/index.html','android/app/src/main/assets/index.html']
           for name in files:
               s=Path(name).read_text(encoding='utf-8')
               js='\n'.join(m.group(1) for m in re.finditer(r'<script[^>]*>(.*?)</script>',s,re.S))
               Path('/tmp/game.js').write_text(js,encoding='utf-8')
               subprocess.run(['node','--check','/tmp/game.js'],check=True)
-              soup=BeautifulSoup(s,'html.parser')
-              ids=[x.get('id') for x in soup.find_all(attrs={'id':True})]
+              ids=re.findall(r'\bid=["\']([^"\']+)',s,re.I)
               dup=sorted({x for x in ids if ids.count(x)>1})
               if dup: raise SystemExit(f'{name}: duplicate IDs {dup}')
-              idset=set(ids)
               refs=set(re.findall(r"(?:el|getElementById)\(['\"]([^'\"]+)",js))
-              missing=(refs-idset)-{'infiniteDepthPanel','release-v38-style'}
+              static_ids=set(ids)
+              missing=(refs-static_ids)-{'infiniteDepthPanel','release-v38-style'}
               if missing: raise SystemExit(f'{name}: missing DOM refs {sorted(missing)}')
               funcs=set(re.findall(r'\bfunction\s+([A-Za-z_$][\w$]*)\s*\(',js))|set(re.findall(r'window\.([A-Za-z_$][\w$]*)\s*=\s*function',js))
               for attr in ['onclick','oninput','onchange','onload']:
-                  for node in soup.find_all(attrs={attr:True}):
-                      for fn in re.findall(r'\b([A-Za-z_$][\w$]*)\s*\(',node[attr]):
+                  for m in re.finditer(attr+r'\s*=\s*["\']([^"\']+)',s,re.I):
+                      expr=html.unescape(m.group(1))
+                      for fn in re.findall(r'\b([A-Za-z_$][\w$]*)\s*\(',expr):
                           if fn not in funcs and fn not in {'if','for','while','setTimeout','clearTimeout','Math'}:
                               raise SystemExit(f'{name}: missing handler {fn}')
-              required=['id="continueHit" class="continue-hit"','function inventoryHasSpace()','INFINITE-ABYSS-PERSISTENT-RPG-V1','ANDROID-TOUCH-STABLE-V55','GAME-STABILITY-V55','function finiteNumber','saveKey+\'_backup\'']
+              required=['id="continueHit" class="continue-hit"','function inventoryHasSpace()','INFINITE-ABYSS-PERSISTENT-RPG-V1','ANDROID-TOUCH-STABLE-V55','GAME-STABILITY-V55','function finiteNumber',"saveKey+'_backup'"]
               for x in required:
                   if x not in s: raise SystemExit(f'{name}: missing stabilization {x}')
               for bad in ['TOUCH-BUTTON-FIX-V39','ANDROID-TOUCH-FIX-V42','ANDROID-TOUCH-FIX-V54','ANDROID-CLASS-SELECT-FIX-V43','Завершить Бездну']:
