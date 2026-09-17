@@ -237,8 +237,9 @@ const el=id=>document.getElementById(id);
 function resetAbyss(){abyssFloor=1;abyssRoom=0;abyssBossDefeated=false;abyssRoomContent='Новая комната ещё не исследована.';updateAbyss()}
 function updateAbyss(){if(el('abyssFloor'))el('abyssFloor').textContent=abyssFloor+(abyssFloor>=8?' · Глубины':'/'+MAX_FLOOR);if(el('abyssRoomInfo'))el('abyssRoomInfo').innerHTML='<b>Комната '+Math.min(ROOMS_PER_FLOOR,abyssRoom+1)+'/'+ROOMS_PER_FLOOR+'</b><br><span class="muted">'+abyssRoomContent+'</span>';if(el('abyssRooms'))el('abyssRooms').textContent=abyssRoom+'/'+ROOMS_PER_FLOOR;if(el('exploreBtn'))el('exploreBtn').textContent=abyssRoom>=ROOMS_PER_FLOOR?'Следующая глубина':'Войти в комнату'}
 function logEvent(type,text){journalEntries.unshift({type,text,time:new Date().toLocaleTimeString('ru-RU',{hour:'2-digit',minute:'2-digit'})});journalEntries=journalEntries.slice(0,40);renderJournal();}
-function normalizeHero(){if(!hero||typeof hero!=='object')return false;const s=classStats[hero.class];if(!s)return false;hero.items=Array.isArray(hero.items)?hero.items:[];hero.gold=Math.max(0,Number(hero.gold??localStorage.getItem('abyss_gold')??100));hero.allies=Array.isArray(hero.allies)?hero.allies:[];hero.crit=Math.max(0,Math.min(1,Number(hero.crit||0)));hero.skillLevel=Math.max(1,Math.min(5,Number(hero.skillLevel||1)));hero.skillPoints=Math.max(0,Number(hero.skillPoints||0));hero.weapon=hero.weapon||'Нет';hero.armor=hero.armor||'Нет';hero.level=Math.max(1,Number(hero.level||1));hero.xp=Math.max(0,Number(hero.xp||0));hero.maxHp=Math.max(Number(hero.maxHp||s.maxHp),1);hero.maxEnergy=Math.max(Number(hero.maxEnergy||s.maxEnergy),1);hero.hp=Math.min(Math.max(Number(hero.hp??hero.maxHp),0),hero.maxHp);hero.energy=Math.min(Math.max(Number(hero.energy??hero.maxEnergy),0),hero.maxEnergy);hero.attack=Math.max(1,Number(hero.attack||s.attack));hero.def=Math.max(0,Number(hero.def||s.def));return true}
-function loadGame(){try{const raw=localStorage.getItem(saveKey);if(!raw)return false;const data=JSON.parse(raw);if(data&&data.hero){hero=data.hero;abyssFloor=Number(data.abyssFloor||1);abyssRoom=Number(data.abyssRoom||0);abyssBossDefeated=!!data.abyssBossDefeated;abyssRoomContent=String(data.abyssRoomContent||'Новая комната ещё не исследована.');journalEntries=Array.isArray(data.journal)?data.journal:[];allies=Array.isArray(data.allies)?data.allies:(Array.isArray(hero.allies)?hero.allies:[])}else{hero=data;resetAbyss()}if(!normalizeHero())return false;hero.allies=allies;localStorage.setItem('abyss_gold',String(hero.gold));return true}catch(e){return false}}
+function finiteNumber(value,fallback){const n=Number(value);return Number.isFinite(n)?n:fallback}
+function normalizeHero(){if(!hero||typeof hero!=='object')return false;const s=classStats[hero.class];if(!s)return false;hero.items=Array.isArray(hero.items)?hero.items:[];let storedGold=100;try{storedGold=finiteNumber(localStorage.getItem('abyss_gold'),100)}catch(e){}hero.gold=Math.max(0,finiteNumber(hero.gold,storedGold));hero.allies=Array.isArray(hero.allies)?hero.allies:[];hero.crit=Math.max(0,Math.min(1,finiteNumber(hero.crit,0)));hero.skillLevel=Math.max(1,Math.min(5,finiteNumber(hero.skillLevel,1)));hero.skillPoints=Math.max(0,finiteNumber(hero.skillPoints,0));hero.weapon=typeof hero.weapon==='string'&&hero.weapon?hero.weapon:'Нет';hero.armor=typeof hero.armor==='string'&&hero.armor?hero.armor:'Нет';hero.level=Math.max(1,Math.floor(finiteNumber(hero.level,1)));hero.xp=Math.max(0,finiteNumber(hero.xp,0));hero.maxHp=Math.max(finiteNumber(hero.maxHp,s.maxHp),1);hero.maxEnergy=Math.max(finiteNumber(hero.maxEnergy,s.maxEnergy),1);hero.hp=Math.min(Math.max(finiteNumber(hero.hp,hero.maxHp),0),hero.maxHp);hero.energy=Math.min(Math.max(finiteNumber(hero.energy,hero.maxEnergy),0),hero.maxEnergy);hero.attack=Math.max(1,finiteNumber(hero.attack,s.attack));hero.def=Math.max(0,finiteNumber(hero.def,s.def));return true}
+function loadGame(){try{let raw=localStorage.getItem(saveKey);if(!raw)raw=localStorage.getItem(saveKey+'_backup');if(!raw)return false;const data=JSON.parse(raw);if(data&&data.hero){hero=data.hero;abyssFloor=Math.max(1,Math.floor(finiteNumber(data.abyssFloor,1)));abyssRoom=Math.max(0,Math.floor(finiteNumber(data.abyssRoom,0)));abyssBossDefeated=!!data.abyssBossDefeated;abyssRoomContent=String(data.abyssRoomContent||'Новая комната ещё не исследована.');journalEntries=Array.isArray(data.journal)?data.journal:[];allies=Array.isArray(data.allies)?data.allies:(Array.isArray(hero.allies)?hero.allies:[])}else{hero=data;resetAbyss()}if(!normalizeHero())return false;hero.allies=allies;try{localStorage.setItem('abyss_gold',String(hero.gold))}catch(e){}return true}catch(e){return false}}
 function hasSave(){return !!localStorage.getItem(saveKey)}
 function continueGame(){if(!loadGame())return showClasses();gameMusicAllowed=true;update();updateAbyss();renderTavern();renderJournal();resumeAudio();resumeMusic();screenHistory=['menu','main'];history.replaceState({screen:'main'},'','#main');setScreen('main',false);logEvent('СОХРАНЕНИЕ','Продолжена сохранённая игра.')}
 function setScreen(screen,push=true){if(el('menu'))el('menu').classList.toggle('hidden',screen!=='menu');screens.forEach(s=>{if(el(s))el(s).classList.toggle('hidden',s!==screen)});if(push){if(screenHistory[screenHistory.length-1]!==screen)screenHistory.push(screen);history.pushState({screen:screen},'','#'+screen);if(hero.class)save()}updateHud()}function showClasses(){resumeAudio();sfx('start');setScreen('classes')}function start(className){gameMusicAllowed=true;resetAbyss();let st=classStats[className];hero={name:'Странник',class:className,hp:st.hp,maxHp:st.maxHp,energy:st.energy,maxEnergy:st.maxEnergy,attack:st.attack,def:st.def,level:1,xp:0,items:[],weapon:'Нет',armor:'Нет',gold:100,allies:[],crit:0,skillLevel:1,skillPoints:0};allies=[];journalEntries=[];logEvent('ИГРА','Начат новый забег: '+className+'.');save();update();if(el('out'))el('out').innerHTML='Выбран класс: '+className;resumeAudio();resumeMusic();screenHistory=['menu','classes'];resumeAudio();resumeMusic();setScreen('main')}
@@ -273,7 +274,7 @@ function turn(){if(enemy.hp<=0){sfx('victory');const xp=enemy.xp||50,gold=enemy.
 function generateLoot(){const loot=[{name:'Зелье здоровья',type:'consumable',effect:'hp',icon:'🧪'},{name:'Зелье маны',type:'consumable',effect:'mp',icon:'🔵'},{name:'Железный меч',type:'weapon',icon:'🗡️',attack:2},{name:'Кожаная броня',type:'armor',icon:'🛡️',def:2}];return JSON.parse(JSON.stringify(loot[Math.floor(Math.random()*loot.length)]))}
 function enemyTurn(){if(!enemy||hero.hp<=0)return;if(enemy.isBoss&&enemy.phase===1&&enemy.hp<=enemy.max*.5){enemy.phase=2;enemy.attack+=6;enemy.def+=2;logEvent('БОСС','Владыка Бездны переходит во вторую фазу.');if(el('battleLog'))el('battleLog').innerHTML='<span class="red">⚠️ Владыка Бездны входит в Фазу II!</span>'}sfx('hit');let incoming=Math.max(1,(enemy.attack||10)-Math.floor(hero.def*.35));if(enemy.isBoss&&enemy.phase===2&&Math.random()<.25){incoming=Math.round(incoming*1.5);logEvent('БОСС','Особая атака: Удар Бездны.');}hero.hp-=guard?Math.ceil(incoming*.5):incoming;guard=false;if(hero.hp<=0){hero.hp=0;update();die();return}save();update();updateBattle()}
 function die(){sfx('error');logEvent('СМЕРТЬ','Герой пал на глубине '+abyssFloor+', комнате '+Math.min(ROOMS_PER_FLOOR,abyssRoom+1)+'. Глубина сохранена.');abyssRoom=0;abyssRoomContent='Новая комната ещё не исследована.';abyssBossDefeated=false;hero.hp=hero.maxHp;hero.energy=hero.maxEnergy;save();screenHistory=['menu','main','death'];history.replaceState({screen:'death'},'','#death');setScreen('death',false)}
-function returnFromDeath(){screenHistory=['menu','main'];history.replaceState({screen:'main'},'','#main');setScreen('main',false);update();if(el('out'))el('out').innerHTML='<span class="green">Ты вернулся в город. Следующий забег начинается с первого этажа.</span>'}
+function returnFromDeath(){screenHistory=['menu','main'];history.replaceState({screen:'main'},'','#main');setScreen('main',false);update();if(el('out'))el('out').innerHTML='<span class="green">Ты вернулся в город. Текущая глубина сохранена. Следующий забег продолжится с этой глубины.</span>'}
 function escapeBattle(){if(!enemy)return;enemy=null;guard=false;logEvent('БОЙ','Герой отступил. Бой прерван.');save();screenHistory=['menu','main','abyss'];history.replaceState({screen:'abyss'},'','#abyss');setScreen('abyss',false);updateAbyss()}
 function inventoryType(name){const n=String(name).toLowerCase();if(n.includes('брон')||n.includes('щит'))return'armor';if(n.includes('зель')||n.includes('эликс')||n.includes('мана')||n.includes('здоров'))return'consumable';if(n.includes('ключ'))return'other';return'weapon'}
 function itemInfo(raw){if(raw&&typeof raw==='object'&&raw.type)return raw;const name=String(raw&&typeof raw==='object'&&raw.name!==undefined?raw.name:raw);if(name==='Случайный предмет')return{name,type:'random',icon:'🎁'};if(name==='Зелье здоровья')return{name,type:'consumable',effect:'hp',icon:'🧪'};if(name==='Зелье маны')return{name,type:'consumable',effect:'mp',icon:'🔵'};if(name==='Железный меч')return{name,type:'weapon',icon:'🗡️',attack:2};if(name==='Кожаная броня')return{name,type:'armor',icon:'🛡️',def:2};return{name,type:inventoryType(name),icon:inventoryType(name)==='armor'?'🛡️':inventoryType(name)==='consumable'?'🧪':inventoryType(name)==='other'?'🔑':'🗝️'}}
@@ -302,7 +303,7 @@ function showSkills(){renderSkills();setScreen('skills')}
 function renderStats(){const s=classStats[hero.class]||{};const crit=Math.round((hero.crit||0)*100);if(el('statsContent'))el('statsContent').innerHTML='<div class="info-row"><span>Имя</span><b>'+hero.name+'</b></div><div class="info-row"><span>Класс</span><b>'+((hero.class)||'—')+'</b></div><div class="info-row"><span>Уровень</span><b>'+hero.level+'</b></div><div class="info-row"><span>Опыт</span><b>'+hero.xp+'/100</b></div><div class="info-row"><span>Здоровье</span><b>'+hero.hp+'/'+hero.maxHp+'</b></div><div class="info-row"><span>Энергия</span><b>'+hero.energy+'/'+hero.maxEnergy+'</b></div>';if(el('statsCombat'))el('statsCombat').innerHTML='<div>⚔️ Сила: <b>'+hero.attack+'</b></div><div>🛡️ Защита: <b>'+hero.def+'</b></div><div>◆ Критический шанс: <b>'+crit+'%</b></div><div>🪙 Золото: <b>'+getGold()+'</b></div><div>⚔️ Оружие: <b>'+hero.weapon+'</b></div><div>🛡️ Броня: <b>'+hero.armor+'</b></div><div>⭐ Базовая сила класса: <b>'+((s.attack)||'—')+'</b></div><div>🛡️ Базовая защита класса: <b>'+((s.def)||'—')+'</b></div>'}
 
 
-function levelUp(){if(hero.xp<100){if(el('out'))el('out').innerHTML='Опыт: '+hero.xp+'/100';return}let levels=0;while(hero.xp>=100){hero.xp-=100;hero.level++;hero.attack+=3;hero.maxHp+=20;hero.maxEnergy+=5;hero.skillPoints=(Number(hero.skillPoints)||0)+1;levels++}hero.hp=hero.maxHp;hero.energy=hero.maxEnergy;logEvent('ПРОКАЧКА','Получено уровней: '+levels+'.');if(el('out'))el('out').innerHTML='<span class="green">Уровень повышен: +'+levels+'.</span>';update();save()}function save(){localStorage.setItem(saveKey,JSON.stringify({version:SAVE_VERSION,hero,abyssFloor,abyssRoom,abyssBossDefeated,allies,journal:journalEntries}));localStorage.setItem('abyss_gold',String(hero.gold||0))}function showExit(){save();el('modal').classList.remove('hidden')}function closeModal(){el('modal').classList.add('hidden')}function mainMenu(){save();gameMusicAllowed=false;stopMusic();if(audioCtx&&audioCtx.state==='running')audioCtx.suspend();closeModal();screenHistory=['menu'];history.replaceState({screen:'menu'},'','#menu');setScreen('menu',false)}let screenHistory=['menu'];
+function levelUp(){if(hero.xp<100){if(el('out'))el('out').innerHTML='Опыт: '+hero.xp+'/100';return}let levels=0;while(hero.xp>=100){hero.xp-=100;hero.level++;hero.attack+=3;hero.maxHp+=20;hero.maxEnergy+=5;hero.skillPoints=(Number(hero.skillPoints)||0)+1;levels++}hero.hp=hero.maxHp;hero.energy=hero.maxEnergy;logEvent('ПРОКАЧКА','Получено уровней: '+levels+'.');if(el('out'))el('out').innerHTML='<span class="green">Уровень повышен: +'+levels+'.</span>';update();save()}function save(){const raw=JSON.stringify({version:SAVE_VERSION,hero,abyssFloor,abyssRoom,abyssBossDefeated,allies,journal:journalEntries});try{localStorage.setItem(saveKey,raw);localStorage.setItem(saveKey+'_backup',raw);localStorage.setItem('abyss_gold',String(hero.gold||0));return true}catch(e){try{localStorage.setItem(saveKey+'_backup',raw);return true}catch(_){return false}}}function showExit(){save();el('modal').classList.remove('hidden')}function closeModal(){el('modal').classList.add('hidden')}function mainMenu(){save();gameMusicAllowed=false;stopMusic();if(audioCtx&&audioCtx.state==='running')audioCtx.suspend();closeModal();screenHistory=['menu'];history.replaceState({screen:'menu'},'','#menu');setScreen('menu',false)}let screenHistory=['menu'];
 function goBack(){sfx('back');if(screenHistory.length>1){screenHistory.pop();const prev=screenHistory[screenHistory.length-1];setScreen(prev,false);history.replaceState({screen:prev},'','#'+prev);update();return;}if(hero.class)setScreen('main',false);else setScreen('menu',false)}window.addEventListener('popstate',function(event){let screen=event.state&&event.state.screen?event.state.screen:'menu';if(screenHistory[screenHistory.length-1]!==screen)screenHistory.push(screen);setScreen(screen,false);if(screen==='battle')updateBattle();if(screen==='abyss')updateAbyss();if(screen==='main')update();if(screen==='inventory')renderInventory();if(screen==='equipment')renderEquipment();if(screen==='hero')renderHero();if(screen==='shop')shopTab(shopCategory);if(screen==='tavern')renderTavern();if(screen==='journal')renderJournal();if(screen==='death')update()});screenHistory=['menu'];history.replaceState({screen:'menu'},'',location.pathname+location.search+'#menu');const saved=loadGame();if(saved&&el('continueHit'))el('continueHit').classList.remove('hidden');update();updateAbyss();renderJournal();renderTavern();
 /* INFINITE-ABYSS-PERSISTENT-RPG-V1 — бесконечная Бездна без рогалика.
    Первые 7 этажей сохраняются; с 8-го начинается постоянная бесконечная глубина.
@@ -383,50 +384,33 @@ const INFINITE_PERSISTENCE_FIX_V2='persistent-infinite-abyss';
 ;
 
 
-/* ANDROID-TOUCH-FIX-V42 — единый резервный обработчик касаний Android WebView. */
+
+/* ANDROID-TOUCH-STABLE-V55 — единый безопасный fallback касаний Android/WebView. */
 (function(){
-  if(window.__androidTouchFixV42)return;
-  window.__androidTouchFixV42=true;
-  const st=document.createElement('style');
-  st.textContent='button{touch-action:manipulation!important;-webkit-tap-highlight-color:rgba(220,30,30,.16)!important;pointer-events:auto!important}.class-card:before,.class-icon{pointer-events:none!important}';
-  document.head.appendChild(st);
-  let pending=null;
-  document.addEventListener('click',function(){if(pending){clearTimeout(pending);pending=null;}},true);
-  function arm(e){
-    const b=e.target&&e.target.closest?e.target.closest('button'):null;
-    if(!b||b.disabled)return;
-    if(pending)clearTimeout(pending);
-    pending=setTimeout(function(){
-      pending=null;
-      if(document.documentElement.contains(b)&&!b.disabled)b.click();
-    },260);
-  }
+  if(window.__androidTouchStableV55)return;
+  window.__androidTouchStableV55=true;
+  const pending=new WeakMap(),lastClick=new WeakMap();
+  const DELAY=140,DEDUPE=450;
+  const css=document.createElement('style');
+  css.textContent='button{touch-action:manipulation!important;-webkit-tap-highlight-color:rgba(220,30,30,.16)!important;pointer-events:auto!important}.class-card:before,.class-icon{pointer-events:none!important}';
+  document.head.appendChild(css);
+  const buttonFromTarget=t=>t&&t.closest?t.closest('button'):null;
+  const cancel=b=>{const t=pending.get(b);if(t){clearTimeout(t);pending.delete(b)}};
+  document.addEventListener('click',e=>{const b=buttonFromTarget(e.target);if(!b)return;cancel(b);const now=Date.now(),prev=lastClick.get(b)||0;if(now-prev<DEDUPE){e.stopImmediatePropagation();e.stopPropagation();return}lastClick.set(b,now)},true);
+  function arm(e){const b=buttonFromTarget(e.target);if(!b||b.disabled)return;cancel(b);pending.set(b,setTimeout(()=>{pending.delete(b);if(document.documentElement.contains(b)&&!b.disabled){const now=Date.now(),prev=lastClick.get(b)||0;if(now-prev>=DEDUPE){lastClick.set(b,now);b.click()}}},DELAY))}
+  function cancelFromTarget(e){const b=buttonFromTarget(e.target);if(b)cancel(b)}
   document.addEventListener('pointerup',arm,{passive:true});
   document.addEventListener('touchend',arm,{passive:true});
+  document.addEventListener('pointercancel',cancelFromTarget,{passive:true});
+  document.addEventListener('touchcancel',cancelFromTarget,{passive:true});
 })();
 
-/* ANDROID-TOUCH-FIX-V54 — прямое безопасное касание кнопок Android WebView. */
+/* GAME-STABILITY-V55 — защита от двойных действий. */
 (function(){
-  if(window.__androidTouchFixV54)return;
-  window.__androidTouchFixV54=true;
-  const st=document.createElement('style');
-  st.textContent='button{touch-action:manipulation!important;-webkit-tap-highlight-color:rgba(220,30,30,.16)!important;pointer-events:auto!important}.class-card:before,.class-icon{pointer-events:none!important}';
-  document.head.appendChild(st);
-  let lock=false;
-  function activate(e){
-    const b=e.target&&e.target.closest?e.target.closest('button'):null;
-    if(!b||b.disabled||lock)return;
-    lock=true;
-    if(e.cancelable)e.preventDefault();
-    if(e.stopImmediatePropagation)e.stopImmediatePropagation();
-    if(e.stopPropagation)e.stopPropagation();
-    b.click();
-    setTimeout(function(){lock=false;},700);
-  }
-  document.addEventListener('touchstart',activate,{capture:true,passive:false});
-  document.addEventListener('pointerdown',function(e){if(e.pointerType==='touch')activate(e);},{capture:true,passive:false});
+  if(window.__gameStabilityV55)return;window.__gameStabilityV55=true;
+  const wrapOnce=(name,ms)=>{const fn=window[name];if(typeof fn!=='function'||fn.__onceV55)return;let busy=false;const wrapped=function(){if(busy)return;busy=true;try{return fn.apply(this,arguments)}finally{setTimeout(()=>busy=false,ms)}};wrapped.__onceV55=true;window[name]=wrapped};
+  ['start','continueGame','explore','attack','defend','skill','buyItem','buyKey','hireAlly','upgradeSkill','selectAbyssDepth','openAbyssKeyCache'].forEach(n=>wrapOnce(n,420));
 })();
-
 </script></div>
 <style id="hero-character-scale-v40-final">
 /* === v3.10 FINAL: увеличиваем именно фактически отображаемый PNG/WebP/SVG героя === */
@@ -461,6 +445,3 @@ const INFINITE_PERSISTENCE_FIX_V2='persistent-infinite-abyss';
 <!-- art-atlas-v2.js legacy marker: активный атлас V3 -->
 <script src="art-atlas-v3.js"></script>
 </body></html>
-<!-- ANDROID-TOUCH-FIX-V4-FINAL: native click is primary; delayed pointer/touch fallback is duplicate-safe. -->
-
-<!-- ANDROID-TOUCH-FIX-V54: direct touch activation for Android buttons; Continue is always visible. -->
