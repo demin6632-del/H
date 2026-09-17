@@ -42,6 +42,7 @@ public class MainActivity extends Activity {
             }
             @Override public void onPageFinished(WebView view, String url) {
                 webViewReady = true;
+                installAndroidClassTouchFix(view);
                 super.onPageFinished(view, url);
             }
         });
@@ -52,6 +53,34 @@ public class MainActivity extends Activity {
 
         web.loadUrl("file:///android_asset/index.html");
         setContentView(root);
+    }
+
+    /**
+     * Android WebView: выбор класса обрабатывается напрямую из touch-события.
+     * Остальные кнопки остаются полностью под управлением существующей игры.
+     */
+    private void installAndroidClassTouchFix(WebView view) {
+        view.evaluateJavascript(
+                "(function(){" +
+                "if(window.__androidClassTouchFixV53)return;" +
+                "window.__androidClassTouchFixV53=true;" +
+                "var lock=false;" +
+                "function activate(e){" +
+                "var t=e.target;var card=t&&t.closest?t.closest('#classes .class-card'):null;" +
+                "if(!card||lock)return;" +
+                "var o=card.getAttribute('onclick')||'';" +
+                "var m=o.match(/start\\\\(['\\\"]([^'\\\"]+)['\\\"]\\\\)/);" +
+                "if(!m||typeof window.start!=='function')return;" +
+                "lock=true;" +
+                "if(e.cancelable)e.preventDefault();" +
+                "if(e.stopImmediatePropagation)e.stopImmediatePropagation();" +
+                "if(e.stopPropagation)e.stopPropagation();" +
+                "window.start(m[1]);" +
+                "setTimeout(function(){lock=false;},700);" +
+                "}" +
+                "document.addEventListener('touchend',activate,{capture:true,passive:false});" +
+                "document.addEventListener('pointerup',activate,{capture:true,passive:false});" +
+                "})()", null);
     }
 
     @Override
