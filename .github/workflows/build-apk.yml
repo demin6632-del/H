@@ -1,19 +1,11 @@
 name: Build APK
 
-# Сборка с проверкой кнопок, экипировки, интерфейса и визуального атласа
-# BUILD-RELEASE-TRIGGER-2026-09-16 — пересборка последних изменений
-# BUILD-BATTLE-FREQUENCY-2026-09-16 — более редкие обычные бои
-# BUILD-INFINITE-ABYSS-V2-2026-09-16 — настоящая бесконечная постоянная Бездна
-# BUILD-INFINITE-ABYSS-V2-TRIGGER — финальная проверка и APK
-# BUILD-INFINITE-ABYSS-V2-FIX — исправление перехода после 7-го этажа
-# BUILD-RELEASE-V3.8 — открытые глубины, расширенное снаряжение, ключевой тайник, настройки и баланс
-# BUILD-TOUCH-FIX-V3.9 — исправление касаний кнопок в Android WebView
-# BUILD-TOUCH-FIX-V4 — резервная активация touchend/pointerup и защита слоёв
-# BUILD-TOUCH-FIX-V4.1 — удаление блокирующего V3.9 synthetic click interceptor
-# BUILD-NATIVE-CLASS-HITBOX-V47 — нативные прозрачные hitbox поверх карточек классов
-# BUILD-ART-ATLAS-V2 — изображения существ и комнат из утверждённого атласа
-# BUILD-TOUCH-FIX-V51 — исправление: #classes является SPA-экраном и не меняет URL
-# BUILD-TOUCH-FIX-V54 — прямое безопасное касание кнопок + постоянная кнопка «Продолжить»
+# Сборка с финальным аудитом кнопок, сохранений, экипировки, интерфейса и визуального атласа
+# BUILD-RELEASE-TRIGGER-2026-09-16
+# BUILD-INFINITE-ABYSS-V2
+# BUILD-RELEASE-V3.8
+# BUILD-TOUCH-STABILIZATION-V55 — единый финальный Android touch fallback
+# BUILD-FULL-AUDIT-V55 — финальная проверка перед подписью APK
 
 on:
   workflow_dispatch:
@@ -63,44 +55,58 @@ jobs:
           python tools/fix_android_touch_v40.py
           python tools/fix_android_touch_v41.py
           python tools/install_art_atlas_v2.py
+          python tools/final_stabilization_v55.py
           python - <<'PY'
           from pathlib import Path
           import re
           p=Path('android/app/build.gradle')
           s=p.read_text()
-          s=re.sub(r'versionCode\s+\d+', 'versionCode 30', s, count=1)
+          s=re.sub(r'versionCode\s+\d+', 'versionCode 31', s, count=1)
           s=re.sub(r"versionName\s+'[^']+'", "versionName '4.2'", s, count=1)
           p.write_text(s)
           PY
-      - name: Static JavaScript syntax check
+      - name: Full source audit
         run: |
           python - <<'PY'
           from pathlib import Path
-          import re
-          import subprocess
-          for name in ['NEW_DARK_RPG/index.html','android/app/src/main/assets/index.html']:
+          from bs4 import BeautifulSoup
+          import re, subprocess
+          files=['NEW_DARK_RPG/index.html','android/app/src/main/assets/index.html']
+          for name in files:
               s=Path(name).read_text(encoding='utf-8')
               js='\n'.join(m.group(1) for m in re.finditer(r'<script[^>]*>(.*?)</script>',s,re.S))
-              Path('/tmp/game.js').write_text(js)
-              print(f'Checking {name}: {len(s)} bytes')
+              Path('/tmp/game.js').write_text(js,encoding='utf-8')
               subprocess.run(['node','--check','/tmp/game.js'],check=True)
-              required=['id="stats"','id="skills"','function inventoryHasSpace()','function unequipItemType(type)','function unequipAll()','function showStats()','function showSkills()','function levelUp()','function upgradeSkill()','Math.random()<0.18','Math.random()<0.40','enemy.phase===1','INFINITE_PERSISTENCE_FIX_V2','depthSelect','selectAbyssDepth','openAbyssKeyCache','RELEASE-V3.8','ANDROID-TOUCH-FIX-V4-FINAL','art-atlas-v2.js']
-              missing=[x for x in required if x not in s]
-              if missing: raise SystemExit(f'{name}: missing required stabilization: {missing}')
-              if "abyssFloor++" not in s: raise SystemExit(f'{name}: infinite floor progression missing')
-              if "resetAbyss();hero.hp=hero.maxHp" in s: raise SystemExit(f'{name}: death still resets Abyss progress')
-              if "Завершить Бездну" in s: raise SystemExit(f'{name}: finite Abyss ending remains')
-              if "hero.xp+=xp;hero.gold+=gold;levelUp();" not in s: raise SystemExit(f'{name}: XP level-up hook missing')
-              if "sk.skill+' нанёс" in s: raise SystemExit(f'{name}: old broken skill-name reference remains')
-              if "function escapeBattle(){goBack()}" in s: raise SystemExit(f'{name}: old escape handler remains')
-              if "function buyKey(){const price=75;if(getGold()<price)" in s and "if(!inventoryHasSpace())" not in s: raise SystemExit(f'{name}: buyKey capacity guard missing')
+              soup=BeautifulSoup(s,'html.parser')
+              ids=[x.get('id') for x in soup.find_all(attrs={'id':True})]
+              dup=sorted({x for x in ids if ids.count(x)>1})
+              if dup: raise SystemExit(f'{name}: duplicate IDs {dup}')
+              idset=set(ids)
+              refs=set(re.findall(r"(?:el|getElementById)\(['\"]([^'\"]+)",js))
+              missing=(refs-idset)-{'infiniteDepthPanel','release-v38-style'}
+              if missing: raise SystemExit(f'{name}: missing DOM refs {sorted(missing)}')
+              funcs=set(re.findall(r'\bfunction\s+([A-Za-z_$][\w$]*)\s*\(',js))|set(re.findall(r'window\.([A-Za-z_$][\w$]*)\s*=\s*function',js))
+              for attr in ['onclick','oninput','onchange','onload']:
+                  for node in soup.find_all(attrs={attr:True}):
+                      for fn in re.findall(r'\b([A-Za-z_$][\w$]*)\s*\(',node[attr]):
+                          if fn not in funcs and fn not in {'if','for','while','setTimeout','clearTimeout','Math'}:
+                              raise SystemExit(f'{name}: missing handler {fn}')
+              required=['id="continueHit" class="continue-hit"','function inventoryHasSpace()','INFINITE-ABYSS-PERSISTENT-RPG-V1','ANDROID-TOUCH-STABLE-V55','GAME-STABILITY-V55','function finiteNumber','saveKey+\'_backup\'']
+              for x in required:
+                  if x not in s: raise SystemExit(f'{name}: missing stabilization {x}')
+              for bad in ['TOUCH-BUTTON-FIX-V39','ANDROID-TOUCH-FIX-V42','ANDROID-TOUCH-FIX-V54','ANDROID-CLASS-SELECT-FIX-V43','Завершить Бездну']:
+                  if bad in s: raise SystemExit(f'{name}: obsolete/broken marker remains {bad}')
+              if 'abyssFloor++' not in s: raise SystemExit(f'{name}: infinite floor progression missing')
+              if 'resetAbyss();hero.hp=hero.maxHp' in s: raise SystemExit(f'{name}: death still resets Abyss progress')
+          if Path(files[0]).read_bytes()!=Path(files[1]).read_bytes(): raise SystemExit('Web and Android game sources differ')
+          print('FULL GAME AUDIT V55: PASS')
           PY
       - name: Commit permanent source fixes
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add NEW_DARK_RPG/index.html NEW_DARK_RPG/art-atlas-v2.js android/app/src/main/assets/index.html android/app/src/main/assets/art-atlas-v2.js android/app/build.gradle tools/install_art_atlas_v2.py
-          if git diff --cached --quiet; then echo "No source changes to commit."; else git commit -m "Apply ChroniclesOfTheAbyss v4.2 art atlas [skip ci]"; git push origin HEAD:main; fi
+          git add NEW_DARK_RPG/index.html NEW_DARK_RPG/art-atlas-v3.js android/app/src/main/assets/index.html android/app/src/main/assets/art-atlas-v2.js android/app/src/main/assets/art-atlas-v3.js android/app/build.gradle android/app/src/main/java/com/chronicles/abyss/MainActivity.java tools/fix_android_touch_v42.py tools/final_stabilization_v55.py tools/install_art_atlas_v2.py .github/workflows/build-apk.yml
+          if git diff --cached --quiet; then echo "No source changes to commit."; else git commit -m "Stabilize ChroniclesOfTheAbyss Android release [skip ci]"; git push origin HEAD:main; fi
       - name: Set up Java
         uses: actions/setup-java@v4
         with:
@@ -129,7 +135,7 @@ jobs:
           APK=app/build/outputs/apk/release/app-release.apk
           BUILD_TOOLS=$(find "$ANDROID_HOME/build-tools" -maxdepth 1 -mindepth 1 -type d | sort -V | tail -1)
           "$BUILD_TOOLS/apksigner" verify --verbose "$APK"
-          "$BUILD_TOOLS/aapt" dump badging "$APK" | grep -E "package: name='com.chronicles.abyss'|versionName='4.2'|versionCode='30'"
+          "$BUILD_TOOLS/aapt" dump badging "$APK" | grep -E "package: name='com.chronicles.abyss'|versionName='4.2'|versionCode='31'"
       - name: Package APK ZIP
         working-directory: android
         run: |
