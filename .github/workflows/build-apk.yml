@@ -18,50 +18,35 @@ jobs:
           java-version: '17'
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v4
-      - name: Repair and synchronize release source
-        run: |
-          python tools/repair_release_source.py
-          cp NEW_DARK_RPG/art-atlas-v4-fix.js android/app/src/main/assets/art-atlas-v4-fix.js
-          python - <<'PY'
-          from pathlib import Path
-          import re
-          p=Path('android/app/build.gradle')
-          s=p.read_text()
-          s=re.sub(r'versionCode\s+\d+','versionCode 42',s,count=1)
-          s=re.sub(r"versionName\s+'[^']+'","versionName '4.3.1'",s,count=1)
-          p.write_text(s)
-          PY
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot].noreply.github.com"
-          git add NEW_DARK_RPG/index.html android/app/src/main/assets/index.html android/app/src/main/assets/art-atlas-v4-fix.js android/app/build.gradle
-          if ! git diff --cached --quiet; then git commit -m "Persist release source repair [skip ci]"; git push origin HEAD:main; fi
       - name: Full source audit
         run: |
           python - <<'PY'
           from pathlib import Path
           import re, subprocess
-          web=Path('NEW_DARK_RPG/index.html'); android=Path('android/app/src/main/assets/index.html')
-          v4=Path('NEW_DARK_RPG/art-atlas-v4.js'); fix=Path('NEW_DARK_RPG/art-atlas-v4-fix.js')
-          av4=Path('android/app/src/main/assets/art-atlas-v4.js'); afix=Path('android/app/src/main/assets/art-atlas-v4-fix.js')
-          fix_text=fix.read_text(encoding='utf-8')
+          root=Path('.')
+          web=root/'NEW_DARK_RPG/index.html'; android=root/'android/app/src/main/assets/index.html'
+          v4=root/'NEW_DARK_RPG/art-atlas-v4.js'; av4=root/'android/app/src/main/assets/art-atlas-v4.js'
+          core=root/'NEW_DARK_RPG/art-atlas-v4-core.js'; acore=root/'android/app/src/main/assets/art-atlas-v4-core.js'
           if web.read_bytes()!=android.read_bytes(): raise SystemExit('Web/Android HTML mismatch')
-          if v4.read_bytes()!=av4.read_bytes(): raise SystemExit('V4 atlas mismatch')
-          if fix.read_bytes()!=afix.read_bytes(): raise SystemExit('V4 fix mismatch')
+          if v4.read_bytes()!=av4.read_bytes(): raise SystemExit('V4 runtime mismatch')
+          if core.read_bytes()!=acore.read_bytes(): raise SystemExit('V4 core mismatch')
           s=web.read_text(encoding='utf-8')
           js='\n'.join(m.group(1) for m in re.finditer(r'<script[^>]*>(.*?)</script>',s,re.S))
           Path('/tmp/game.js').write_text(js,encoding='utf-8')
           subprocess.run(['node','--check','/tmp/game.js'],check=True)
           subprocess.run(['node','--check',str(v4)],check=True)
-          subprocess.run(['node','--check',str(fix)],check=True)
+          subprocess.run(['node','--check',str(core)],check=True)
           ids=re.findall(r'\bid=["\']([^"\']+)',s,re.I)
           dup=sorted({x for x in ids if ids.count(x)>1})
           if dup: raise SystemExit(f'Duplicate IDs: {dup}')
-          for x in ['function heroRefNav(id){','setScreen(id);',"function hasSave(){return !!localStorage.getItem(saveKey)||!!localStorage.getItem(saveKey+'_backup')}","abyssKeyCaches={};window.abyssKeyCaches=abyssKeyCaches",'INFINITE-ABYSS-PERSISTENT-RPG-V1','ART-ATLAS-V4-FIX']:
-            if x not in s and x not in fix_text: raise SystemExit('Missing fix: '+x)
+          runtime=v4.read_text(encoding='utf-8')
+          for marker in ['ART-ATLAS-V4-RUNTIME','setScreen(id)','abyssKeyCaches={};window.abyssKeyCaches=abyssKeyCaches','__battleArtRuntimeFix','400% 600%']:
+            if marker not in runtime: raise SystemExit('Missing runtime fix: '+marker)
           for bad in ['dispatchTouchFallback','setOnTouchListener','TOUCH-BUTTON-FIX-V39','ANDROID-TOUCH-FIX-V42','ANDROID-TOUCH-FIX-V54','ANDROID-CLASS-SELECT-FIX-V43']:
-            if bad in s or bad in fix_text: raise SystemExit('Legacy touch code remains: '+bad)
-          if 'versionCode 42' not in Path('android/app/build.gradle').read_text(): raise SystemExit('Bad versionCode')
-          if "versionName '4.3.1'" not in Path('android/app/build.gradle').read_text(): raise SystemExit('Bad versionName')
+            if bad in s or bad in runtime: raise SystemExit('Legacy touch code remains: '+bad)
+          gradle=(root/'android/app/build.gradle').read_text()
+          if 'versionCode 42' not in gradle: raise SystemExit('Bad versionCode')
+          if "versionName '4.3.1'" not in gradle: raise SystemExit('Bad versionName')
           print('SOURCE AUDIT: PASS')
           PY
       - name: Prepare permanent signing key
@@ -88,7 +73,7 @@ jobs:
           "$BUILD_TOOLS/apksigner" verify --verbose "$APK"
           BADGING=$("$BUILD_TOOLS/aapt" dump badging "$APK")
           echo "$BADGING" | grep -F "package: name='com.chronicles.abyss' versionCode='42' versionName='4.3.1'"
-          unzip -l "$APK" | grep -E 'assets/(index.html|art-atlas-v4.js|art-atlas-v4-fix.js)$'
+          unzip -l "$APK" | grep -E 'assets/(index.html|art-atlas-v4.js|art-atlas-v4-core.js)$'
       - name: Package APK ZIP
         working-directory: android
         run: |
