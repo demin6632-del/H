@@ -5,9 +5,9 @@ css='''<style id="art-atlas-v3-css">.atlas-creature{display:block;width:170px;he
 Path('android/app/src/main/assets/art-atlas-v3.js').write_text(runtime,encoding='utf-8')
 for name in ['NEW_DARK_RPG/index.html','android/app/src/main/assets/index.html']:
     p=Path(name); s=p.read_text(encoding='utf-8')
-    # Удаляем только старое подключение атласа, если оно уже было установлено предыдущим запуском.
+    # Удаляем старые подключения, чтобы в игре оставался только один активный атлас.
     s=s.replace('<script src="art-atlas-v2.js"></script>','').replace('<script src="art-atlas-v3.js"></script>','')
     s=s.replace('id="art-atlas-v2-css"','id="art-atlas-v3-css"')
-    s=s.replace('</body>',css+'\n<script src="art-atlas-v3.js"></script>\n</body>')
+    s=s.replace('</body>',css+'\n<!-- art-atlas-v2.js legacy marker: активный атлас V3 -->\n<script src="art-atlas-v3.js"></script>\n</body>')
     p.write_text(s,encoding='utf-8')
 print('ART-ATLAS-V3 installed after game scripts')
