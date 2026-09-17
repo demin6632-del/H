@@ -3,7 +3,7 @@ name: Build APK
 # Сборка с финальным аудитом кнопок, сохранений, экипировки, интерфейса и визуального атласа
 # BUILD-RELEASE-TRIGGER-2026-09-17
 # BUILD-INFINITE-ABYSS-V2
-# BUILD-TOUCH-TAP-SCROLL-SAFE-V59
+# BUILD-TOUCH-TAP-SCROLL-SAFE-V60-NATIVE-FALLBACK
 # BUILD-ART-ATLAS-EXACT-TILES-V41
 
 on:
@@ -58,13 +58,14 @@ jobs:
           python tools/final_stabilization_v55.py
           python tools/fix_android_touch_v56.py
           python tools/fix_v4_runtime_and_touch.py
+          python tools/fix_android_touch_v60.py
           python - <<'PY'
           from pathlib import Path
           import re
           p=Path('android/app/build.gradle')
           s=p.read_text()
-          s=re.sub(r'versionCode\s+\d+', 'versionCode 39', s, count=1)
-          s=re.sub(r"versionName\s+'[^']+'", "versionName '4.2.8'", s, count=1)
+          s=re.sub(r'versionCode\s+\d+', 'versionCode 40', s, count=1)
+          s=re.sub(r"versionName\s+'[^']+'", "versionName '4.2.9'", s, count=1)
           p.write_text(s)
           PY
       - name: Full source audit
@@ -97,15 +98,15 @@ jobs:
                       for fn in re.findall(r'\b([A-Za-z_$][\w$]*)\s*\(',expr):
                           if fn not in funcs and fn not in {'if','for','while','setTimeout','clearTimeout','Math'}:
                               raise SystemExit(f'{name}: missing handler {fn}')
-              required=['id="continueHit" class="continue-hit"','function inventoryHasSpace()','INFINITE-ABYSS-PERSISTENT-RPG-V1','ANDROID-TOUCH-STABLE-V59','GAME-STABILITY-V55','function finiteNumber',"saveKey+'_backup"]
+              required=['id="continueHit" class="continue-hit"','function inventoryHasSpace()','INFINITE-ABYSS-PERSISTENT-RPG-V1','ANDROID-TOUCH-STABLE-V60','GAME-STABILITY-V55','function finiteNumber',"saveKey+'_backup"]
               for x in required:
                   if x not in s: raise SystemExit(f'{name}: missing stabilization {x}')
-              for bad in ['TOUCH-BUTTON-FIX-V39','ANDROID-TOUCH-FIX-V42','ANDROID-TOUCH-FIX-V54','ANDROID-CLASS-SELECT-FIX-V43','ANDROID-TOUCH-STABLE-V55','ANDROID-TOUCH-STABLE-V57','ANDROID-TOUCH-STABLE-V58','Завершить Бездну']:
+              for bad in ['TOUCH-BUTTON-FIX-V39','ANDROID-TOUCH-FIX-V42','ANDROID-TOUCH-FIX-V54','ANDROID-CLASS-SELECT-FIX-V43','ANDROID-TOUCH-STABLE-V55','ANDROID-TOUCH-STABLE-V57','ANDROID-TOUCH-STABLE-V58','ANDROID-TOUCH-STABLE-V59','Завершить Бездну']:
                   if bad in s: raise SystemExit(f'{name}: obsolete/broken marker remains {bad}')
-              if re.search(r"addEventListener\(\s*['\"]pointerup['\"]", s) or 'dispatchTouchFallback' in s or 'setOnTouchListener' in s:
-                  raise SystemExit(f'{name}: unsafe pointer/native touch fallback remains')
-              if 'const MOVE_LIMIT=14' not in s or 'touchMoved=true' not in s or 'b.click();' not in s or 'touchTimer' not in s:
-                  raise SystemExit(f'{name}: V59 tap/scroll guard is incomplete')
+              if 'dispatchTouchFallback' in s or 'setOnTouchListener' in s:
+                  raise SystemExit(f'{name}: unsafe legacy touch fallback remains')
+              if 'const MOVE_LIMIT=14' not in s or 'moved=true' not in s or 'b.click();' not in s or '__nativeTapFallbackAt' not in s or 'addEventListener(\'pointerup\'' not in s:
+                  raise SystemExit(f'{name}: V60 tap/scroll guard is incomplete')
               if 'abyssFloor++' not in s: raise SystemExit(f'{name}: infinite floor progression missing')
               if 'resetAbyss();hero.hp=hero.maxHp' in s: raise SystemExit(f'{name}: death still resets Abyss progress')
           if Path(files[0]).read_bytes()!=Path(files[1]).read_bytes(): raise SystemExit('Web and Android game sources differ')
@@ -116,15 +117,17 @@ jobs:
           if 'art-v4-scene:before' not in v4: raise SystemExit('V4 legacy scene overlay suppression missing')
           if not Path('android/app/src/main/assets/art-atlas-v4.js').exists(): raise SystemExit('Android V4 atlas asset missing')
           ma=Path('android/app/src/main/java/com/chronicles/abyss/MainActivity.java').read_text(encoding='utf-8')
-          if any(x in ma for x in ['dispatchTouchFallback','setOnTouchListener','MotionEvent']):
-              raise SystemExit('MainActivity still contains duplicate native touch fallback')
-          print('FULL GAME AUDIT V4.1 + TAP/SCROLL-SAFE TOUCH V59: PASS')
+          if 'ANDROID-NATIVE-TOUCH-FALLBACK-V60' not in ma or 'MotionEvent.ACTION_DOWN' not in ma or 'MotionEvent.ACTION_UP' not in ma:
+              raise SystemExit('MainActivity native V60 touch fallback is missing')
+          if 'setOnTouchListener' in ma or 'dispatchTouchFallback' in ma:
+              raise SystemExit('MainActivity contains legacy touch fallback')
+          print('FULL GAME AUDIT V4.1 + TAP/SCROLL-SAFE TOUCH V60: PASS')
           PY
       - name: Commit permanent source fixes
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot].noreply.github.com"
-          git add NEW_DARK_RPG/index.html NEW_DARK_RPG/art-atlas-v4.js android/app/src/main/assets/index.html android/app/src/main/assets/art-atlas-v4.js android/app/build.gradle android/app/src/main/java/com/chronicles/abyss/MainActivity.java tools/fix_v4_runtime_and_touch.py tools/fix_android_touch_v42.py tools/fix_android_touch_v56.py tools/final_stabilization_v55.py tools/install_art_atlas_v2.py tools/install_art_atlas_v4.py .github/workflows/build-apk.yml
+          git add NEW_DARK_RPG/index.html NEW_DARK_RPG/art-atlas-v4.js android/app/src/main/assets/index.html android/app/src/main/assets/art-atlas-v4.js android/app/build.gradle android/app/src/main/java/com/chronicles/abyss/MainActivity.java tools/fix_v4_runtime_and_touch.py tools/fix_android_touch_v42.py tools/fix_android_touch_v56.py tools/fix_android_touch_v60.py tools/final_stabilization_v55.py tools/install_art_atlas_v2.py tools/install_art_atlas_v4.py .github/workflows/build-apk.yml
           if git diff --cached --quiet; then echo "No source changes to commit."; else git commit -m "Fix Android taps without scroll clicks [skip ci]"; git push origin HEAD:main; fi
       - name: Set up Java
         uses: actions/setup-java@v4
@@ -154,38 +157,38 @@ jobs:
           APK=app/build/outputs/apk/release/app-release.apk
           BUILD_TOOLS=$(find "$ANDROID_HOME/build-tools" -maxdepth 1 -mindepth 1 -type d | sort -V | tail -1)
           "$BUILD_TOOLS/apksigner" verify --verbose "$APK"
-          "$BUILD_TOOLS/aapt" dump badging "$APK" | grep -E "package: name='com.chronicles.abyss'|versionName='4.2.8'|versionCode='39'"
+          "$BUILD_TOOLS/aapt" dump badging "$APK" | grep -E "package: name='com.chronicles.abyss'|versionName='4.2.9'|versionCode='40'"
           unzip -l "$APK" | grep -E 'assets/(index.html|art-atlas-v4.js)$'
       - name: Package APK ZIP
         working-directory: android
         run: |
           mkdir -p release-package
-          cp app/build/outputs/apk/release/app-release.apk release-package/ChroniclesOfTheAbyss-v4.2.8.apk
-          sha256sum release-package/ChroniclesOfTheAbyss-v4.2.8.apk > release-package/SHA256SUMS.txt
+          cp app/build/outputs/apk/release/app-release.apk release-package/ChroniclesOfTheAbyss-v4.2.9.apk
+          sha256sum release-package/ChroniclesOfTheAbyss-v4.2.9.apk > release-package/SHA256SUMS.txt
           cd release-package
-          zip -9 ../ChroniclesOfTheAbyss-v4.2.8-APK.zip *
+          zip -9 ../ChroniclesOfTheAbyss-v4.2.9-APK.zip *
       - name: Package normal PROJECT ZIP
         run: |
           rm -rf /tmp/ChroniclesOfTheAbyss_PROJECT
           mkdir -p /tmp/ChroniclesOfTheAbyss_PROJECT
           rsync -a --exclude='.git' --exclude='android/.gradle' --exclude='android/app/build' --exclude='android/release-package' ./ /tmp/ChroniclesOfTheAbyss_PROJECT/
           cd /tmp
-          zip -9 -r ChroniclesOfTheAbyss_PROJECT-v4.2.8.zip ChroniclesOfTheAbyss_PROJECT >/dev/null
+          zip -9 -r ChroniclesOfTheAbyss_PROJECT-v4.2.9.zip ChroniclesOfTheAbyss_PROJECT >/dev/null
       - name: Upload signed APK
         uses: actions/upload-artifact@v4
         with:
-          name: ChroniclesOfTheAbyss-v4.2.8-apk
+          name: ChroniclesOfTheAbyss-v4.2.9-apk
           path: android/app/build/outputs/apk/release/app-release.apk
           if-no-files-found: error
       - name: Upload APK ZIP
         uses: actions/upload-artifact@v4
         with:
-          name: ChroniclesOfTheAbyss-v4.2.8-apk-zip
-          path: android/ChroniclesOfTheAbyss-v4.2.8-APK.zip
+          name: ChroniclesOfTheAbyss-v4.2.9-apk-zip
+          path: android/ChroniclesOfTheAbyss-v4.2.9-APK.zip
           if-no-files-found: error
       - name: Upload normal PROJECT ZIP
         uses: actions/upload-artifact@v4
         with:
-          name: ChroniclesOfTheAbyss-v4.2.8-project
-          path: /tmp/ChroniclesOfTheAbyss_PROJECT-v4.2.8.zip
+          name: ChroniclesOfTheAbyss-v4.2.9-project
+          path: /tmp/ChroniclesOfTheAbyss_PROJECT-v4.2.9.zip
           if-no-files-found: error
