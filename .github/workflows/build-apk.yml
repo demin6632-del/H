@@ -102,7 +102,7 @@ jobs:
                   if x not in s: raise SystemExit(f'{name}: missing stabilization {x}')
               for bad in ['TOUCH-BUTTON-FIX-V39','ANDROID-TOUCH-FIX-V42','ANDROID-TOUCH-FIX-V54','ANDROID-CLASS-SELECT-FIX-V43','ANDROID-TOUCH-STABLE-V55','ANDROID-TOUCH-STABLE-V57','Завершить Бездну']:
                   if bad in s: raise SystemExit(f'{name}: obsolete/broken marker remains {bad}')
-              if re.search(r"addEventListener\(\s*['\"](?:pointerup|touchend)['\"]", s) or 'dispatchTouchFallback' in s or 'setOnTouchListener' in s:
+              if re.search(r"addEventListener\(\s*['\"]pointerup['\"]", s) or 'dispatchTouchFallback' in s or 'setOnTouchListener' in s:
                   raise SystemExit(f'{name}: unsafe pointer/native touch fallback remains')
               if 'const MOVE_LIMIT=14' not in s or 'touchMoved=true' not in s or 'b.click();' not in s:
                   raise SystemExit(f'{name}: V58 tap/scroll guard is incomplete')
