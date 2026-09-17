@@ -1,6 +1,7 @@
 from pathlib import Path
 import re
 import base64
+import io
 import subprocess
 import tempfile
 
@@ -57,26 +58,30 @@ function roomKeyV4"""
     s=s.replace("e.style.backgroundSize='400% 600%';", "e.style.setProperty('background-size','400% 600%','important');e.style.setProperty('background-position',((idx[k]%4)*100/3)+'% '+(Math.floor(idx[k]/4)*100/5)+'%','important');")
     p.write_text(s,encoding='utf-8')
 
-# Улучшаем разрешение V4-атласа только средствами стандартного Ubuntu runner.
-# Старый V4 содержит 256x384 (64x64 на клетку); новый — 1024x1536 (256x256 на клетку).
+# Улучшаем разрешение V4-атласа. CI-образ Ubuntu не содержит Pillow,
+# поэтому ставим системный пакет перед обработкой.
+try:
+    from PIL import Image, ImageFilter, ImageEnhance
+except ImportError:
+    subprocess.run(['sudo','apt-get','update','-qq'],check=True)
+    subprocess.run(['sudo','apt-get','install','-y','-qq','python3-pil'],check=True)
+    from PIL import Image, ImageFilter, ImageEnhance
+
 for p in [Path('NEW_DARK_RPG/art-atlas-v4.js'), Path('android/app/src/main/assets/art-atlas-v4.js')]:
     s=p.read_text(encoding='utf-8')
     m=re.search(r"data:image/webp;base64,([^']+)'",s)
     if not m:
         raise SystemExit(f'{p}: V4 WebP not found')
-    raw=base64.b64decode(m.group(1))
-    with tempfile.TemporaryDirectory() as td:
-        src=Path(td)/'src.webp';dst=Path(td)/'dst.webp';src.write_bytes(raw)
-        subprocess.run([
-            'ffmpeg','-hide_banner','-loglevel','error','-y','-i',str(src),
-            '-vf','scale=1024:1536:flags=lanczos,unsharp=5:5:0.8:5:5:0',
-            '-c:v','libwebp','-quality','92',str(dst)
-        ],check=True)
-        enhanced=dst.read_bytes()
-    b64=base64.b64encode(enhanced).decode('ascii')
+    im=Image.open(io.BytesIO(base64.b64decode(m.group(1)))).convert('RGB')
+    if im.width < 1024 or im.height < 1536:
+        im=im.resize((1024,1536),Image.Resampling.LANCZOS)
+        im=ImageEnhance.Contrast(im).enhance(1.025)
+        im=im.filter(ImageFilter.UnsharpMask(radius=1.15,percent=115,threshold=3))
+    out=io.BytesIO();im.save(out,'WEBP',quality=92,method=6)
+    b64=base64.b64encode(out.getvalue()).decode('ascii')
     s=s[:m.start(1)]+b64+s[m.end(1):]
     p.write_text(s,encoding='utf-8')
-    print(f'V4 atlas improved: {p} -> 1024x1536, {len(enhanced)} bytes')
+    print(f'V4 atlas improved: {p} -> {im.width}x{im.height}, {len(out.getvalue())} bytes')
 
 # Новая версия только для этой исправленной визуальной сборки.
 p=Path('android/app/build.gradle')
