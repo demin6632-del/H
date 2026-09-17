@@ -3,7 +3,7 @@ import re
 import base64
 import io
 import subprocess
-import sys
+import tempfile
 
 FILES = [Path('NEW_DARK_RPG/index.html'), Path('android/app/src/main/assets/index.html')]
 
@@ -31,8 +31,7 @@ for token in ['import android.os.Handler;\n','import android.os.Looper;\n','impo
 p.write_text(s, encoding='utf-8')
 
 # V4 exact crop. В исходной игре .scene имеет background-size/position: ... !important,
-# поэтому обычные inline-свойства V4 проигрывают. Заменяем setScene целиком regex-ом,
-# независимо от пробелов/форматирования, которое выдал installer.
+# поэтому обычные inline-свойства V4 проигрывают. Заменяем setScene целиком regex-ом.
 for p in [Path('NEW_DARK_RPG/art-atlas-v4.js'), Path('android/app/src/main/assets/art-atlas-v4.js')]:
     s = p.read_text(encoding='utf-8')
     pattern = r"function setScene\(id,key\)\{.*?\}\nfunction roomKeyV4"
@@ -59,30 +58,24 @@ function roomKeyV4"""
     s=s.replace("e.style.backgroundSize='400% 600%';", "e.style.setProperty('background-size','400% 600%','important');e.style.setProperty('background-position',((idx[k]%4)*100/3)+'% '+(Math.floor(idx[k]/4)*100/5)+'%','important');")
     p.write_text(s,encoding='utf-8')
 
-# Улучшаем разрешение V4-атласа перед упаковкой APK.
-# Старый V4 содержит 256x384 (64x64 на клетку); увеличиваем до 1024x1536
-# и применяем умеренное повышение резкости. Композиция и сами изображения не меняются.
-try:
-    from PIL import Image, ImageFilter, ImageEnhance
-except ImportError:
-    subprocess.run([sys.executable,'-m','pip','install','Pillow','-q'],check=True)
-    from PIL import Image, ImageFilter, ImageEnhance
-
+# Улучшаем разрешение V4-атласа без внешних Python-библиотек.
+# ImageMagick есть в стандартном runner Ubuntu. Старый V4: 256x384 (64x64 на клетку).
+# Новый V4: 1024x1536 (256x256 на клетку) + умеренная резкость.
 for p in [Path('NEW_DARK_RPG/art-atlas-v4.js'), Path('android/app/src/main/assets/art-atlas-v4.js')]:
     s=p.read_text(encoding='utf-8')
     m=re.search(r"data:image/webp;base64,([^']+)'",s)
     if not m:
         raise SystemExit(f'{p}: V4 WebP not found')
-    im=Image.open(io.BytesIO(base64.b64decode(m.group(1)))).convert('RGB')
-    if im.width < 1024 or im.height < 1536:
-        im=im.resize((1024,1536),Image.Resampling.LANCZOS)
-        im=ImageEnhance.Contrast(im).enhance(1.025)
-        im=im.filter(ImageFilter.UnsharpMask(radius=1.15,percent=115,threshold=3))
-    out=io.BytesIO();im.save(out,'WEBP',quality=92,method=6)
-    b64=base64.b64encode(out.getvalue()).decode('ascii')
+    raw=base64.b64decode(m.group(1))
+    with tempfile.TemporaryDirectory() as td:
+        src=Path(td)/'src.webp'; dst=Path(td)/'dst.webp'
+        src.write_bytes(raw)
+        subprocess.run(['convert',str(src),'-resize','1024x1536!','-unsharp','0x1.15+1.15+0.03','-quality','92',str(dst)],check=True)
+        enhanced=dst.read_bytes()
+    b64=base64.b64encode(enhanced).decode('ascii')
     s=s[:m.start(1)]+b64+s[m.end(1):]
     p.write_text(s,encoding='utf-8')
-    print(f'V4 atlas improved: {p} -> {im.width}x{im.height}, {len(out.getvalue())} bytes')
+    print(f'V4 atlas improved: {p} -> 1024x1536, {len(enhanced)} bytes')
 
 # Новая версия только для этой исправленной визуальной сборки.
 p=Path('android/app/build.gradle')
