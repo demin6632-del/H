@@ -437,17 +437,43 @@ const INFINITE_PERSISTENCE_FIX_V2='persistent-infinite-abyss';
   window.addEventListener('unhandledrejection',e=>{try{if(typeof logEvent==='function')logEvent('СИСТЕМА','Ошибка операции: '+String(e&&e.reason||'неизвестная ошибка').slice(0,180))}catch(_){}});
 })();
 
-/* ANDROID-TOUCH-STABLE-V56 — только защита от повторных действий; штатный WebView tap не перехватывается. */
+/* ANDROID-TOUCH-STABLE-V57 — короткий tap работает на Android, прокрутка не нажимает кнопки. */
 (function(){
-  if(window.__androidTouchStableV56)return;
-  window.__androidTouchStableV56=true;
-  const lastClick=new WeakMap();
-  document.addEventListener('click',function(e){
-    const b=e.target&&e.target.closest?e.target.closest('button'):null;
-    if(b) lastClick.set(b,Date.now());
-  },true);
-  // Никаких обработчиков pointerup/touchend и никакого программного b.click().
-  // Прокрутка должна оставаться полностью нативной для WebView.
+  if(window.__androidTouchStableV57)return;
+  window.__androidTouchStableV57=true;
+  let touchButton=null,touchX=0,touchY=0,touchMoved=false;
+  const MOVE_LIMIT=14;
+  const findButton=(node)=>{
+    if(!node)return null;
+    if(node.closest)return node.closest('button');
+    return null;
+  };
+  document.addEventListener('touchstart',function(e){
+    const t=e.touches&&e.touches[0];
+    touchButton=findButton(e.target);
+    touchMoved=false;
+    if(t){touchX=t.clientX;touchY=t.clientY;}
+  },{capture:true,passive:true});
+  document.addEventListener('touchmove',function(e){
+    if(!touchButton)return;
+    const t=e.touches&&e.touches[0];
+    if(!t)return;
+    if(Math.abs(t.clientX-touchX)>MOVE_LIMIT || Math.abs(t.clientY-touchY)>MOVE_LIMIT){
+      touchMoved=true;
+      touchButton=null;
+    }
+  },{capture:true,passive:true});
+  document.addEventListener('touchend',function(e){
+    const b=touchButton;
+    touchButton=null;
+    if(!b||touchMoved)return;
+    const t=e.changedTouches&&e.changedTouches[0];
+    if(!t)return;
+    if(Math.abs(t.clientX-touchX)>MOVE_LIMIT || Math.abs(t.clientY-touchY)>MOVE_LIMIT)return;
+    e.preventDefault();
+    try{b.click();}catch(_){ }
+  },{capture:true,passive:false});
+  document.addEventListener('touchcancel',function(){touchButton=null;touchMoved=true;},{capture:true,passive:true});
   if(typeof selectAbyssDepth==='function' && !window.selectAbyssDepth){
     window.selectAbyssDepth=function(){return selectAbyssDepth.apply(this,arguments);};
   }
