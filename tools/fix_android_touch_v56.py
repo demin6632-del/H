@@ -45,8 +45,23 @@ NEW_JS = r'''/* ANDROID-TOUCH-STABLE-V56 — прямой и не блокиру
   document.addEventListener('pointercancel',cancelTarget,{passive:true,capture:false});
   document.addEventListener('touchcancel',cancelTarget,{passive:true,capture:false});
   window.__nativeButtonAt=function(x,y){
-    const e=document.elementFromPoint(Number(x)||0,Number(y)||0);
-    const b=getButton(e);
+    const xx=Number(x)||0,yy=Number(y)||0;
+    const e=document.elementFromPoint(xx,yy);
+    let b=getButton(e);
+    if(!b){
+      const cs=document.querySelectorAll('#classes .class-card');
+      for(let i=0;i<cs.length;i++){
+        const r=cs[i].getBoundingClientRect();
+        if(xx>=r.left&&xx<=r.right&&yy>=r.top&&yy<=r.bottom){b=cs[i];break;}
+      }
+    }
+    if(!b){
+      const bs=document.querySelectorAll('button');
+      for(let i=0;i<bs.length;i++){
+        const r=bs[i].getBoundingClientRect();
+        if(xx>=r.left&&xx<=r.right&&yy>=r.top&&yy<=r.bottom){b=bs[i];break;}
+      }
+    }
     if(!b||b.disabled)return false;
     cancel(b);b.click();lastNative.set(b,Date.now());return true;
   };
@@ -107,7 +122,18 @@ def patch_java():
     end = s.find('        root.addView(web, new FrameLayout.LayoutParams(', start)
     if start < 0 or end < 0:
         raise SystemExit('MainActivity touch section not found')
-    replacement = '''        // Не перехватываем штатное касание WebView. На ACTION_UP лишь ставим\n        // отложенный JS-fallback, чтобы дать WebView закончить собственный tap/click.\n        web.setOnTouchListener((v, event) -> {\n            if (webViewReady && event.getAction() == MotionEvent.ACTION_UP) {\n                final float px = event.getX();\n                final float py = event.getY();\n                web.postDelayed(() -> dispatchTouchFallback(px, py), 90);\n            }\n            return false;\n        });\n\n'''
+    replacement = '''        // Не перехватываем штатное касание WebView. На ACTION_UP лишь ставим
+        // отложенный JS-fallback, чтобы дать WebView закончить собственный tap/click.
+        web.setOnTouchListener((v, event) -> {
+            if (webViewReady && event.getAction() == MotionEvent.ACTION_UP) {
+                final float px = event.getX();
+                final float py = event.getY();
+                web.postDelayed(() -> dispatchTouchFallback(px, py), 90);
+            }
+            return false;
+        });
+
+'''
     s = s[:start] + replacement + s[end:]
 
     mstart = s.find('    /**\n     * Резерв для Android WebView:')
@@ -115,8 +141,11 @@ def patch_java():
     if mstart < 0 or mend < 0:
         raise SystemExit('MainActivity fallback method not found')
     method = '''    /**
-     * Резерв для Android WebView: вызывает DOM-кнопку под фактическим пальцем.
-     * Координаты переводятся из координат WebView в CSS-пиксели.
+     * Резерв для Android WebView: самостоятельно определяет HTML-кнопку
+     * под фактическим пальцем и запускает её click().
+     * Сначала используется hit-test WebView, затем проверка геометрии DOM.
+     * Это закрывает случай, когда WebView возвращает не тот элемент из-за
+     * масштабирования или вложенного текста внутри карточки класса.
      */
     private void dispatchTouchFallback(float px, float py) {
         if (web == null || web.getWidth() <= 0 || web.getHeight() <= 0) return;
@@ -124,8 +153,21 @@ def patch_java():
         final float cssX = Math.max(0f, px / scale);
         final float cssY = Math.max(0f, py / scale);
         final String js = "(function(){"
-                + "if(typeof window.__nativeButtonAt!=='function')return false;"
-                + "return window.__nativeButtonAt(" + cssX + "," + cssY + ");"
+                + "var now=Date.now();"
+                + "if(window.__lastNativeButtonAt && now-window.__lastNativeButtonAt<350)return true;"
+                + "var e=document.elementFromPoint(" + cssX + "," + cssY + ");"
+                + "var b=e&&e.closest?e.closest('button'):null;"
+                + "if(!b){"
+                + "var cs=document.querySelectorAll('#classes .class-card');"
+                + "for(var i=0;i<cs.length;i++){var r=cs[i].getBoundingClientRect();if(" + cssX + ">=r.left&&" + cssX + "<=r.right&&" + cssY + ">=r.top&&" + cssY + "<=r.bottom){b=cs[i];break;}}"
+                + "}"
+                + "if(!b){"
+                + "var bs=document.querySelectorAll('button');"
+                + "for(var j=0;j<bs.length;j++){var q=bs[j].getBoundingClientRect();if(" + cssX + ">=q.left&&" + cssX + "<=q.right&&" + cssY + ">=q.top&&" + cssY + "<=q.bottom){b=bs[j];break;}}"
+                + "}"
+                + "if(!b||b.disabled)return false;"
+                + "window.__lastNativeButtonAt=now;"
+                + "try{b.click();return true;}catch(err){console.error('ANDROID_TOUCH_FALLBACK',err);return false;}"
                 + "})()";
         web.evaluateJavascript(js, value -> { });
     }
