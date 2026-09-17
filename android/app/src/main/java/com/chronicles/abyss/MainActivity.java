@@ -51,11 +51,13 @@ public class MainActivity extends Activity {
             }
         });
 
-        // Не блокируем штатное касание WebView. Если WebView не создаст click,
-        // на ACTION_UP выполняется безопасный JS-fallback по фактической координате.
+        // Не перехватываем штатное касание WebView. На ACTION_UP лишь ставим
+        // отложенный JS-fallback, чтобы дать WebView закончить собственный tap/click.
         web.setOnTouchListener((v, event) -> {
             if (webViewReady && event.getAction() == MotionEvent.ACTION_UP) {
-                dispatchTouchFallback(event.getX(), event.getY());
+                final float px = event.getX();
+                final float py = event.getY();
+                web.postDelayed(() -> dispatchTouchFallback(px, py), 90);
             }
             return false;
         });
@@ -70,20 +72,17 @@ public class MainActivity extends Activity {
     }
 
     /**
-     * Резерв для Android WebView: определяет кнопку под пальцем и запускает её
-     * штатный DOM click. Само касание при этом не перехватывается.
+     * Резерв для Android WebView: вызывает DOM-кнопку под фактическим пальцем.
+     * Координаты переводятся из координат WebView в CSS-пиксели.
      */
     private void dispatchTouchFallback(float px, float py) {
         if (web == null || web.getWidth() <= 0 || web.getHeight() <= 0) return;
-        final float nx = Math.max(0f, Math.min(1f, px / web.getWidth()));
-        final float ny = Math.max(0f, Math.min(1f, py / web.getHeight()));
+        final float scaleX = web.getWidth() / Math.max(1f, web.getContentWidth() * web.getScale());
+        final float cssX = Math.max(0f, px / Math.max(0.0001f, web.getScale()));
+        final float cssY = Math.max(0f, py / Math.max(0.0001f, web.getScale()));
         final String js = "(function(){"
-                + "var x=" + nx + ",y=" + ny + ";"
-                + "var cx=x*window.innerWidth,cy=y*window.innerHeight;"
-                + "var e=document.elementFromPoint(cx,cy);"
-                + "var b=e&&e.closest?e.closest('button'):null;"
-                + "if(!b||b.disabled)return 'NONE';"
-                + "b.click();return 'OK';"
+                + "if(typeof window.__nativeButtonAt!=='function')return false;"
+                + "return window.__nativeButtonAt(" + cssX + "," + cssY + ");"
                 + "})()";
         web.evaluateJavascript(js, value -> { });
     }
