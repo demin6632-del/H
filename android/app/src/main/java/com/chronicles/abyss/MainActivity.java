@@ -3,6 +3,7 @@ package com.chronicles.abyss;
 import android.app.Activity;
 import android.os.Bundle;
 import android.graphics.Color;
+import android.view.MotionEvent;
 import android.view.ViewGroup;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
@@ -37,6 +38,7 @@ public class MainActivity extends Activity {
         settings.setBuiltInZoomControls(false);
         settings.setDisplayZoomControls(false);
         settings.setSupportZoom(false);
+        settings.setTextZoom(100);
 
         web.setWebViewClient(new WebViewClient() {
             @Override public void onPageCommitVisible(WebView view, String url) {
@@ -49,6 +51,15 @@ public class MainActivity extends Activity {
             }
         });
 
+        // Не блокируем штатное касание WebView. Если WebView не создаст click,
+        // на ACTION_UP выполняется безопасный JS-fallback по фактической координате.
+        web.setOnTouchListener((v, event) -> {
+            if (webViewReady && event.getAction() == MotionEvent.ACTION_UP) {
+                dispatchTouchFallback(event.getX(), event.getY());
+            }
+            return false;
+        });
+
         root.addView(web, new FrameLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT,
                 ViewGroup.LayoutParams.MATCH_PARENT));
@@ -56,6 +67,25 @@ public class MainActivity extends Activity {
         web.loadUrl("file:///android_asset/index.html");
         setContentView(root);
         web.requestFocus();
+    }
+
+    /**
+     * Резерв для Android WebView: определяет кнопку под пальцем и запускает её
+     * штатный DOM click. Само касание при этом не перехватывается.
+     */
+    private void dispatchTouchFallback(float px, float py) {
+        if (web == null || web.getWidth() <= 0 || web.getHeight() <= 0) return;
+        final float nx = Math.max(0f, Math.min(1f, px / web.getWidth()));
+        final float ny = Math.max(0f, Math.min(1f, py / web.getHeight()));
+        final String js = "(function(){"
+                + "var x=" + nx + ",y=" + ny + ";"
+                + "var cx=x*window.innerWidth,cy=y*window.innerHeight;"
+                + "var e=document.elementFromPoint(cx,cy);"
+                + "var b=e&&e.closest?e.closest('button'):null;"
+                + "if(!b||b.disabled)return 'NONE';"
+                + "b.click();return 'OK';"
+                + "})()";
+        web.evaluateJavascript(js, value -> { });
     }
 
     @Override
