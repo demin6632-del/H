@@ -10,6 +10,7 @@ name: Build APK
 # BUILD-TOUCH-FIX-V3.9 — исправление касаний кнопок в Android WebView
 # BUILD-TOUCH-FIX-V4 — резервная активация touchend/pointerup и защита слоёв
 # BUILD-TOUCH-FIX-V4.1 — удаление блокирующего V3.9 synthetic click interceptor
+# BUILD-NATIVE-CLASS-HITBOX-V47 — нативные прозрачные hitbox поверх карточек классов
 
 on:
   workflow_dispatch:
