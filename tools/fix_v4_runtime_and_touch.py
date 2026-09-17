@@ -1,5 +1,4 @@
 from pathlib import Path
-import re
 
 # V4 runtime: исправляем подключение внешнего скрипта и не меняем игровую логику.
 FILES = [Path('NEW_DARK_RPG/index.html'), Path('android/app/src/main/assets/index.html')]
@@ -13,11 +12,28 @@ for p in FILES:
 p = Path('android/app/src/main/java/com/chronicles/abyss/MainActivity.java')
 s = p.read_text(encoding='utf-8')
 s = s.replace('import android.view.MotionEvent;\n', '')
-# Удаляем любой установленный native touch listener между его началом и root.addView.
-s = re.sub(r'(?s)\n\s*// Не (?:перехватываем|блокируем) штатное касание WebView\..*?\n\s*root\.addView\(web,', '\n\n        root.addView(web,', s, count=1)
-s = re.sub(r'(?s)\n\s*web\.setOnTouchListener\(\(v, event\) -> \{.*?\n\s*\}\);\n\n\s*root\.addView\(web,', '\n\n        root.addView(web,', s, count=1)
-# Удаляем старый Java fallback, если он есть. Повторный запуск скрипта безопасен.
-s = re.sub(r'(?s)\n\s*/\*\*\n\s*\* Резерв для Android WebView:.*?\n\s*private void dispatchTouchFallback\(.*?\n\s*\}\n\n(?=\s*@Override\n\s*public void onBackPressed)', '\n\n', s, count=1)
+start = s.find('\n        // Не перехватываем штатное касание WebView.')
+if start < 0:
+    start = s.find('\n        // Не блокируем штатное касание WebView.')
+if start >= 0:
+    end = s.find('\n        root.addView(web,', start)
+    if end < 0:
+        raise SystemExit('MainActivity root.addView marker not found')
+    s = s[:start] + s[end:]
+else:
+    # Безопасный повторный запуск: если комментария уже нет, удаляем listener по сигнатуре.
+    start = s.find('\n        web.setOnTouchListener(')
+    if start >= 0:
+        end = s.find('\n        root.addView(web,', start)
+        if end < 0:
+            raise SystemExit('MainActivity root.addView marker not found')
+        s = s[:start] + s[end:]
+method_start = s.find('\n    /**\n     * Резерв для Android WebView:')
+if method_start >= 0:
+    method_end = s.find('\n    @Override\n    public void onBackPressed()', method_start)
+    if method_end < 0:
+        raise SystemExit('MainActivity onBackPressed marker not found')
+    s = s[:method_start] + s[method_end:]
 p.write_text(s, encoding='utf-8')
 
 # В V4 background-position выбирает конкретную ячейку атласа. background-size=cover
