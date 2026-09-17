@@ -59,6 +59,7 @@ jobs:
           python tools/fix_v4_runtime_and_touch.py
           python tools/final_stabilization_v55.py
           python tools/fix_android_touch_v56.py
+          python tools/fix_v4_runtime_and_touch.py
           python - <<'PY'
           from pathlib import Path
           import re
