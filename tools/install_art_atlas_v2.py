@@ -6,8 +6,8 @@ Path('android/app/src/main/assets/art-atlas-v2.js').write_text(runtime,encoding=
 for name in ['NEW_DARK_RPG/index.html','android/app/src/main/assets/index.html']:
     p=Path(name); s=p.read_text(encoding='utf-8')
     if 'art-atlas-v2.js' not in s:
-        s=s.replace('</head>',css+'\n<script src="art-atlas-v2.js"></script>\n</head>')
+        s=s.replace('</body>',css+'\n<script src="art-atlas-v2.js"></script>\n</body>')
     elif 'art-atlas-v2-css' not in s:
-        s=s.replace('</head>',css+'\n</head>')
+        s=s.replace('</body>',css+'\n</body>')
     p.write_text(s,encoding='utf-8')
-print('ART-ATLAS-V2 installed')
+print('ART-ATLAS-V2 installed after game scripts')
