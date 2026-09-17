@@ -2,8 +2,6 @@ package com.chronicles.abyss;
 
 import android.app.Activity;
 import android.os.Bundle;
-import android.os.Handler;
-import android.os.Looper;
 import android.graphics.Color;
 import android.view.MotionEvent;
 import android.view.ViewGroup;
@@ -18,10 +16,7 @@ public class MainActivity extends Activity {
     private volatile boolean webViewReady = false;
     private WebView web;
     private FrameLayout root;
-    private final Handler uiHandler = new Handler(Looper.getMainLooper());
-    private boolean classScreenVisible = false;
     private boolean classTouchHandled = false;
-    private long classTouchLockUntil = 0L;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -54,27 +49,30 @@ public class MainActivity extends Activity {
             }
         });
 
-        // V49: нативный перехватчик работает непосредственно на WebView.
-        // Прозрачные View поверх HTML больше не используются, поэтому они не могут перекрыть неверную область экрана.
+        // V50: никаких прозрачных Android View поверх HTML.
+        // Касание перехватывается непосредственно WebView только на экране выбора класса.
         web.setOnTouchListener((v, event) -> {
             if (!webViewReady) return false;
-            if (event.getAction() == MotionEvent.ACTION_DOWN) {
+            String url = web.getUrl();
+            boolean classScreen = url != null && url.contains("#classes");
+            if (!classScreen) {
                 classTouchHandled = false;
-                if (classScreenVisible && System.currentTimeMillis() >= classTouchLockUntil) {
-                    classTouchHandled = true;
-                    dispatchNativeClassTouch(event.getX(), event.getY());
-                    return true;
-                }
+                return false;
             }
-            if (classTouchHandled && (event.getAction() == MotionEvent.ACTION_MOVE
-                    || event.getAction() == MotionEvent.ACTION_UP
-                    || event.getAction() == MotionEvent.ACTION_CANCEL)) {
-                if (event.getAction() == MotionEvent.ACTION_UP || event.getAction() == MotionEvent.ACTION_CANCEL) {
-                    classTouchHandled = false;
-                }
+
+            // На экране выбора класса WebView не получает обычный touch/click.
+            // Нативный обработчик проверяет точку пальца через реальные DOM-границы карточек.
+            if (event.getAction() == MotionEvent.ACTION_DOWN
+                    || event.getAction() == MotionEvent.ACTION_UP) {
+                classTouchHandled = true;
+                dispatchNativeClassTouch(event.getX(), event.getY());
                 return true;
             }
-            return false;
+            if (classTouchHandled) {
+                if (event.getAction() == MotionEvent.ACTION_CANCEL) classTouchHandled = false;
+                return true;
+            }
+            return true;
         });
 
         root.addView(web, new FrameLayout.LayoutParams(
@@ -86,8 +84,9 @@ public class MainActivity extends Activity {
     }
 
     /**
-     * V49: нормализует реальные координаты MotionEvent относительно WebView.
-     * Затем DOM сам определяет, какая карточка класса находится под пальцем.
+     * V50: координаты MotionEvent нормализуются относительно фактического размера WebView.
+     * JS сравнивает точку с getBoundingClientRect() всех карточек и вызывает существующий start().
+     * Это не зависит от плотности экрана, status bar или фиксированных процентов Activity.
      */
     private void dispatchNativeClassTouch(float px, float py) {
         if (web == null) return;
@@ -95,44 +94,30 @@ public class MainActivity extends Activity {
         final float vh = Math.max(1f, web.getHeight());
         final float nx = Math.max(0f, Math.min(1f, px / vw));
         final float ny = Math.max(0f, Math.min(1f, py / vh));
+
         final String js = "(function(){"
                 + "var s=document.getElementById('classes');"
                 + "if(!s||s.classList.contains('hidden'))return 'HIDE';"
-                + "var x=" + nx + "*window.innerWidth,y=" + ny + "*window.innerHeight;"
-                + "var e=document.elementFromPoint(x,y);"
-                + "var b=e&&e.closest?e.closest('.class-card'):null;"
-                + "if(!b)return 'NONE';"
-                + "var o=b.getAttribute('onclick')||'';"
+                + "var x=" + nx + ",y=" + ny + ";"
+                + "var a=document.querySelectorAll('#classes .class-card');"
+                + "for(var i=0;i<a.length;i++){var r=a[i].getBoundingClientRect();"
+                + "if(x*window.innerWidth>=r.left&&x*window.innerWidth<=r.right&&y*window.innerHeight>=r.top&&y*window.innerHeight<=r.bottom){"
+                + "var o=a[i].getAttribute('onclick')||'';"
                 + "var m=o.match(/start\\(['\"]([^'\"]+)['\"]\\)/);"
                 + "if(!m||typeof window.start!=='function')return 'BAD';"
-                + "window.__nativeClassTouchV49=true;"
-                + "window.start(m[1]);return 'OK:'+m[1];"
-                + "})()";
-        web.evaluateJavascript(js, value -> {
-            if (value != null && value.contains("OK:")) {
-                classTouchLockUntil = System.currentTimeMillis() + 900L;
-            }
-        });
+                + "if(window.__nativeClassSelectionLockV50)return 'LOCK';"
+                + "window.__nativeClassSelectionLockV50=true;"
+                + "window.start(m[1]);"
+                + "setTimeout(function(){window.__nativeClassSelectionLockV50=false;},1000);"
+                + "return 'OK:'+m[1];}}"
+                + "return 'NONE';})()";
+        web.evaluateJavascript(js, value -> { });
     }
 
-    /** V49: обновляет только признак экрана выбора класса. */
+    /** V50: диагностический маркер без polling и без блокировки других экранов. */
     private void installNativeTouchBridge() {
         if (web == null) return;
-        web.evaluateJavascript(
-                "(function(){if(window.__nativeTouchBridgeV49)return 'READY';"
-                        + "window.__nativeTouchBridgeV49=true;"
-                        + "setInterval(function(){var s=document.getElementById('classes');"
-                        + "window.__classesVisibleV49=!!(s&&!s.classList.contains('hidden'));},150);"
-                        + "return 'READY';})()",
-                value -> pollClassVisibility());
-    }
-
-    private void pollClassVisibility() {
-        if (web == null || !webViewReady) return;
-        web.evaluateJavascript("!!window.__classesVisibleV49", value -> {
-            classScreenVisible = "true".equals(value);
-            uiHandler.postDelayed(this::pollClassVisibility, 150L);
-        });
+        web.evaluateJavascript("window.__nativeTouchBridgeV50=true; 'READY'", value -> { });
     }
 
     @Override
@@ -154,7 +139,6 @@ public class MainActivity extends Activity {
 
     @Override
     protected void onDestroy() {
-        uiHandler.removeCallbacksAndMessages(null);
         if (web != null) web.destroy();
         super.onDestroy();
     }
