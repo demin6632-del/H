@@ -386,43 +386,7 @@ const INFINITE_PERSISTENCE_FIX_V2='persistent-infinite-abyss';
 
 
 
-/* ANDROID-TOUCH-STABLE-V56 — прямой и не блокирующий fallback касания Android/WebView. */
-(function(){
-  if(window.__androidTouchStableV56)return;
-  window.__androidTouchStableV56=true;
-  const lastNative=new WeakMap();
-  const pending=new WeakMap();
-  const WINDOW_MS=500;
-  const DELAY=90;
-  const getButton=t=>t&&t.closest?t.closest('button'):null;
-  const cancel=b=>{const id=pending.get(b);if(id){clearTimeout(id);pending.delete(b)}};
-  document.addEventListener('click',e=>{
-    const b=getButton(e.target);if(!b)return;
-    cancel(b);lastNative.set(b,Date.now());
-  },true);
-  function fallback(b){
-    if(!b||b.disabled||!document.documentElement.contains(b))return;
-    const now=Date.now();
-    if(now-(lastNative.get(b)||0)<WINDOW_MS)return;
-    b.click();
-  }
-  function arm(e){
-    const b=getButton(e.target);if(!b||b.disabled)return;
-    cancel(b);
-    pending.set(b,setTimeout(()=>{pending.delete(b);fallback(b)},DELAY));
-  }
-  function cancelTarget(e){const b=getButton(e.target);if(b)cancel(b)}
-  document.addEventListener('pointerup',arm,{passive:true,capture:false});
-  document.addEventListener('touchend',arm,{passive:true,capture:false});
-  document.addEventListener('pointercancel',cancelTarget,{passive:true,capture:false});
-  document.addEventListener('touchcancel',cancelTarget,{passive:true,capture:false});
-  window.__nativeButtonAt=function(x,y){
-    const e=document.elementFromPoint(Number(x)||0,Number(y)||0);
-    const b=getButton(e);
-    if(!b||b.disabled)return false;
-    cancel(b);b.click();lastNative.set(b,Date.now());return true;
-  };
-})();
+
 </script></div>
 <style id="hero-character-scale-v40-final">
 /* === v3.10 FINAL: увеличиваем именно фактически отображаемый PNG/WebP/SVG героя === */
@@ -456,23 +420,7 @@ const INFINITE_PERSISTENCE_FIX_V2='persistent-infinite-abyss';
 <style id="art-atlas-v3-css">.atlas-creature{display:block;width:170px;height:170px;background-repeat:no-repeat;background-size:400% 600%;border:1px solid #671515;box-shadow:0 0 25px rgba(220,0,0,.32);border-radius:4px}.scene{background-size:cover!important;background-position:center!important}.scene .art-atlas-label{position:absolute;left:10px;bottom:8px;z-index:4;background:rgba(0,0,0,.55);padding:3px 6px;border-radius:3px;font:12px Georgia;color:#eee;text-shadow:0 2px 5px #000}</style>
 <!-- art-atlas-v2.js legacy marker: активный атлас V3 -->
 <script src="art-atlas-v3.js">
-/* ANDROID-TOUCH-STABLE-V55 — единый безопасный fallback касаний Android/WebView. */
-(function(){
-  if(window.__androidTouchStableV55)return;
-  window.__androidTouchStableV55=true;
-  const pending=new WeakMap(),lastClick=new WeakMap();
-  const DELAY=140,DEDUPE=450;
-  const css=document.createElement('style');
-  css.textContent='button{touch-action:manipulation!important;-webkit-tap-highlight-color:rgba(220,30,30,.16)!important;pointer-events:auto!important}.class-card:before,.class-icon{pointer-events:none!important}';
-  document.head.appendChild(css);
-  const buttonFromTarget=t=>t&&t.closest?t.closest('button'):null;
-  const cancel=b=>{const t=pending.get(b);if(t){clearTimeout(t);pending.delete(b)}};
-  document.addEventListener('click',e=>{const b=buttonFromTarget(e.target);if(!b)return;cancel(b);const now=Date.now(),prev=lastClick.get(b)||0;if(now-prev<DEDUPE){e.stopImmediatePropagation();e.stopPropagation();return}lastClick.set(b,now)},true);
-  function arm(e){const b=buttonFromTarget(e.target);if(!b||b.disabled)return;cancel(b);pending.set(b,setTimeout(()=>{pending.delete(b);if(document.documentElement.contains(b)&&!b.disabled){const now=Date.now(),prev=lastClick.get(b)||0;if(now-prev>=DEDUPE){lastClick.set(b,now);b.click()}}},DELAY))}
-  function cancelFromTarget(e){const b=buttonFromTarget(e.target);if(b)cancel(b)}
-  document.addEventListener('pointerup',arm,{passive:true});document.addEventListener('touchend',arm,{passive:true});
-  document.addEventListener('pointercancel',cancelFromTarget,{passive:true});document.addEventListener('touchcancel',cancelFromTarget,{passive:true});
-})();
+
 
 /* GAME-STABILITY-V55 — защита от двойных действий. */
 (function(){
@@ -486,6 +434,43 @@ const INFINITE_PERSISTENCE_FIX_V2='persistent-infinite-abyss';
   if(window.__gameErrorGuardV55)return;window.__gameErrorGuardV55=true;
   window.addEventListener('error',e=>{try{if(typeof logEvent==='function')logEvent('СИСТЕМА','Ошибка интерфейса: '+String(e&&e.message||'неизвестная ошибка').slice(0,180))}catch(_){}});
   window.addEventListener('unhandledrejection',e=>{try{if(typeof logEvent==='function')logEvent('СИСТЕМА','Ошибка операции: '+String(e&&e.reason||'неизвестная ошибка').slice(0,180))}catch(_){}});
+})();
+
+/* ANDROID-TOUCH-STABLE-V56 — прямой и не блокирующий fallback касания Android/WebView. */
+(function(){
+  if(window.__androidTouchStableV56)return;
+  window.__androidTouchStableV56=true;
+  const lastNative=new WeakMap();
+  const pending=new WeakMap();
+  const WINDOW_MS=500;
+  const DELAY=90;
+  const getButton=t=>t&&t.closest?t.closest('button'):null;
+  const cancel=b=>{const id=pending.get(b);if(id){clearTimeout(id);pending.delete(b)}};
+  document.addEventListener('click',e=>{
+    const b=getButton(e.target);if(!b)return;
+    cancel(b);lastNative.set(b,Date.now());
+  },true);
+  function fallback(b){
+    if(!b||b.disabled||!document.documentElement.contains(b))return;
+    if(Date.now()-(lastNative.get(b)||0)<WINDOW_MS)return;
+    b.click();
+  }
+  function arm(e){
+    const b=getButton(e.target);if(!b||b.disabled)return;
+    cancel(b);
+    pending.set(b,setTimeout(()=>{pending.delete(b);fallback(b)},DELAY));
+  }
+  function cancelTarget(e){const b=getButton(e.target);if(b)cancel(b)}
+  document.addEventListener('pointerup',arm,{passive:true,capture:false});
+  document.addEventListener('touchend',arm,{passive:true,capture:false});
+  document.addEventListener('pointercancel',cancelTarget,{passive:true,capture:false});
+  document.addEventListener('touchcancel',cancelTarget,{passive:true,capture:false});
+  window.__nativeButtonAt=function(x,y){
+    const e=document.elementFromPoint(Number(x)||0,Number(y)||0);
+    const b=getButton(e);
+    if(!b||b.disabled)return false;
+    cancel(b);b.click();lastNative.set(b,Date.now());return true;
+  };
 })();
 </script>
 </body></html>

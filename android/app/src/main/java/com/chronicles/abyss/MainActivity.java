@@ -77,9 +77,9 @@ public class MainActivity extends Activity {
      */
     private void dispatchTouchFallback(float px, float py) {
         if (web == null || web.getWidth() <= 0 || web.getHeight() <= 0) return;
-        final float scaleX = web.getWidth() / Math.max(1f, web.getContentWidth() * web.getScale());
-        final float cssX = Math.max(0f, px / Math.max(0.0001f, web.getScale()));
-        final float cssY = Math.max(0f, py / Math.max(0.0001f, web.getScale()));
+        final float scale = Math.max(0.0001f, web.getScale());
+        final float cssX = Math.max(0f, px / scale);
+        final float cssY = Math.max(0f, py / scale);
         final String js = "(function(){"
                 + "if(typeof window.__nativeButtonAt!=='function')return false;"
                 + "return window.__nativeButtonAt(" + cssX + "," + cssY + ");"

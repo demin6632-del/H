@@ -8,8 +8,8 @@ android {
         applicationId 'com.chronicles.abyss'
         minSdk 24
         targetSdk 35
-        versionCode 31
-        versionName '4.2'
+        versionCode 32
+        versionName '4.2.1'
     }
 
     // Постоянная release-подпись берётся из переменных GitHub Actions.
