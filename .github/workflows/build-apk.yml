@@ -56,7 +56,6 @@ jobs:
           python tools/fix_android_touch_v41.py
           python tools/install_art_atlas_v2.py
           python tools/install_art_atlas_v4.py
-          python tools/fix_v4_runtime_and_touch.py
           python tools/final_stabilization_v55.py
           python tools/fix_android_touch_v56.py
           python tools/fix_v4_runtime_and_touch.py
