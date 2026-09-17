@@ -54,26 +54,35 @@ NEW_JS = r'''/* ANDROID-TOUCH-STABLE-V56 — прямой и не блокиру
 '''
 
 
-def remove_touch_blocks(s: str) -> str:
-    for marker in OLD_MARKERS:
-        while marker in s:
-            marker_pos = s.find(marker)
-            start = s.rfind('/*', 0, marker_pos)
-            if start < 0: start = marker_pos
-            end_marker = s.find('})();', marker_pos)
-            if end_marker < 0:
-                raise SystemExit(f'Cannot remove block {marker}: terminator not found')
-            s = s[:start] + s[end_marker + len('})();'):]
+def remove_old_touch_blocks(s: str) -> str:
+    # Удаляем именно целые IIFE-блоки старых touch-патчей. Это намеренно
+    # делается до вставки V56, чтобы в APK не оставалось конкурирующих fallback.
+    for marker in OLD_MARKERS[1:]:
+        pattern = re.compile(r'(?s)/\*[^*]*' + re.escape(marker) + r'.*?\*/\s*\(function\(\)\{.*?\}\)\(\);')
+        s, n = pattern.subn('', s)
+        if n == 0 and marker in s:
+            raise SystemExit(f'Cannot remove old touch block: {marker}')
     return s
 
 
 def patch_html(path: Path):
     s = path.read_text(encoding='utf-8')
-    s = remove_touch_blocks(s)
-    marker = '</script>'
-    pos = s.rfind(marker)
-    if pos < 0: raise SystemExit(f'{path}: no script terminator')
+    # Сначала удаляем любой уже установленный V56/V55 и все старые touch-IIFE.
+    s = remove_old_touch_blocks(s)
+    marker_comment = '/* ANDROID-TOUCH-STABLE-V56'
+    while marker_comment in s:
+        start = s.rfind('/*', 0, s.find(marker_comment))
+        end = s.find('})();', s.find(marker_comment))
+        if start < 0 or end < 0:
+            raise SystemExit('Cannot remove previous V56 block')
+        s = s[:start] + s[end + len('})();'):]
+    pos = s.rfind('</script>')
+    if pos < 0:
+        raise SystemExit(f'{path}: no script terminator')
     s = s[:pos] + '\n' + NEW_JS + s[pos:]
+    leftovers = [m for m in OLD_MARKERS[1:] if m in s]
+    if leftovers:
+        raise SystemExit(f'{path}: obsolete touch markers remain: {leftovers}')
     if s.count('ANDROID-TOUCH-STABLE-V56') != 1:
         raise SystemExit(f'{path}: V56 insertion failed')
     path.write_text(s, encoding='utf-8')
