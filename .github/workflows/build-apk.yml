@@ -65,7 +65,7 @@ jobs:
           echo "ANDROID_KEY_PASSWORD=$ANDROID_KEY_PASSWORD" >> "$GITHUB_ENV"
       - name: Build signed release APK
         working-directory: android
-        run: gradle assembleRelease --no-daemon
+        run: gradle clean assembleRelease --no-daemon
       - name: Verify APK
         working-directory: android
         run: |
@@ -79,28 +79,28 @@ jobs:
         working-directory: android
         run: |
           rm -rf release-package && mkdir -p release-package
-          cp app/build/outputs/apk/release/app-release.apk release-package/ChroniclesOfTheAbyss-v4.3.1.apk
+          cp app/build/outputs/apk/release/app-release.apk release-package/ChroniclesOfTheAbyss-v4.3.2.apk
           sha256sum release-package/ChroniclesOfTheAbyss-v4.3.1.apk > release-package/SHA256SUMS.txt
-          cd release-package && zip -9 ../ChroniclesOfTheAbyss-v4.3.1-APK.zip *
+          cd release-package && zip -9 ../ChroniclesOfTheAbyss-v4.3.2-APK.zip *
       - name: Package PROJECT ZIP
         run: |
           rm -rf /tmp/ChroniclesOfTheAbyss_PROJECT
           rsync -a --exclude='.git' --exclude='android/.gradle' --exclude='android/app/build' --exclude='android/release-package' --exclude='android/ChroniclesOfTheAbyss-v4.3.1-APK.zip' ./ /tmp/ChroniclesOfTheAbyss_PROJECT/
-          cd /tmp && zip -9 -r ChroniclesOfTheAbyss_PROJECT-v4.3.1.zip ChroniclesOfTheAbyss_PROJECT >/dev/null
+          cd /tmp && zip -9 -r ChroniclesOfTheAbyss_PROJECT-v4.3.2.zip ChroniclesOfTheAbyss_PROJECT >/dev/null
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: ChroniclesOfTheAbyss-v4.3.1-apk
+          name: ChroniclesOfTheAbyss-v4.3.2-apk
           path: android/app/build/outputs/apk/release/app-release.apk
       - name: Upload APK ZIP
         uses: actions/upload-artifact@v4
         with:
-          name: ChroniclesOfTheAbyss-v4.3.1-apk-zip
+          name: ChroniclesOfTheAbyss-v4.3.2-apk-zip
           path: android/ChroniclesOfTheAbyss-v4.3.1-APK.zip
       - name: Upload PROJECT ZIP
         uses: actions/upload-artifact@v4
         with:
-          name: ChroniclesOfTheAbyss_PROJECT-v4.3.1
+          name: ChroniclesOfTheAbyss_PROJECT-v4.3.2
           path: /tmp/ChroniclesOfTheAbyss_PROJECT-v4.3.1.zip
 
           unzip -p "$APK" assets/index.html > /tmp/apk-index.html
