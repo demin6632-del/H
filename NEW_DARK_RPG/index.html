@@ -662,4 +662,39 @@ window.abyssKeyCaches = abyssKeyCaches;
   renderInventory();
   if(typeof update==='function') update();
 })();
+</script><script>
+(function(){
+  /* PLAYER-ONLY-EQUIP-V1
+     Предмет никогда не экипируется автоматически.
+     Любая замена слота разрешена только через явное действие игрока
+     в интерфейсе инвентаря. Более сильный/слабый предмет сам ничего не меняет. */
+  let explicitEquipRequest=false;
+  const previousEquipItem=equipItem;
+  equipItem=function(index,item){
+    if(!explicitEquipRequest) return false;
+    return previousEquipItem.apply(this,arguments);
+  };
+  const previousUseInventoryItem=useInventoryItem;
+  useInventoryItem=function(index){
+    const item=hero&&hero.items?hero.items[index]:null;
+    const x=item?itemInfo(item):null;
+    const slot=x&&(x.slot||x.type);
+    const isEquipment=!!(x&&(['weapon','armor','head','ring','boots','cloak','amulet','shield'].includes(x.type)||['weapon','armor','head','ring','boots','cloak','amulet','shield'].includes(x.slot)));
+    if(isEquipment){
+      explicitEquipRequest=true;
+      try{return previousUseInventoryItem.apply(this,arguments)}
+      finally{explicitEquipRequest=false}
+    }
+    return previousUseInventoryItem.apply(this,arguments);
+  };
+  /* Добавление добычи/покупки только помещает предмет в инвентарь.
+     Оно не имеет права менять equippedIds или текущую экипировку. */
+  const previousAddItemToInventory=addItemToInventory;
+  addItemToInventory=function(item){
+    if(!item) return false;
+    const result=previousAddItemToInventory.apply(this,arguments);
+    return result;
+  };
+  if(typeof save==='function')save();
+})();
 </script>
