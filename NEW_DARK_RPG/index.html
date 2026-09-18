@@ -654,7 +654,7 @@ window.abyssKeyCaches = abyssKeyCaches;
         else if(x.crit) desc='+'+Math.round(x.crit*100)+'% к криту';
         else if(x.maxEnergy) desc='+'+x.maxEnergy+' к максимуму энергии';
       }
-      const actionHandler=equipped?"unequipItemType('"+slot+"')":"useInventoryItem("+index+");
+      const actionHandler=equipped ? ("unequipItemType('" + slot + "')") : ("useInventoryItem(" + index + ")");
       return '<div class="'+rowClass+'"><div class="item-icon">'+(x.icon||'◈')+'</div><div>'+x.name+badge+'<small>'+desc+'</small></div><button style="width:auto;min-width:92px;margin:0;padding:7px 8px;font-size:12px" '+disabled+' onclick="'+actionHandler+'">'+action+'</button></div>';
     }).join('');
   };
