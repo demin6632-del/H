@@ -39,10 +39,10 @@
           b.innerHTML='';
           b.style.position='absolute';
           b.style.left='50%';
-          b.style.top='52%';
+          b.style.top='50%';
           b.style.transform='translate(-50%,-50%)';
-          b.style.width='min(68vw,220px)';
-          b.style.height='min(68vw,220px)';
+          b.style.width='min(78vw,300px)';
+          b.style.height='min(78vw,300px)';
           b.style.margin='0';
           b.style.padding='0';
           b.style.zIndex='3';
@@ -70,28 +70,10 @@
           }
           e.style.border='0';
           e.style.boxShadow='none';
-          e.style.setProperty('background-position','center center','important');
-          e.style.setProperty('background-size','100% 100%','important');
-          e.style.setProperty('background-position','center center','important');
-          e.style.filter='drop-shadow(0 8px 12px rgba(0,0,0,.65))';
+          e.style.filter='drop-shadow(0 8px 12px rgba(0,0,0,.72))';e.style.mixBlendMode='screen';
           b.appendChild(e);
-
-          if(hpBox){
-            b.appendChild(hpBox);
-            hpBox.style.position='absolute';
-            hpBox.style.left='10px';
-            hpBox.style.right='10px';
-            hpBox.style.top='8px';
-            hpBox.style.width='auto';
-            hpBox.style.height='11px';
-            hpBox.style.minHeight='11px';
-            hpBox.style.zIndex='5';
-            hpBox.style.margin='0';
-            hpBox.style.padding='0';
-            hpBox.style.boxSizing='border-box';
-            hpBox.style.pointerEvents='none';
-            hpBox.style.borderRadius='3px';
-          }
+          /* Центрируем именно видимую фигуру: чёрный фон атласа убирается режимом screen. */
+          e.style.transform='translateY(7%)';
         };
         f.__battleArtRuntimeFix=true;
         f.__artV4=true;
