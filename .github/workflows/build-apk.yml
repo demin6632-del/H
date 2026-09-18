@@ -84,7 +84,7 @@ jobs:
       - name: Package PROJECT ZIP
         run: |
           rm -rf /tmp/ChroniclesOfTheAbyss_PROJECT
-          rsync -a --exclude='.git' --exclude='android/.gradle' --exclude='android/app/build' --exclude='android/release-package' ./ /tmp/ChroniclesOfTheAbyss_PROJECT/
+          rsync -a --exclude='.git' --exclude='android/.gradle' --exclude='android/app/build' --exclude='android/release-package' --exclude='android/ChroniclesOfTheAbyss-v4.3.1-APK.zip' ./ /tmp/ChroniclesOfTheAbyss_PROJECT/
           cd /tmp && zip -9 -r ChroniclesOfTheAbyss_PROJECT-v4.3.1.zip ChroniclesOfTheAbyss_PROJECT >/dev/null
       - name: Upload APK
         uses: actions/upload-artifact@v4
