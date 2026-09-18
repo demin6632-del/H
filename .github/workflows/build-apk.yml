@@ -43,7 +43,7 @@ jobs:
           subprocess.run(['node','--check','/tmp/game.js'],check=True)
           subprocess.run(['node','--check',str(v4)],check=True)
           subprocess.run(['node','--check',str(core)],check=True)
-          ids=re.findall(r'\bid=["\\']([^"\\']+)',s,re.I)
+          ids=re.findall(r"\\bid=[\"']([^\"']+)",s,re.I)
           dup=sorted({x for x in ids if ids.count(x)>1})
           if dup: raise SystemExit(f'Duplicate IDs: {dup}')
           runtime=v4.read_text(encoding='utf-8')
