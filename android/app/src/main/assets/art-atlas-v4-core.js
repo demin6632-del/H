@@ -16,16 +16,17 @@ V4_SHEET_IMG=img;
 return img;
 }
 function v4QualityData(key,w,h){
-/* Рендерим исходный квадратный тайл без растяжения по ширине/высоте контейнера. */
-const side=Math.max(1,Math.min(512,Math.round(Math.min(w||256,h||256))));
-const k=key+'@'+side;
+/* Заполняем всю область без растяжения: исходный квадрат масштабируется пропорционально, лишнее аккуратно обрезается по центру. */
+const width=Math.max(1,Math.min(1024,Math.round(w||256)));
+const height=Math.max(1,Math.min(1024,Math.round(h||256)));
+const k=key+'@'+width+'x'+height;
 if(V4_TILE_CACHE[k])return V4_TILE_CACHE[k];
 const img=loadV4Sheet();
 const make=function(){
 try{
 const dpr=Math.min(2,Math.max(1,window.devicePixelRatio||1));
-const cw=Math.max(1,Math.round(side*dpr));
-const ch=cw;
+const cw=Math.max(1,Math.round(width*dpr));
+const ch=Math.max(1,Math.round(height*dpr));
 const c=document.createElement('canvas');c.width=cw;c.height=ch;
 const ctx=c.getContext('2d',{alpha:true});
 if(!ctx)return null;
@@ -33,9 +34,19 @@ ctx.imageSmoothingEnabled=true;
 ctx.imageSmoothingQuality='high';
 const i=idx[key];if(i==null)return null;
 const sx=(i%4)*256,sy=Math.floor(i/4)*256;
-/* Умеренная обработка без изменения геометрии исходного изображения. */
-ctx.filter='contrast(1.04) saturate(1.03)';
-ctx.drawImage(img,sx,sy,256,256,0,0,cw,ch);
+/* Вычисляем центральный crop так, чтобы квадратный исходник заполнил прямоугольную область без деформации. */
+const targetRatio=width/height;
+let sw=256,sh=256,ox=0,oy=0;
+if(targetRatio>1){
+sh=256/targetRatio;
+oy=(256-sh)/2;
+}else if(targetRatio<1){
+sw=256*targetRatio;
+ox=(256-sw)/2;
+}
+/* Один качественный ресэмплинг из исходного тайла, без промежуточного растягивания. */
+ctx.filter='contrast(1.06) saturate(1.04)';
+ctx.drawImage(img,sx+ox,sy+oy,sw,sh,0,0,cw,ch);
 ctx.filter='none';
 const data=c.toDataURL('image/png');
 V4_TILE_CACHE[k]=data;
@@ -48,25 +59,24 @@ return null;
 }
 function renderV4Tile(el,key,w,h){
 if(!el)return;
-const width=Math.max(1,w||el.clientWidth||256);
-const height=Math.max(1,h||el.clientHeight||256);
-const side=Math.max(1,Math.min(512,Math.round(Math.min(width,height))));
-const data=v4QualityData(key,side,side);
+const width=Math.max(1,Math.min(1024,Math.round(w||el.clientWidth||256)));
+const height=Math.max(1,Math.min(1024,Math.round(h||el.clientHeight||256)));
+const data=v4QualityData(key,width,height);
 if(data){
 el.style.setProperty('background-image','url("'+data+'")','important');
-el.style.setProperty('background-size',side+'px '+side+'px','important');
+el.style.setProperty('background-size','100% 100%','important');
 el.style.setProperty('background-position','center center','important');
 el.style.setProperty('background-repeat','no-repeat','important');
-el.dataset.v4QualityKey=key+'@'+side;
+el.style.setProperty('image-rendering','auto','important');
+el.dataset.v4QualityKey=key+'@'+width+'x'+height;
 return true;
 }
 const img=loadV4Sheet();
 const apply=function(){
 if(!el.isConnected)return;
-const i=idx[key];
 el.style.setProperty('background-image','url("'+SHEET+'")','important');
-el.style.setProperty('background-size',side+'px '+side+'px','important');
-el.style.setProperty('background-position','center center','important');
+el.style.setProperty('background-size','400% auto','important');
+el.style.setProperty('background-position',v4Tile(key).match(/background-position:[^;]+;/)?.[0]?.replace('background-position:','').replace(';','')||'center center','important');
 el.style.setProperty('background-repeat','no-repeat','important');
 el.dataset.v4QualityKey=key+'@raw';
 setTimeout(function(){renderV4Tile(el,key,width,height)},0);
@@ -81,7 +91,7 @@ const i=idx[key];if(i==null)return;
 s.classList.add('art-v4-scene');
 s.style.setProperty('background-repeat','no-repeat','important');
 s.style.setProperty('background-position','center center','important');
-s.style.setProperty('background-size','contain','important');
+s.style.setProperty('background-size','cover','important');
 renderV4Tile(s,key,s.clientWidth||700,s.clientHeight||390);
 }
 function roomKeyV4(){const c=String(typeof abyssRoomContent!=='undefined'?abyssRoomContent:'');if(c.includes('Кровавый алтарь'))return'altar';if(c.includes('Забытый тайник'))return'treasure';if(c.includes('Источник Бездны'))return'portal';if(c.includes('Босс:'))return'bossroom';if(c.includes('Элитный враг:'))return'eliteroom';if(c.includes('Пустой проход')||c.includes('Побеждён'))return'ordinary';return'labyrinth';}
