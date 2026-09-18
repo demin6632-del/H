@@ -664,37 +664,61 @@ window.abyssKeyCaches = abyssKeyCaches;
 })();
 </script><script>
 (function(){
-  /* PLAYER-ONLY-EQUIP-V1
-     Предмет никогда не экипируется автоматически.
-     Любая замена слота разрешена только через явное действие игрока
-     в интерфейсе инвентаря. Более сильный/слабый предмет сам ничего не меняет. */
+  /* PLAYER-ONLY-EQUIP-V2
+     Жёсткое правило:
+     1) получение предмета НИКОГДА не экипирует его автоматически;
+     2) сила/слабость предмета не влияет на выбор;
+     3) замена происходит только по явному нажатию «Экипировать»;
+     4) если игрок нажал несколько разных предметов подряд, последним
+        становится именно последний нажатый предмет. */
   let explicitEquipRequest=false;
+  let explicitEquipSerial=0;
+
   const previousEquipItem=equipItem;
   equipItem=function(index,item){
     if(!explicitEquipRequest) return false;
-    return previousEquipItem.apply(this,arguments);
+    const raw=hero&&hero.items?hero.items[index]:null;
+    if(!raw) return false;
+    const selectedUid=raw._equipUid;
+    if(!selectedUid) return false;
+    return previousEquipItem.call(this,index,raw);
   };
+
   const previousUseInventoryItem=useInventoryItem;
   useInventoryItem=function(index){
-    const item=hero&&hero.items?hero.items[index]:null;
-    const x=item?itemInfo(item):null;
-    const slot=x&&(x.slot||x.type);
-    const isEquipment=!!(x&&(['weapon','armor','head','ring','boots','cloak','amulet','shield'].includes(x.type)||['weapon','armor','head','ring','boots','cloak','amulet','shield'].includes(x.slot)));
-    if(isEquipment){
-      explicitEquipRequest=true;
-      try{return previousUseInventoryItem.apply(this,arguments)}
-      finally{explicitEquipRequest=false}
+    const raw=hero&&Array.isArray(hero.items)?hero.items[index]:null;
+    if(!raw) return;
+    const x=itemInfo(raw);
+    const slots=['weapon','armor','head','ring','boots','cloak','amulet','shield'];
+    const isEquipment=!!(x&&(slots.includes(x.type)||slots.includes(x.slot)));
+
+    if(!isEquipment) return previousUseInventoryItem.apply(this,arguments);
+
+    /* Каждый клик получает собственный номер. Никакого сравнения статов
+       и никакого автоматического выбора здесь нет. */
+    const clickSerial=++explicitEquipSerial;
+    explicitEquipRequest=true;
+    try{
+      /* Берём предмет именно по индексу на момент текущего клика.
+         Поэтому два последовательных клика: второй становится итоговым. */
+      const current=hero.items[index];
+      if(!current||current._equipUid!==raw._equipUid)return;
+      return previousUseInventoryItem.call(this,index);
+    }finally{
+      if(clickSerial===explicitEquipSerial) explicitEquipRequest=false;
+      else explicitEquipRequest=false;
     }
-    return previousUseInventoryItem.apply(this,arguments);
   };
-  /* Добавление добычи/покупки только помещает предмет в инвентарь.
-     Оно не имеет права менять equippedIds или текущую экипировку. */
+
+  /* Добавление добычи, награды или покупки только кладёт новый экземпляр
+     в инвентарь. Оно не выбирает его и не меняет equippedIds. */
   const previousAddItemToInventory=addItemToInventory;
   addItemToInventory=function(item){
-    if(!item) return false;
+    if(!item)return false;
     const result=previousAddItemToInventory.apply(this,arguments);
     return result;
   };
+
   if(typeof save==='function')save();
 })();
 </script>
