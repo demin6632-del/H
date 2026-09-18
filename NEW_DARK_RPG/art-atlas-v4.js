@@ -61,7 +61,7 @@
           e.style.height='100%';
           e.style.margin='0';
           e.style.backgroundColor='transparent';
-          if(window.renderV4Tile) window.renderV4Tile(e,k,220,220);
+          if(window.renderV4Tile) window.renderV4Tile(e,k,280,280);
           else{
             e.style.backgroundImage='url("'+m[1]+'")';
             e.style.backgroundRepeat='no-repeat';
