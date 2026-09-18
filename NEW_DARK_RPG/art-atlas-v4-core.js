@@ -20,5 +20,5 @@ function installBattleV4(){const old=window.updateBattle;if(typeof old!=='functi
 function installAbyssV4(){const old=window.updateAbyss;if(typeof old!=='function'||old.__artV4)return false;function wrapped(){old.apply(this,arguments);setTimeout(updateScenesV4,0);}wrapped.__artV4=true;window.updateAbyss=wrapped;return true;}
 function installScreenV4(){const old=window.setScreen;if(typeof old!=='function'||old.__artV4)return false;function wrapped(){old.apply(this,arguments);setTimeout(updateScenesV4,0);}wrapped.__artV4=true;window.setScreen=wrapped;return true;}
 function bootV4(){installBattleV4();installAbyssV4();installScreenV4();updateScenesV4();}
-setInterval(bootV4,300);document.addEventListener('DOMContentLoaded',bootV4);
+bootV4();document.addEventListener('DOMContentLoaded',bootV4);setTimeout(bootV4,250);
 })();
