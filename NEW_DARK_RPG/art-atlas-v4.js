@@ -60,11 +60,14 @@
           e.style.width='100%';
           e.style.height='100%';
           e.style.margin='0';
-          e.style.backgroundImage='url("'+m[1]+'")';
-          e.style.backgroundRepeat='no-repeat';
-          e.style.setProperty('background-size','400% 600%','important');
-          e.style.setProperty('background-position',((i%4)*100/3)+'% '+(Math.floor(i/4)*100/5)+'%','important');
           e.style.backgroundColor='transparent';
+          if(window.renderV4Tile) window.renderV4Tile(e,k,220,220);
+          else{
+            e.style.backgroundImage='url("'+m[1]+'")';
+            e.style.backgroundRepeat='no-repeat';
+            e.style.setProperty('background-size','400% 600%','important');
+            e.style.setProperty('background-position',((i%4)*100/3)+'% '+(Math.floor(i/4)*100/5)+'%','important');
+          }
           e.style.border='0';
           e.style.boxShadow='none';
           e.style.filter='drop-shadow(0 8px 12px rgba(0,0,0,.65))';
