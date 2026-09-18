@@ -73,7 +73,7 @@ jobs:
 
       - name: Build signed release APK
         working-directory: android
-        run: ./gradlew clean assembleRelease --no-daemon
+        run: gradle clean assembleRelease --no-daemon
 
       - name: Verify APK
         working-directory: android
