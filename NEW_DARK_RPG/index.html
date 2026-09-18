@@ -446,4 +446,220 @@ window.abyssKeyCaches = abyssKeyCaches;
   };
   normalizeEquipmentIds();renderInventory();
 })();
+</script>\n<script>
+(function(){
+  /* UNIFIED-EQUIPMENT-INSTANCE-V2
+     Один слот = один конкретный экземпляр предмета.
+     Замена происходит только после явного нажатия игрока.
+     Статы снимаются с реально надетого экземпляра, а не ищутся по имени. */
+  const UE_SLOTS=['weapon','armor','head','ring','boots','cloak','amulet','shield'];
+  const UE_EXT=['head','ring','boots','cloak','amulet','shield'];
+
+  function ueUid(){
+    if(window.crypto&&typeof window.crypto.randomUUID==='function') return window.crypto.randomUUID();
+    return 'eq_'+Date.now().toString(36)+'_'+Math.random().toString(36).slice(2,12);
+  }
+  function ueItem(raw){return itemInfo(raw)}
+  function ueSlot(raw){
+    const x=ueItem(raw);
+    if(x&&x.slot&&UE_SLOTS.includes(x.slot)) return x.slot;
+    if(x&&UE_SLOTS.includes(x.type)) return x.type;
+    if(x&&x.type==='weapon') return 'weapon';
+    if(x&&x.type==='armor') return 'armor';
+    return null;
+  }
+  function ueEnsure(){
+    if(!hero) return;
+    hero.equippedIds=hero.equippedIds&&typeof hero.equippedIds==='object'?hero.equippedIds:{};
+    if(!Array.isArray(hero.items)) hero.items=[];
+    hero.items.forEach((raw,i)=>{
+      if(!raw||typeof raw!=='object') hero.items[i]=Object.assign({},ueItem(raw),{_equipUid:ueUid()});
+      else if(ueSlot(raw)&&!raw._equipUid) raw._equipUid=ueUid();
+    });
+    const legacy={
+      weapon:hero.weapon,
+      armor:hero.armor,
+      head:hero.gear&&hero.gear.head,
+      ring:hero.gear&&hero.gear.ring,
+      boots:hero.gear&&hero.gear.boots,
+      cloak:hero.gear&&hero.gear.cloak,
+      amulet:hero.gear&&hero.gear.amulet,
+      shield:hero.gear&&hero.gear.shield
+    };
+    UE_SLOTS.forEach(slot=>{
+      const id=hero.equippedIds[slot];
+      if(id&&hero.items.some(x=>x&&x._equipUid===id)) return;
+      const name=legacy[slot];
+      if(!name||name==='Нет') return;
+      const found=hero.items.find(x=>ueSlot(x)===slot&&ueItem(x).name===name);
+      if(found&&found._equipUid) hero.equippedIds[slot]=found._equipUid;
+    });
+  }
+  function ueCurrent(slot){
+    ueEnsure();
+    const id=hero.equippedIds[slot];
+    if(!id) return null;
+    return hero.items.find(x=>x&&x._equipUid===id)||null;
+  }
+  function ueFind(index,item){
+    const raw=hero.items[index];
+    if(raw&&typeof raw==='object'&&raw._equipUid) return raw;
+    if(item&&typeof item==='object'&&item._equipUid) return item;
+    return raw;
+  }
+  function ueApply(item,sign){
+    const x=ueItem(item)||{};
+    if(x.type==='weapon') hero.attack=Math.max(0,hero.attack+sign*Number(x.attack||2));
+    if(x.type==='armor'||UE_EXT.includes(x.slot)||UE_EXT.includes(x.type)){
+      hero.def=Math.max(0,hero.def+sign*Number(x.def||0));
+      hero.crit=Math.max(0,hero.crit+sign*Number(x.crit||0));
+      hero.maxEnergy=Math.max(1,hero.maxEnergy+sign*Number(x.maxEnergy||0));
+    }
+  }
+  function ueSetGearName(slot,item){
+    if(UE_EXT.includes(slot)){
+      if(!hero.gear||typeof hero.gear!=='object') hero.gear={};
+      hero.gear[slot]=item?ueItem(item).name:'Нет';
+    }
+  }
+
+  const oldSave=save;
+  save=function(){ueEnsure();return oldSave.apply(this,arguments)};
+
+  equipItem=function(index,item){
+    ueEnsure();
+    const selected=ueFind(index,item);
+    const x=ueItem(selected);
+    const slot=ueSlot(selected);
+    if(!x||!slot) return;
+    const uid=selected&&selected._equipUid;
+    if(!uid) return;
+    if(hero.equippedIds[slot]===uid) return;
+
+    const old=ueCurrent(slot);
+    if(old) ueApply(old,-1);
+
+    ueApply(selected,1);
+    hero.equippedIds[slot]=uid;
+    if(slot==='weapon') hero.weapon=x.name;
+    else if(slot==='armor') hero.armor=x.name;
+    else ueSetGearName(slot,selected);
+
+    hero.energy=Math.min(hero.energy,hero.maxEnergy);
+    save();
+  };
+
+  useInventoryItem=function(index){
+    ueEnsure();
+    const raw=hero.items[index];
+    if(raw===undefined) return;
+    const item=ueItem(raw);
+    const slot=ueSlot(raw);
+    const fromBattle=screenHistory[screenHistory.length-1]==='inventory'&&screenHistory[screenHistory.length-2]==='battle';
+
+    if(slot){
+      equipItem(index,raw);
+      sfx('buy');
+      logEvent('ЭКИПИРОВКА','Экипировано: '+item.name+'.');
+      save(); update(); renderInventory();
+      if(fromBattle){goBack();enemyTurn();}
+      return;
+    }
+
+    if(item.type==='random'){
+      hero.items[index]=generateLoot();
+      save();sfx('open');
+      logEvent('ПРЕДМЕТ','Случайный предмет открыт: '+hero.items[index].name+'.');
+      renderInventory();
+      if(fromBattle){goBack();enemyTurn();}
+      return;
+    }
+    if(item.type==='consumable'){
+      if(item.effect==='hp') hero.hp=Math.min(hero.maxHp,hero.hp+50);
+      if(item.effect==='mp') hero.energy=Math.min(hero.maxEnergy,hero.energy+30);
+      hero.items.splice(index,1);sfx('buy');
+      logEvent('ПРЕДМЕТ',item.name+' использовано.');
+      save();update();renderInventory();
+    }else if(item.type==='other'){
+      if(item.name==='Таинственный ключ'){
+        hero.items.splice(index,1);
+        logEvent('ПРЕДМЕТ','Таинственный ключ использован.');
+        save();renderInventory();
+      }
+    }
+    if(fromBattle){goBack();enemyTurn();}
+  };
+
+  unequipItemType=function(type){
+    ueEnsure();
+    if(!UE_SLOTS.includes(type)) return;
+    const old=ueCurrent(type);
+    if(!old) return;
+    const name=ueItem(old).name;
+    ueApply(old,-1);
+    delete hero.equippedIds[type];
+    if(type==='weapon') hero.weapon='Нет';
+    else if(type==='armor') hero.armor='Нет';
+    else ueSetGearName(type,null);
+    hero.energy=Math.min(hero.energy,hero.maxEnergy);
+    save();update();renderHero();renderEquipment();renderInventory();
+    logEvent('ЭКИПИРОВКА','Снято: '+name+'.');
+  };
+
+  unequipAll=function(){
+    ueEnsure();
+    UE_SLOTS.forEach(slot=>{
+      const old=ueCurrent(slot);
+      if(!old) return;
+      ueApply(old,-1);
+      delete hero.equippedIds[slot];
+      if(slot==='weapon') hero.weapon='Нет';
+      else if(slot==='armor') hero.armor='Нет';
+      else ueSetGearName(slot,null);
+    });
+    hero.energy=Math.min(hero.energy,hero.maxEnergy);
+    save();update();renderHero();renderEquipment();renderInventory();
+  };
+
+  const oldRenderInventory=renderInventory;
+  renderInventory=function(){
+    ueEnsure();
+    const list=[];
+    hero.items.forEach((raw,index)=>{
+      const x=ueItem(raw);
+      const slot=ueSlot(raw);
+      if(inventoryCategory==='all'||x.type===inventoryCategory||(inventoryCategory==='armor'&&!!slot&&slot!=='weapon'))
+        list.push({item:x,index,raw,slot});
+    });
+    if(!list.length){
+      if(el('inventoryList')) el('inventoryList').innerHTML='<div class="muted" style="padding:14px;text-align:center">Инвентарь пуст.</div>';
+      return;
+    }
+    if(!el('inventoryList')) return;
+    el('inventoryList').innerHTML=list.map(({item:x,index,raw,slot})=>{
+      const equippable=!!slot;
+      const equipped=!!(slot&&hero.equippedIds[slot]===raw._equipUid);
+      let action='Экипировать';
+      if(x.type==='random') action='Открыть';
+      else if(x.type==='consumable'||x.type==='other') action='Использовать';
+      else if(equipped) action='Экипировано';
+      const disabled=equipped?'disabled':'';
+      const rowClass=equipped?'item inventory-equipped':'item';
+      const badge=equippable?(equipped?'<span class="equipped-badge">✓ ЭКИПИРОВАНО</span>':'<span class="not-equipped-badge">НЕ ЭКИПИРОВАНО</span>'):'';
+      let desc='Предмет из Бездны';
+      if(x.type==='consumable') desc=x.effect==='hp'?'Восстанавливает 50 HP':'Восстанавливает 30 MP';
+      else if(x.type==='weapon') desc='+'+Number(x.attack||2)+' к атаке';
+      else if(x.type==='armor'||UE_EXT.includes(x.slot)||UE_EXT.includes(x.type)){
+        if(x.def) desc='+'+x.def+' к защите';
+        else if(x.crit) desc='+'+Math.round(x.crit*100)+'% к криту';
+        else if(x.maxEnergy) desc='+'+x.maxEnergy+' к максимуму энергии';
+      }
+      return '<div class="'+rowClass+'"><div class="item-icon">'+(x.icon||'◈')+'</div><div>'+x.name+badge+'<small>'+desc+'</small></div><button style="width:auto;min-width:92px;margin:0;padding:7px 8px;font-size:12px" '+disabled+' onclick="useInventoryItem('+index+')">'+action+'</button></div>';
+    }).join('');
+  };
+
+  ueEnsure();
+  renderInventory();
+  if(typeof update==='function') update();
+})();
 </script>
