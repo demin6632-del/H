@@ -642,8 +642,8 @@ window.abyssKeyCaches = abyssKeyCaches;
       let action='Экипировать';
       if(x.type==='random') action='Открыть';
       else if(x.type==='consumable'||x.type==='other') action='Использовать';
-      else if(equipped) action='Экипировано';
-      const disabled=equipped?'disabled':'';
+      else if(equipped) action='Снять';
+      const disabled='';
       const rowClass=equipped?'item inventory-equipped':'item';
       const badge=equippable?(equipped?'<span class="equipped-badge">✓ ЭКИПИРОВАНО</span>':'<span class="not-equipped-badge">НЕ ЭКИПИРОВАНО</span>'):'';
       let desc='Предмет из Бездны';
@@ -654,7 +654,8 @@ window.abyssKeyCaches = abyssKeyCaches;
         else if(x.crit) desc='+'+Math.round(x.crit*100)+'% к криту';
         else if(x.maxEnergy) desc='+'+x.maxEnergy+' к максимуму энергии';
       }
-      return '<div class="'+rowClass+'"><div class="item-icon">'+(x.icon||'◈')+'</div><div>'+x.name+badge+'<small>'+desc+'</small></div><button style="width:auto;min-width:92px;margin:0;padding:7px 8px;font-size:12px" '+disabled+' onclick="useInventoryItem('+index+')">'+action+'</button></div>';
+      const actionHandler=equipped?"unequipItemType('"+slot+"')":"useInventoryItem("+index+");
+      return '<div class="'+rowClass+'"><div class="item-icon">'+(x.icon||'◈')+'</div><div>'+x.name+badge+'<small>'+desc+'</small></div><button style="width:auto;min-width:92px;margin:0;padding:7px 8px;font-size:12px" '+disabled+' onclick="'+actionHandler+'">'+action+'</button></div>';
     }).join('');
   };
 
@@ -676,7 +677,7 @@ window.abyssKeyCaches = abyssKeyCaches;
 
   const previousEquipItem=equipItem;
   equipItem=function(index,item){
-    if(!explicitEquipRequest) return false;
+    if(!explicitEquipRequest && !window.__V3_INTERNAL_EQUIP__) return false;
     const raw=hero&&hero.items?hero.items[index]:null;
     if(!raw) return false;
     const selectedUid=raw._equipUid;
@@ -723,7 +724,7 @@ window.abyssKeyCaches = abyssKeyCaches;
 })();
 </script>\n<script>
 (function(){
-  /* UNIFIED-EQUIPMENT-INSTANCE-V3
+  /* UNIFIED-EQUIPMENT-INSTANCE-V4
      Получение/покупка предмета никогда не экипирует его автоматически.
      В одном слоте может быть надет только один конкретный экземпляр.
      Замена происходит только после явного нажатия игрока.
@@ -773,7 +774,8 @@ window.abyssKeyCaches = abyssKeyCaches;
     v3Normalize();
     const item=hero.items[index];
     if(item&&v3SlotItem(item)){
-      equipItem(index,item);
+      window.__V3_INTERNAL_EQUIP__=true;
+      try{equipItem(index,item);}finally{window.__V3_INTERNAL_EQUIP__=false;}
       sfx('buy');
       logEvent('ЭКИПИРОВКА','Экипировано: '+itemInfo(item).name+'.');
       save();
