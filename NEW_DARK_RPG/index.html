@@ -391,3 +391,20 @@ window.abyssKeyCaches = abyssKeyCaches;
   display:block!important;
   width:auto!important;
   height:100%!important;
+
+<!-- ART-ATLAS-V4 — восстановление изображений существ и сцен. -->
+<script src="art-atlas-v4.js"></script>
+<!-- Стилизация V4 под тёмную красно-чёрную эстетику игры. -->
+<style id="art-v4-game-style">
+.scene.art-v4-scene{
+  background-color:rgba(45,0,0,.28)!important;
+  background-blend-mode:multiply!important;
+  box-shadow:inset 0 0 42px rgba(150,0,0,.30),0 0 12px rgba(110,0,0,.16)!important;
+}
+.scene.battle.art-v4-scene{
+  background-color:rgba(35,0,0,.34)!important;
+}
+.atlas-creature-v4{
+  filter:sepia(.18) saturate(.90) hue-rotate(325deg) brightness(.84) contrast(1.10) drop-shadow(0 8px 12px rgba(0,0,0,.72))!important;
+}
+</style>
