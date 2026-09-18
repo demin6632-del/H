@@ -4,14 +4,94 @@
   window.__ART_ATLAS_V4_RUNTIME=true;
   const core=document.createElement('script');core.src='art-atlas-v4-core.js';
   core.onload=function(){
-    const patch=function(){try{const style=document.createElement('style');style.textContent='.scene.battle:before,.scene.battle:after{display:none!important}';if(!document.getElementById('art-v4-battle-clean')){style.id='art-v4-battle-clean';document.head.appendChild(style)}
+    const patch=function(){try{
+      const style=document.createElement('style');
+      style.textContent='.scene.battle:before,.scene.battle:after{display:none!important}.scene.battle{overflow:hidden!important}.enemy-art{filter:none!important;background:transparent!important;border:0!important;box-shadow:none!important}.enemy-art .atlas-creature-v4{filter:drop-shadow(0 8px 12px rgba(0,0,0,.65));}';
+      if(!document.getElementById('art-v4-battle-clean')){style.id='art-v4-battle-clean';document.head.appendChild(style)}
+
       if(typeof restoreBest==='function'&&!restoreBest.__fixed){const f=function(){};f.__fixed=true;window.restoreBest=f;}
       if(typeof hasSave==='function'&&!hasSave.__fixed){const f=function(){return !!localStorage.getItem(saveKey)||!!localStorage.getItem(saveKey+'_backup')};f.__fixed=true;window.hasSave=f;}
       if(typeof heroRefNav==='function'&&!heroRefNav.__fixed){const f=function(id){if(!screens.includes(id))return;if(id==='hero')renderHero();if(id==='inventory'&&typeof renderInventory==='function')renderInventory();if(id==='equipment'&&typeof renderEquipment==='function')renderEquipment();if(id==='stats')renderStats();if(id==='skills')renderSkills();setScreen(id)};f.__fixed=true;window.heroRefNav=f;}
       if(typeof start==='function'&&!start.__fixed){const old=start;const f=function(className){try{abyssKeyCaches={};window.abyssKeyCaches=abyssKeyCaches;localStorage.removeItem('abyss_key_caches');localStorage.removeItem('abyss_gear')}catch(e){}return old.apply(this,arguments)};f.__fixed=true;window.start=f;}
       if(typeof save==='function'&&!save.__fixed){const old=save;const f=function(){try{if(typeof ensureGear==='function')ensureGear();localStorage.setItem('abyss_gear',JSON.stringify(hero.gear));localStorage.setItem('abyss_key_caches',JSON.stringify(abyssKeyCaches||{}))}catch(e){}return old.apply(this,arguments)};f.__fixed=true;window.save=f;}
-      if(typeof updateBattle==='function'&&!updateBattle.__battleArtRuntimeFix){const old=updateBattle;const f=function(){old.apply(this,arguments);const b=document.getElementById('enemyArt');if(!b)return;const bg=document.querySelector('.scene.art-v4-scene')?.style.backgroundImage||'';const m=bg.match(/data:image\/webp;base64,[^")]+/);if(!m)return;let k='shadow';if(typeof enemy!=='undefined'&&enemy){if(enemy.isBoss)k='boss';else if(enemy.isElite)k='elite';else k=({'Теневой зверь':'shadow','Заражённый охотник':'hunter','Мутант пустоши':'mutant','Пожиратель костей':'bones'})[enemy.name]||'shadow'}const idx={shadow:0,hunter:1,mutant:2,bones:3,elite:4,boss:5},i=idx[k];const hpBox=document.getElementById('enemyBar')?.parentElement;b.innerHTML='';b.style.display='block';b.style.position='absolute';b.style.left='50%';b.style.top='61%';b.style.transform='translate(-50%,-50%)';b.style.width='min(62vw,220px)';b.style.height='min(62vw,220px)';b.style.margin='0';b.style.zIndex='3';b.style.backgroundImage='url("'+m[1]+'")';b.style.backgroundRepeat='no-repeat';b.style.setProperty('background-size','400% 600%','important');b.style.setProperty('background-position',((i%4)*100/3)+'% '+(Math.floor(i/4)*100/5)+'%','important');b.style.border='0';b.style.boxShadow='none';b.style.mixBlendMode='normal';if(hpBox){b.appendChild(hpBox);hpBox.style.position='absolute';hpBox.style.left='8px';hpBox.style.right='8px';hpBox.style.top='6px';hpBox.style.width='auto';hpBox.style.height='12px';hpBox.style.zIndex='5';hpBox.style.margin='0';hpBox.style.boxSizing='border-box';hpBox.style.pointerEvents='none'}};f.__battleArtRuntimeFix=true;window.updateBattle=f;}
+
+      if(typeof updateBattle==='function'&&!updateBattle.__battleArtRuntimeFix){
+        const old=updateBattle;
+        const f=function(){
+          old.apply(this,arguments);
+          const b=document.getElementById('enemyArt');
+          if(!b)return;
+          const scene=b.closest('.scene.battle');
+          if(scene){scene.style.overflow='hidden';scene.classList.add('art-v4-battle-clean');}
+          const bg=document.querySelector('.scene.art-v4-scene')?.style.backgroundImage||'';
+          const m=bg.match(/data:image\/webp;base64,[^\")]+/);
+          if(!m)return;
+
+          let k='shadow';
+          if(typeof enemy!=='undefined'&&enemy){
+            if(enemy.isBoss)k='boss';
+            else if(enemy.isElite)k='elite';
+            else k=({'Теневой зверь':'shadow','Заражённый охотник':'hunter','Мутант пустоши':'mutant','Пожиратель костей':'bones'})[enemy.name]||'shadow';
+          }
+          const idx={shadow:0,hunter:1,mutant:2,bones:3,elite:4,boss:5},i=idx[k];
+
+          const hpBox=document.getElementById('enemyBar')?.parentElement;
+          b.innerHTML='';
+          b.style.position='absolute';
+          b.style.left='50%';
+          b.style.top='52%';
+          b.style.transform='translate(-50%,-50%)';
+          b.style.width='min(68vw,220px)';
+          b.style.height='min(68vw,220px)';
+          b.style.margin='0';
+          b.style.padding='0';
+          b.style.zIndex='3';
+          b.style.display='block';
+          b.style.background='transparent';
+          b.style.border='0';
+          b.style.boxShadow='none';
+          b.style.filter='none';
+          b.style.overflow='visible';
+          b.style.mixBlendMode='normal';
+
+          const e=document.createElement('span');
+          e.className='atlas-creature-v4';
+          e.style.display='block';
+          e.style.width='100%';
+          e.style.height='100%';
+          e.style.margin='0';
+          e.style.backgroundImage='url("'+m[1]+'")';
+          e.style.backgroundRepeat='no-repeat';
+          e.style.setProperty('background-size','400% 600%','important');
+          e.style.setProperty('background-position',((i%4)*100/3)+'% '+(Math.floor(i/4)*100/5)+'%','important');
+          e.style.backgroundColor='transparent';
+          e.style.border='0';
+          e.style.boxShadow='none';
+          e.style.filter='drop-shadow(0 8px 12px rgba(0,0,0,.65))';
+          b.appendChild(e);
+
+          if(hpBox){
+            b.appendChild(hpBox);
+            hpBox.style.position='absolute';
+            hpBox.style.left='10px';
+            hpBox.style.right='10px';
+            hpBox.style.top='8px';
+            hpBox.style.width='auto';
+            hpBox.style.height='11px';
+            hpBox.style.minHeight='11px';
+            hpBox.style.zIndex='5';
+            hpBox.style.margin='0';
+            hpBox.style.padding='0';
+            hpBox.style.boxSizing='border-box';
+            hpBox.style.pointerEvents='none';
+            hpBox.style.borderRadius='3px';
+          }
+        };
+        f.__battleArtRuntimeFix=true;
+        window.updateBattle=f;
+      }
     }catch(e){}};
     patch();setInterval(patch,300);
-  };document.head.appendChild(core);
+  };
+  document.head.appendChild(core);
 })();
