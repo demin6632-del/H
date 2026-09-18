@@ -721,4 +721,69 @@ window.abyssKeyCaches = abyssKeyCaches;
 
   if(typeof save==='function')save();
 })();
+</script>\n<script>
+(function(){
+  /* UNIFIED-EQUIPMENT-INSTANCE-V3
+     Получение/покупка предмета никогда не экипирует его автоматически.
+     В одном слоте может быть надет только один конкретный экземпляр.
+     Замена происходит только после явного нажатия игрока.
+     Последний выбранный экземпляр становится надетым. */
+  const V3_SLOTS=['weapon','armor','head','ring','boots','cloak','amulet','shield'];
+  function v3Uid(){
+    if(window.crypto&&typeof window.crypto.randomUUID==='function')return window.crypto.randomUUID();
+    return 'eq_'+Date.now().toString(36)+'_'+Math.random().toString(36).slice(2,12);
+  }
+  function v3SlotItem(item){
+    const x=itemInfo(item);
+    return !!(x&&(x.type==='weapon'||x.type==='armor'||V3_SLOTS.includes(x.type)||V3_SLOTS.includes(x.slot)));
+  }
+  function v3Normalize(){
+    if(!hero||!Array.isArray(hero.items))return;
+    hero.items.forEach(item=>{if(v3SlotItem(item)&&!item._equipUid)item._equipUid=v3Uid()});
+    if(!hero.equippedIds||typeof hero.equippedIds!=='object')hero.equippedIds={};
+  }
+  const v3Save=save;
+  save=function(){v3Normalize();return v3Save.apply(this,arguments)};
+  const v3Add=addItemToInventory;
+  addItemToInventory=function(item){
+    if(item&&v3SlotItem(item)&&!item._equipUid)item._equipUid=v3Uid();
+    return v3Add.apply(this,arguments);
+  };
+  const v3Loot=generateLoot;
+  generateLoot=function(){
+    const item=v3Loot.apply(this,arguments);
+    if(item&&v3SlotItem(item)&&!item._equipUid)item._equipUid=v3Uid();
+    return item;
+  };
+  const v3Buy=buyItem;
+  buyItem=function(id){
+    const before=hero.items.length;
+    const result=v3Buy.apply(this,arguments);
+    for(let i=before;i<hero.items.length;i++){
+      const item=hero.items[i];
+      if(item&&v3SlotItem(item)&&!item._equipUid)item._equipUid=v3Uid();
+    }
+    save();
+    return result;
+  };
+  /* Единственная точка смены экипировки из инвентаря:
+     используется именно индекс нажатого предмета, поэтому «последний клик» всегда побеждает. */
+  const v3Use=useInventoryItem;
+  useInventoryItem=function(index){
+    v3Normalize();
+    const item=hero.items[index];
+    if(item&&v3SlotItem(item)){
+      equipItem(index,item);
+      sfx('buy');
+      logEvent('ЭКИПИРОВКА','Экипировано: '+itemInfo(item).name+'.');
+      save();
+      update();
+      renderInventory();
+      return;
+    }
+    return v3Use.apply(this,arguments);
+  };
+  v3Normalize();
+  save();
+})();
 </script>
