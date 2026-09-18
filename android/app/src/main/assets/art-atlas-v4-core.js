@@ -5,14 +5,76 @@ const SHEET='data:image/webp;base64,UklGRrjAAgBXRUJQVlA4IKzAAgDwfw6dASoABAAGPikS
 const V4_STYLE=document.createElement('style');V4_STYLE.textContent='.scene.art-v4-scene:before,.scene.art-v4-scene:after{display:none!important}.scene.art-v4-scene{background-repeat:no-repeat!important}.atlas-creature-v4{background-image:url(\"'+SHEET+'\");background-size:400% 600%;background-repeat:no-repeat;}';document.head.appendChild(V4_STYLE);const names=['shadow','hunter','mutant','bones','elite','boss','start','ordinary','treasure','shop','forge','tavern','sanctuary','cursed','library','altar','trap','labyrinth','portal','bossroom','eliteroom','event'];
 const idx={};names.forEach((n,i)=>idx[n]=i);
 function v4Tile(n){const i=idx[n];if(i==null)return '';return 'background-size:400% 600%;background-position:'+((i%4)*100/3)+'% '+(Math.floor(i/4)*100/5)+'%;background-repeat:no-repeat;';}
+const V4_TILE_CACHE={};
+let V4_SHEET_IMG=null;
+function loadV4Sheet(){
+if(V4_SHEET_IMG)return V4_SHEET_IMG;
+const img=new Image();
+img.decoding='async';
+img.src=SHEET;
+V4_SHEET_IMG=img;
+return img;
+}
+function v4QualityData(key,w,h){
+const k=key+'@'+Math.round(w)+'x'+Math.round(h);
+if(V4_TILE_CACHE[k])return V4_TILE_CACHE[k];
+const img=loadV4Sheet();
+const make=function(){
+try{
+const dpr=Math.min(2,Math.max(1,window.devicePixelRatio||1));
+const cw=Math.max(1,Math.round(w*dpr)),ch=Math.max(1,Math.round(h*dpr));
+const c=document.createElement('canvas');c.width=cw;c.height=ch;
+const ctx=c.getContext('2d',{alpha:true});
+if(!ctx)return null;
+ctx.imageSmoothingEnabled=true;
+ctx.imageSmoothingQuality='high';
+const i=idx[key];if(i==null)return null;
+const sx=(i%4)*256,sy=Math.floor(i/4)*256;
+ctx.filter='contrast(1.06) saturate(1.04)';
+ctx.drawImage(img,sx,sy,256,256,0,0,cw,ch);
+ctx.filter='none';
+const data=c.toDataURL('image/png');
+V4_TILE_CACHE[k]=data;
+return data;
+}catch(e){return null;}
+};
+if(img.complete&&img.naturalWidth)return make();
+img.addEventListener('load',make,{once:true});
+return null;
+}
+function renderV4Tile(el,key,w,h){
+if(!el)return;
+const width=Math.max(1,w||el.clientWidth||256);
+const height=Math.max(1,h||el.clientHeight||256);
+const data=v4QualityData(key,width,height);
+if(data){
+el.style.backgroundImage='url("'+data+'")';
+el.style.backgroundSize='100% 100%';
+el.style.backgroundPosition='center';
+el.style.backgroundRepeat='no-repeat';
+el.dataset.v4QualityKey=key+'@'+Math.round(width)+'x'+Math.round(height);
+return true;
+}
+const img=loadV4Sheet();
+const apply=function(){
+if(!el.isConnected)return;
+el.style.backgroundImage='url("'+SHEET+'")';
+el.style.backgroundSize='400% 600%';
+const i=idx[key];
+el.style.backgroundPosition=((i%4)*100/3)+'% '+(Math.floor(i/4)*100/5)+'%';
+el.style.backgroundRepeat='no-repeat';
+setTimeout(function(){renderV4Tile(el,key,width,height)},0);
+};
+if(img.complete&&img.naturalWidth)apply();else img.addEventListener('load',apply,{once:true});
+return false;
+}
+window.renderV4Tile=renderV4Tile;
 function setScene(id,key){
 const s=document.querySelector('#'+id+' .scene');if(!s)return;
 const i=idx[key];if(i==null)return;
 s.classList.add('art-v4-scene');
-s.style.setProperty('background-image','url(\"'+SHEET+'\")','important');
-s.style.setProperty('background-size','400% 600%','important');
-s.style.setProperty('background-position',((i%4)*100/3)+'% '+(Math.floor(i/4)*100/5)+'%','important');
 s.style.setProperty('background-repeat','no-repeat','important');
+renderV4Tile(s,key,s.clientWidth||700,s.clientHeight||390);
 }
 function roomKeyV4(){const c=String(typeof abyssRoomContent!=='undefined'?abyssRoomContent:'');if(c.includes('Кровавый алтарь'))return'altar';if(c.includes('Забытый тайник'))return'treasure';if(c.includes('Источник Бездны'))return'portal';if(c.includes('Босс:'))return'bossroom';if(c.includes('Элитный враг:'))return'eliteroom';if(c.includes('Пустой проход')||c.includes('Побеждён'))return'ordinary';return'labyrinth';}
 function updateScenesV4(){setScene('main','start');setScene('shop','shop');setScene('tavern','tavern');setScene('equipment','forge');setScene('stats','library');setScene('journal','ordinary');setScene('death','cursed');const a=document.getElementById('abyss');if(a&&!a.classList.contains('hidden'))setScene('abyss',roomKeyV4());}
