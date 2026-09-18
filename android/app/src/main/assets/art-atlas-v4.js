@@ -92,7 +92,7 @@
         window.updateBattle=f;
       }
     }catch(e){}};
-    patch();setInterval(patch,300);
+    patch();setTimeout(patch,250);
   };
   document.head.appendChild(core);
 })();
