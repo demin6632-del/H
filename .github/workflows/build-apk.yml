@@ -1,4 +1,5 @@
 name: Build APK
+# Автосборка актуальной версии проекта
 
 on:
   workflow_dispatch:
