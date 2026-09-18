@@ -71,7 +71,8 @@
           e.style.border='0';
           e.style.boxShadow='none';
           e.style.setProperty('background-position','center center','important');
-          e.style.setProperty('background-size','min(100%, 220px) min(100%, 220px)','important');
+          e.style.setProperty('background-size','100% 100%','important');
+          e.style.setProperty('background-position','center center','important');
           e.style.filter='drop-shadow(0 8px 12px rgba(0,0,0,.65))';
           b.appendChild(e);
 
