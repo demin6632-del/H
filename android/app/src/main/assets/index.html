@@ -409,3 +409,41 @@ window.abyssKeyCaches = abyssKeyCaches;
   filter:sepia(.18) saturate(.90) hue-rotate(325deg) brightness(.84) contrast(1.10) drop-shadow(0 8px 12px rgba(0,0,0,.72))!important;
 }
 </style>
+<script>
+(function(){
+  /* DUPLICATE-EQUIPMENT-CHOICE-V1 — одинаковые предметы имеют собственный ID.
+     Полученный дубликат не считается надетым только из-за совпадения имени.
+     Заменить надетый предмет можно только явным действием игрока. */
+  const EQ_SLOTS=['weapon','armor','head','ring','boots','cloak','amulet','shield'];
+  function uid(){if(window.crypto&&typeof window.crypto.randomUUID==='function')return window.crypto.randomUUID();return 'eq_'+Date.now().toString(36)+'_'+Math.random().toString(36).slice(2,10)+'_'+Math.random().toString(36).slice(2,10)}
+  function slotOf(item){const x=itemInfo(item);if(x&&x.slot&&EQ_SLOTS.includes(x.slot))return x.slot;if(x&&EQ_SLOTS.includes(x.type))return x.type;return null}
+  function normalizeEquipmentIds(){
+    if(!hero||!Array.isArray(hero.items))return;
+    hero.equippedIds=hero.equippedIds&&typeof hero.equippedIds==='object'?hero.equippedIds:{};
+    hero.items.forEach((raw,i)=>{const x=itemInfo(raw),slot=slotOf(x);if(!slot)return;if(raw&&typeof raw==='object'){if(!raw._equipUid)raw._equipUid=uid()}else hero.items[i]=Object.assign({},x,{_equipUid:uid()})});
+    const legacy={weapon:hero.weapon,armor:hero.armor,head:hero.gear&&hero.gear.head,ring:hero.gear&&hero.gear.ring,boots:hero.gear&&hero.gear.boots,cloak:hero.gear&&hero.gear.cloak,amulet:hero.gear&&hero.gear.amulet,shield:hero.gear&&hero.gear.shield};
+    EQ_SLOTS.forEach(slot=>{const id=hero.equippedIds[slot];if(id&&hero.items.some(x=>x&&x._equipUid===id))return;const name=legacy[slot];if(!name||name==='Нет')return;const found=hero.items.find(x=>{const y=itemInfo(x);return slotOf(y)===slot&&y.name===name});if(found&&found._equipUid)hero.equippedIds[slot]=found._equipUid})
+  }
+  function markEquipped(item){normalizeEquipmentIds();const x=itemInfo(item),slot=slotOf(x);if(slot&&item&&item._equipUid)hero.equippedIds[slot]=item._equipUid}
+  const __save=save;save=function(){normalizeEquipmentIds();return __save.apply(this,arguments)};
+  const __equipItem=equipItem;equipItem=function(index,item){normalizeEquipmentIds();const result=__equipItem.apply(this,arguments);markEquipped(hero.items[index]||item);return result};
+  const __useInventoryItem=useInventoryItem;useInventoryItem=function(index){normalizeEquipmentIds();const before=hero.items[index],slot=slotOf(before);const result=__useInventoryItem.apply(this,arguments);if(slot&&hero.items[index])markEquipped(hero.items[index]);return result};
+  const __unequipItemType=unequipItemType;unequipItemType=function(type){normalizeEquipmentIds();const result=__unequipItemType.apply(this,arguments);if(hero.equippedIds)delete hero.equippedIds[type];save();return result};
+  const __unequipAll=unequipAll;unequipAll=function(){normalizeEquipmentIds();const result=__unequipAll.apply(this,arguments);hero.equippedIds={};save();return result};
+  const __renderInventory=renderInventory;renderInventory=function(){
+    normalizeEquipmentIds();const filtered=[];
+    hero.items.forEach((raw,index)=>{const x=itemInfo(raw),isGear=!!x.slot&&['head','ring','boots','cloak','amulet','shield'].includes(x.slot);if(inventoryCategory==='all'||x.type===inventoryCategory||(inventoryCategory==='armor'&&isGear))filtered.push({item:x,index})});
+    if(!filtered.length){if(el('inventoryList'))el('inventoryList').innerHTML='<div class="muted" style="padding:14px;text-align:center">Инвентарь пуст.</div>';return}
+    if(el('inventoryList'))el('inventoryList').innerHTML=filtered.map(({item:x,index})=>{
+      const isGear=!!x.slot&&['head','ring','boots','cloak','amulet','shield'].includes(x.slot),slot=slotOf(x);
+      const equipped=!!(slot&&hero.equippedIds&&hero.equippedIds[slot]&&x._equipUid===hero.equippedIds[slot]);
+      const equippable=x.type==='weapon'||x.type==='armor'||isGear;let action='Экипировать';
+      if(x.type==='random')action='Открыть';else if(x.type==='consumable'||x.type==='other')action='Использовать';else if(equipped)action='Экипировано';
+      const disabled=equipped?'disabled':'',rowClass=equipped?'item inventory-equipped':'item',badge=equippable?(equipped?'<span class="equipped-badge">✓ ЭКИПИРОВАНО</span>':'<span class="not-equipped-badge">НЕ ЭКИПИРОВАНО</span>'):'';
+      let desc='Предмет из Бездны';if(x.type==='consumable')desc=x.effect==='hp'?'Восстанавливает 50 HP':'Восстанавливает 30 MP';else if(x.type==='weapon')desc='+'+(x.attack||2)+' к атаке';else if(x.type==='armor'||isGear){if(x.def)desc='+'+x.def+' к защите';else if(x.crit)desc='+'+Math.round(x.crit*100)+'% к криту';else if(x.maxEnergy)desc='+'+x.maxEnergy+' к максимуму энергии'}
+      return '<div class="'+rowClass+'"><div class="item-icon">'+x.icon+'</div><div>'+x.name+badge+'<small>'+desc+'</small></div><button style="width:auto;min-width:92px;margin:0;padding:7px 8px;font-size:12px" '+disabled+' onclick="useInventoryItem('+index+')">'+action+'</button></div>'
+    }).join('')
+  };
+  normalizeEquipmentIds();renderInventory();
+})();
+</script>
