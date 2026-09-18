@@ -88,6 +88,7 @@
           }
         };
         f.__battleArtRuntimeFix=true;
+        f.__artV4=true;
         window.updateBattle=f;
       }
     }catch(e){}};
