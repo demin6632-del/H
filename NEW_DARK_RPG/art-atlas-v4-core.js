@@ -16,13 +16,16 @@ V4_SHEET_IMG=img;
 return img;
 }
 function v4QualityData(key,w,h){
-const k=key+'@'+Math.round(w)+'x'+Math.round(h);
+/* Рендерим исходный квадратный тайл без растяжения по ширине/высоте контейнера. */
+const side=Math.max(1,Math.min(512,Math.round(Math.min(w||256,h||256))));
+const k=key+'@'+side;
 if(V4_TILE_CACHE[k])return V4_TILE_CACHE[k];
 const img=loadV4Sheet();
 const make=function(){
 try{
 const dpr=Math.min(2,Math.max(1,window.devicePixelRatio||1));
-const cw=Math.max(1,Math.round(w*dpr)),ch=Math.max(1,Math.round(h*dpr));
+const cw=Math.max(1,Math.round(side*dpr));
+const ch=cw;
 const c=document.createElement('canvas');c.width=cw;c.height=ch;
 const ctx=c.getContext('2d',{alpha:true});
 if(!ctx)return null;
@@ -30,7 +33,8 @@ ctx.imageSmoothingEnabled=true;
 ctx.imageSmoothingQuality='high';
 const i=idx[key];if(i==null)return null;
 const sx=(i%4)*256,sy=Math.floor(i/4)*256;
-ctx.filter='contrast(1.06) saturate(1.04)';
+/* Умеренная обработка без изменения геометрии исходного изображения. */
+ctx.filter='contrast(1.04) saturate(1.03)';
 ctx.drawImage(img,sx,sy,256,256,0,0,cw,ch);
 ctx.filter='none';
 const data=c.toDataURL('image/png');
@@ -46,23 +50,25 @@ function renderV4Tile(el,key,w,h){
 if(!el)return;
 const width=Math.max(1,w||el.clientWidth||256);
 const height=Math.max(1,h||el.clientHeight||256);
-const data=v4QualityData(key,width,height);
+const side=Math.max(1,Math.min(512,Math.round(Math.min(width,height))));
+const data=v4QualityData(key,side,side);
 if(data){
-el.style.backgroundImage='url("'+data+'")';
-el.style.backgroundSize='100% 100%';
-el.style.backgroundPosition='center';
-el.style.backgroundRepeat='no-repeat';
-el.dataset.v4QualityKey=key+'@'+Math.round(width)+'x'+Math.round(height);
+el.style.setProperty('background-image','url("'+data+'")','important');
+el.style.setProperty('background-size',side+'px '+side+'px','important');
+el.style.setProperty('background-position','center center','important');
+el.style.setProperty('background-repeat','no-repeat','important');
+el.dataset.v4QualityKey=key+'@'+side;
 return true;
 }
 const img=loadV4Sheet();
 const apply=function(){
 if(!el.isConnected)return;
-el.style.backgroundImage='url("'+SHEET+'")';
-el.style.backgroundSize='400% 600%';
 const i=idx[key];
-el.style.backgroundPosition=((i%4)*100/3)+'% '+(Math.floor(i/4)*100/5)+'%';
-el.style.backgroundRepeat='no-repeat';
+el.style.setProperty('background-image','url("'+SHEET+'")','important');
+el.style.setProperty('background-size',side+'px '+side+'px','important');
+el.style.setProperty('background-position','center center','important');
+el.style.setProperty('background-repeat','no-repeat','important');
+el.dataset.v4QualityKey=key+'@raw';
 setTimeout(function(){renderV4Tile(el,key,width,height)},0);
 };
 if(img.complete&&img.naturalWidth)apply();else img.addEventListener('load',apply,{once:true});
@@ -74,6 +80,8 @@ const s=document.querySelector('#'+id+' .scene');if(!s)return;
 const i=idx[key];if(i==null)return;
 s.classList.add('art-v4-scene');
 s.style.setProperty('background-repeat','no-repeat','important');
+s.style.setProperty('background-position','center center','important');
+s.style.setProperty('background-size','contain','important');
 renderV4Tile(s,key,s.clientWidth||700,s.clientHeight||390);
 }
 function roomKeyV4(){const c=String(typeof abyssRoomContent!=='undefined'?abyssRoomContent:'');if(c.includes('Кровавый алтарь'))return'altar';if(c.includes('Забытый тайник'))return'treasure';if(c.includes('Источник Бездны'))return'portal';if(c.includes('Босс:'))return'bossroom';if(c.includes('Элитный враг:'))return'eliteroom';if(c.includes('Пустой проход')||c.includes('Побеждён'))return'ordinary';return'labyrinth';}
