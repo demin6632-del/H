@@ -1178,4 +1178,39 @@ window.abyssKeyCaches = abyssKeyCaches;
   window.ABYSS_TRADER_V1=TMARK;
   setTimeout(tRender,50);
 })();
+</script><script id="shop-one-purchase-v1">
+(function(){
+  /* SHOP-ONE-PURCHASE-V1
+     Один и тот же товар магазина нельзя купить повторно, пока такой товар уже есть
+     у игрока. Проверка работает по ID товара и по имени для всех категорий. */
+  function shopAlreadyOwned(item){
+    if(!item||!hero||!Array.isArray(hero.items))return false;
+    const id=item.id!=null?String(item.id):'';
+    const name=item.name!=null?String(item.name):'';
+    return hero.items.some(raw=>{
+      if(!raw)return false;
+      if(id&&raw.id!=null&&String(raw.id)===id)return true;
+      return !!name&&String(raw.name||'')===name;
+    });
+  }
+  function shopDuplicateMessage(item){
+    sfx('error');
+    const name=item&&item.name?item.name:'Этот товар';
+    if(el('out'))el('out').innerHTML='<span class="red">У вас уже есть: '+name+'. Повторная покупка недоступна.</span>';
+    logEvent('МАГАЗИН','Повторная покупка запрещена: '+name+' уже есть в инвентаре.');
+  }
+  const onePurchaseBuy=buyItem;
+  buyItem=function(id){
+    const item=shopItems.find(x=>x.id===id);
+    if(item&&shopAlreadyOwned(item)){shopDuplicateMessage(item);shopTab(shopCategory);return;}
+    return onePurchaseBuy.apply(this,arguments);
+  };
+  const onePurchaseKey=buyKey;
+  buyKey=function(){
+    const item={id:'mystery_key',name:'Таинственный ключ'};
+    if(shopAlreadyOwned(item)){shopDuplicateMessage(item);shopTab('other');return;}
+    return onePurchaseKey.apply(this,arguments);
+  };
+  window.SHOP_ONE_PURCHASE_V1='SHOP-ONE-PURCHASE-V1';
+})();
 </script>
