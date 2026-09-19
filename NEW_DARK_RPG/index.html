@@ -655,7 +655,7 @@ window.abyssKeyCaches = abyssKeyCaches;
         else if(x.maxEnergy) desc='+'+x.maxEnergy+' к максимуму энергии';
       }
       const actionHandler=equipped ? ("unequipItemType('" + slot + "')") : ("useInventoryItem(" + index + ")");
-      return '<div class="'+rowClass+'"><div class="item-icon">'+(x.icon||'◈')+'</div><div>'+x.name+badge+'<small>'+desc+'</small></div><button style="width:auto;min-width:92px;margin:0;padding:7px 8px;font-size:12px" '+disabled+' onclick="'+actionHandler+'">'+action+'</button></div>';
+      return '<div class="'+rowClass+'" data-inventory-index="'+index+'"><div class="item-icon">'+(x.icon||'◈')+'</div><div>'+x.name+badge+'<small>'+desc+'</small></div><button style="width:auto;min-width:92px;margin:0;padding:7px 8px;font-size:12px" '+disabled+' onclick="'+actionHandler+'">'+action+'</button></div>';
     }).join('');
   };
 
@@ -1003,7 +1003,7 @@ window.abyssKeyCaches = abyssKeyCaches;
       const x=itemInfo(raw)||{},slot=typeof slotOf==='function'?slotOf(x):null;
       const equipped=!!(slot&&hero.equippedIds&&hero.equippedIds[slot]&&raw._equipUid===hero.equippedIds[slot]);
       /* EQUIP-NO-PRICE-V1: экипированный предмет не показывает цену продажи вообще. */
-      const row=[...list.children].find(node=>node.querySelector('button[onclick*="useInventoryItem('+index+')"],button[onclick*="unequipItemType"]'));
+      const row=list.querySelector('[data-inventory-index="'+index+'"]')||[...list.children].find(node=>node.querySelector('button[onclick*="useInventoryItem('+index+')"],button[onclick*="unequipItemType"]'));
       if(!row)return;
       const b=document.createElement('button');b.type='button';b.dataset.baseSellIndex=String(index);b.textContent=equipped?'Продать':'Продать · '+sellPrice(raw)+' 🪙';
       b.style.cssText='width:auto;min-width:108px;margin:4px 0 0 4px;padding:6px 7px;font-size:11px';
