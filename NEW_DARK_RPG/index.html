@@ -1216,4 +1216,74 @@ window.abyssKeyCaches = abyssKeyCaches;
   };
   window.SHOP_ONE_PURCHASE_V1='SHOP-ONE-PURCHASE-V1';
 })();
+</script>\n<script id="mystery-key-multi-loot-v1">
+(function(){
+  /* MYSTERY-KEY-MULTI-LOOT-V1
+     Таинственный ключ — расходник:
+     1) его можно покупать сколько угодно раз, пока хватает золота и места;
+     2) каждый ключ можно использовать один раз;
+     3) шанс на очень редкий сильный лут минимальный — 0.5%;
+     4) редкий предмет не экипируется автоматически. */
+
+  const KEY_PRICE=75;
+  const RARE_KEY_CHANCE=0.005;
+
+  const rareKeyLoot=[
+    {name:'Клинок Бездны',type:'weapon',icon:'⚔️',attack:12},
+    {name:'Доспех Бездны',type:'armor',slot:'armor',icon:'🛡️',def:10},
+    {name:'Кольцо Бездны',type:'armor',slot:'ring',icon:'💍',crit:.12},
+    {name:'Амулет Пустоты',type:'armor',slot:'amulet',icon:'🔮',maxEnergy:20},
+    {name:'Щит Бездны',type:'armor',slot:'shield',icon:'🛡️',def:12}
+  ];
+
+  /* Ключ теперь расходуется и не проверяется на наличие дубля. */
+  window.buyKey=function(){
+    if(!hero||!Array.isArray(hero.items))return;
+    if(!inventoryHasSpace()){
+      sfx('error');
+      if(el('out'))el('out').innerHTML='<span class="red">Инвентарь заполнен (24/24).</span>';
+      return;
+    }
+    if(getGold()<KEY_PRICE){
+      sfx('error');
+      if(el('out'))el('out').innerHTML='<span class="red">Недостаточно золота.</span>';
+      return;
+    }
+    hero.gold-=KEY_PRICE;
+    hero.items.push({name:'Таинственный ключ',type:'other',icon:'🔑'});
+    save();update();sfx('buy');
+    logEvent('МАГАЗИН','Куплен Таинственный ключ за '+KEY_PRICE+' золота.');
+    if(el('out'))el('out').innerHTML='<span class="green">Куплен Таинственный ключ.</span>';
+    shopTab('other');
+  };
+
+  const oldUseKeyLoot=useInventoryItem;
+  window.useInventoryItem=function(index){
+    const raw=hero.items[index];
+    if(raw&&raw.name==='Таинственный ключ'){
+      const fromBattle=screenHistory[screenHistory.length-1]==='inventory'&&screenHistory[screenHistory.length-2]==='battle';
+
+      hero.items.splice(index,1);
+
+      if(Math.random()<RARE_KEY_CHANCE){
+        const loot=JSON.parse(JSON.stringify(rareKeyLoot[Math.floor(Math.random()*rareKeyLoot.length)]));
+        hero.items.splice(Math.min(index,hero.items.length),0,loot);
+        sfx('open');
+        logEvent('РЕДКИЙ ЛУТ','Таинственный ключ открыл редкую находку: '+loot.name+'. Шанс находки — 0.5%.');
+        if(el('out'))el('out').innerHTML='<span class="green">🔑 Ключ открыл редкий лут: '+loot.name+'!</span>';
+      }else{
+        sfx('click');
+        logEvent('ПРЕДМЕТ','Таинственный ключ использован. Редкой находки не найдено.');
+        if(el('out'))el('out').innerHTML='<span class="muted">🔑 Ключ использован. В этот раз ничего ценного.</span>';
+      }
+
+      save();update();renderInventory();
+      if(fromBattle){goBack();enemyTurn();}
+      return;
+    }
+    return oldUseKeyLoot.apply(this,arguments);
+  };
+
+  window.MYSTERY_KEY_MULTI_LOOT_V1='MYSTERY-KEY-MULTI-LOOT-V1';
+})();
 </script>
