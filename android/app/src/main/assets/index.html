@@ -1095,7 +1095,14 @@ window.abyssKeyCaches = abyssKeyCaches;
       p=document.createElement('div');p.id='abyssDynamicPanel';p.className='panel';
       const anchor=el('infiniteDepthPanel')||el('abyss').firstChild;el('abyss').insertBefore(p,anchor||null);
     }
-    const d=Number(abyssFloor||1),r=Math.max(1,Math.min(ROOMS_PER_FLOOR,Number(abyssRoom)+1)),room=getRoom(d,r);\n    /* ABYSS-ROOM-STATE-RECOVERY-V1 — если тип текущей комнаты уже сохранён, но pending потерян (например после смерти/старого состояния), восстановить действие комнаты автоматически. */\n    let pending=state.pending&&state.pending.depth===d&&state.pending.room===r;\n    if(!pending&&room.type&&!room.visited){\n      state.pending={depth:d,room:r};\n      pending=true;\n      saveState();\n    }
+    const d=Number(abyssFloor||1),r=Math.max(1,Math.min(ROOMS_PER_FLOOR,Number(abyssRoom)+1)),room=getRoom(d,r);
+    /* ABYSS-ROOM-STATE-RECOVERY-V1 — если тип текущей комнаты уже сохранён, но pending потерян, восстановить действие комнаты автоматически. */
+    let pending=state.pending&&state.pending.depth===d&&state.pending.room===r;
+    if(!pending&&room.type&&!room.visited){
+      state.pending={depth:d,room:r};
+      pending=true;
+      saveState();
+    }
     /* Текущая комната всегда соответствует abyssRoom+1. Если глубина была
        выбрана заново, старый флаг visited этой комнаты больше не должен
        показываться как исследованный при счётчике 0/5. */
