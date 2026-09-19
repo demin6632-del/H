@@ -1339,3 +1339,91 @@ window.abyssKeyCaches = abyssKeyCaches;
   window.EQUIP_NO_DUPLICATE_PRICE_V2='EQUIP-NO-DUPLICATE-PRICE-V2';
 })();
 </script>
+<script id="blacksmith-upgrade-integration-v1">
+(function(){
+  function bsLevel(item){return Math.max(0,Number(item&&item.upgradeLevel||0))}
+  function bsSlot(item){return typeof slotOf==='function'?slotOf(item):null}
+  function bsEquipped(item){
+    const slot=bsSlot(item);
+    return !!(slot&&hero&&hero.equippedIds&&item&&item._equipUid&&hero.equippedIds[slot]===item._equipUid);
+  }
+  function bsApplyUpgrade(item,sign){
+    const x=itemInfo(item)||{},lvl=bsLevel(item);
+    if(x.type==='weapon') hero.attack=Math.max(0,hero.attack+sign*lvl);
+    if(x.type==='armor'||['head','ring','boots','cloak','amulet','shield'].includes(x.slot)){
+      hero.def=Math.max(0,hero.def+sign*(x.def?lvl:0));
+      hero.crit=Math.max(0,hero.crit+sign*(x.crit?lvl*.01:0));
+      hero.maxEnergy=Math.max(1,hero.maxEnergy+sign*(x.maxEnergy?lvl:0));
+    }
+  }
+  function bsName(item){const x=itemInfo(item)||{};return x.name+(bsLevel(item)>0?' +'+bsLevel(item):'')}
+  function bsDesc(item){
+    const x=itemInfo(item)||{},lvl=bsLevel(item);
+    if(x.type==='weapon')return '+'+(Number(x.attack||2)+lvl)+' к атаке';
+    if(x.def)return '+'+(Number(x.def)+lvl)+' к защите';
+    if(x.crit)return '+'+Math.round((Number(x.crit)+lvl*.01)*100)+'% к криту';
+    if(x.maxEnergy)return '+'+(Number(x.maxEnergy)+lvl)+' к максимуму энергии';
+    return x.desc||'Предмет из Бездны';
+  }
+
+  const finalEquip=equipItem;
+  equipItem=function(index,item){
+    const selected=hero&&hero.items?hero.items[index]:item;
+    const slot=bsSlot(selected);
+    const old=slot&&hero.equippedIds?hero.items.find(x=>x&&x._equipUid===hero.equippedIds[slot]):null;
+    if(old&&old!==selected)bsApplyUpgrade(old,-1);
+    const before=hero.attack, beforeDef=hero.def, beforeCrit=hero.crit, beforeEnergy=hero.maxEnergy;
+    finalEquip.apply(this,arguments);
+    if(selected)bsApplyUpgrade(selected,1);
+    if(old&&old!==selected&&before===hero.attack&&beforeDef===hero.def&&beforeCrit===hero.crit&&beforeEnergy===hero.maxEnergy){
+      /* Ветка только для защиты от двойного применения; основная экипировка уже обработана выше. */
+    }
+    save();
+  };
+
+  const finalUnequip=unequipItemType;
+  unequipItemType=function(type){
+    const old=hero&&hero.equippedIds?hero.items.find(x=>x&&x._equipUid===hero.equippedIds[type]):null;
+    if(old)bsApplyUpgrade(old,-1);
+    return finalUnequip.apply(this,arguments);
+  };
+
+  upgradeBlacksmithItem=function(index){
+    const item=hero&&hero.items?hero.items[index]:null;if(!item)return;
+    const x=itemInfo(item)||{},valid=!!(x.type==='weapon'||x.type==='armor'||['head','ring','boots','cloak','amulet','shield'].includes(x.slot));if(!valid)return;
+    const lvl=bsLevel(item);if(lvl>=BLACKSMITH_MAX){sfx('error');return}
+    const cost=blacksmithUpgradeCost(lvl);if(getGold()<cost){sfx('error');if(el('out'))el('out').innerHTML='<span class="red">Недостаточно золота для улучшения.</span>';return}
+    hero.gold-=cost;item.upgradeLevel=lvl+1;
+    if(bsEquipped(item))bsApplyUpgrade(item,1);
+    save();update();renderBlacksmith();renderInventory();renderEquipment();sfx('buy');
+    logEvent('КУЗНЕЦ','Улучшено: '+x.name+' до +'+(lvl+1)+' за '+cost+' золота.');
+    if(el('out'))el('out').innerHTML='<span class="green">'+x.name+' улучшен до +'+(lvl+1)+'.</span>';
+  };
+
+  const finalRenderInventory=renderInventory;
+  renderInventory=function(){
+    finalRenderInventory.apply(this,arguments);
+    document.querySelectorAll('[data-inventory-index]').forEach(row=>{
+      const index=Number(row.getAttribute('data-inventory-index')),item=hero&&hero.items?hero.items[index]:null;
+      if(!item)return;
+      const box=row.children[1];if(!box)return;
+      const node=Array.from(box.childNodes).find(n=>n.nodeType===3&&String(n.nodeValue||'').trim());
+      if(node)node.nodeValue=bsName(item);
+      const small=box.querySelector('small');if(small&&bsSlot(item))small.textContent=bsDesc(item);
+    });
+  };
+
+  const finalRenderEquipment=renderEquipment;
+  renderEquipment=function(){
+    finalRenderEquipment.apply(this,arguments);
+    if(!hero||!Array.isArray(hero.items))return;
+    const map={weapon:'equipWeapon',armor:'equipArmor',head:'equipHead',ring:'equipRing',cloak:'equipBody',boots:'equipBoots'};
+    Object.keys(map).forEach(slot=>{
+      const id=hero.equippedIds&&hero.equippedIds[slot];const item=id?hero.items.find(x=>x&&x._equipUid===id):null;const node=el(map[slot]);if(!node||!item)return;
+      const name=node.querySelector('.equip-name');if(name)name.textContent=bsName(item);
+    });
+  };
+
+  if(typeof renderBlacksmith==='function')renderBlacksmith();
+})();
+</script>
