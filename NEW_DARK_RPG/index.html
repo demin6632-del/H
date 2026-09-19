@@ -1070,7 +1070,7 @@ window.abyssKeyCaches = abyssKeyCaches;
     if(!o){o=document.createElement('div');o.id='abyssDynamicOverlay';o.className='abyss-overlay hidden';o.innerHTML='<div class="abyss-overlay-box"><h3 id="abyssOverlayTitle"></h3><p id="abyssOverlayText"></p><div id="abyssOverlayBody"></div><button id="abyssOverlayMain">Продолжить</button></div>';el('game').appendChild(o)}
     return o;
   }
-  function closeOverlay(){const o=el('abyssDynamicOverlay');if(o)o.classList.add('hidden');if(typeof updateAbyss==='function')updateAbyss();if(typeof renderDynamic==='function')renderDynamic()}
+  function closeOverlay(){const o=el('abyssDynamicOverlay');if(o)o.classList.add('hidden');if(typeof updateAbyss==='function')updateAbyss();if(typeof renderDynamic==='function')renderDynamic();const p=el('abyssDynamicPanel');if(p&&state.pending){setTimeout(()=>{try{p.scrollIntoView({behavior:'smooth',block:'center'})}catch(e){}},50)}}
   function narrative(text,title){
     const o=ensureOverlay();el('abyssOverlayTitle').textContent=title||depthName(abyssFloor);el('abyssOverlayText').textContent=text;el('abyssOverlayBody').innerHTML='';el('abyssOverlayMain').textContent='Продолжить';el('abyssOverlayMain').onclick=closeOverlay;o.classList.remove('hidden');sfx('open');
   }
