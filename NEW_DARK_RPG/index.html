@@ -973,13 +973,40 @@ window.abyssKeyCaches = abyssKeyCaches;
      Продажа только по явному нажатию игрока. Экипированный экземпляр
      нельзя продать: сначала его нужно снять. */
   function sellPrice(raw){
+    /* Один предмет = одна фиксированная цена продажи.
+       Цена больше не зависит от характеристик конкретного экземпляра. */
     const x=itemInfo(raw)||{};
-    if(x.type==='weapon') return Math.max(8,Math.round(12+Number(x.attack||2)*7));
-    if(x.type==='armor') return Math.max(8,Math.round(12+Number(x.def||2)*7));
-    if(x.slot) return Math.max(8,Math.round(12+Number(x.def||0)*7+Number(x.crit||0)*40+Number(x.maxEnergy||0)*1.5));
-    if(x.type==='consumable') return 10;
-    if(x.type==='random') return 12;
-    if(x.type==='other') return 15;
+    const name=String(x.name||raw&&raw.name||'');
+    const fixedPrices={
+      'Железный меч':20,
+      'Кожаная броня':20,
+      'Стальной шлем':25,
+      'Серебряное кольцо':30,
+      'Плащ странника':22,
+      'Сапоги пустоши':20,
+      'Амулет Бездны':35,
+      'Щит пепла':40,
+      'Кровавый Клык':55,
+      'Мантия Пустоты':60,
+      'Кольцо Последнего Шанса':65,
+      'Щит Пепельного Стража':70,
+      'Сердце Бездны':75,
+      'Клинок Бездны':60,
+      'Доспех Бездны':60,
+      'Кольцо Бездны':65,
+      'Амулет Пустоты':70,
+      'Щит Бездны':75,
+      'Таинственный ключ':15,
+      'Зелье здоровья':10,
+      'Зелье маны':10,
+      'Случайный предмет':12
+    };
+    if(Object.prototype.hasOwnProperty.call(fixedPrices,name))return fixedPrices[name];
+    if(x.type==='consumable')return 10;
+    if(x.type==='random')return 12;
+    if(x.type==='other')return 15;
+    if(x.type==='weapon')return 20;
+    if(x.type==='armor'||x.slot)return 25;
     return 8;
   }
   window.sellInventoryItem=function(index){
