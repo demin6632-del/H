@@ -1340,14 +1340,20 @@ window.abyssKeyCaches = abyssKeyCaches;
     logEvent('ТОРГОВЕЦ','Редкая встреча: в комнате появился Странник Бездны.');
     return true;
   }
-  const oldExploreTrader=window.explore;
+  /* TRADER-INTERACTION-FIX-V2
+     Торговец перехватывает именно тот обработчик explore(), который вызывается
+     кнопкой Бездны. Процент появления и все значения tChance() не изменяются. */
+  const oldExploreTrader=explore;
   if(typeof oldExploreTrader==='function'){
-    window.explore=function(){
+    const traderExploreHandler=function(){
       const s=tState();
       if(s.open){tRender();return}
+      /* Сначала проверяем торговца, затем передаём ход обычной Бездне. */
       if(tTryEncounter())return;
       return oldExploreTrader.apply(this,arguments);
     };
+    explore=traderExploreHandler;
+    window.explore=traderExploreHandler;
   }
   const oldStartTrader=window.start;
   if(typeof oldStartTrader==='function'){
