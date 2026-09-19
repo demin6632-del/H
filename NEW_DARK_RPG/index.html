@@ -1209,7 +1209,17 @@ window.abyssKeyCaches = abyssKeyCaches;
     if(state.pending&&state.pending.depth===d&&state.pending.room===Number(abyssRoom)+1){renderDynamic();return;}
     const roomNo=Number(abyssRoom)+1;
     const bossOrElite=roomNo===ROOMS_PER_FLOOR&&(d===7||(d>=8&&d%5===0));
-    if(bossOrElite){room.type='ambush';state.pending=null;saveState();transition(()=>oldExplore.apply(this,arguments));return;}
+    if(bossOrElite){
+      /* Последняя комната глубины тоже проходит через единую систему состояния.
+         Старый боевой движок используется только для самого боя, но комната
+         заранее получает точные depth/room, чтобы после победы не потерять прогресс. */
+      room.type='ambush';
+      room.visited=false;
+      state.pending={depth:d,room:roomNo};
+      saveState();
+      transition(()=>oldExplore.apply(this,arguments));
+      return;
+    }
     const id=chooseRoomType(),type=typeOf(id);
     abyssRoomContent=type.name+': '+type.desc;
     save();updateAbyss();renderDynamic();narrative(randomEntry(d),depthName(d));logEvent('ИССЛЕДОВАНИЕ','Обнаружена комната: '+type.name+'.');
@@ -1220,13 +1230,17 @@ window.abyssKeyCaches = abyssKeyCaches;
      Любой бой, созданный системой Бездны, завершает ровно одну текущую комнату.
      Пятая комната не перескакивает этаж и не запускается повторно: после неё
      кнопка переводит игрока на следующий этаж. */
-  function completeAbyssCombatRoom(){
-    const d=Number(abyssFloor||1),r=Math.max(1,Math.min(ROOMS_PER_FLOOR,Number(abyssRoom)+1)),room=getRoom(d,r);
+  function completeAbyssCombatRoom(depth,roomNo){
+    const d=Number(depth||abyssFloor||1);
+    const r=Math.max(1,Math.min(ROOMS_PER_FLOOR,Number(roomNo||Number(abyssRoom)+1)));
+    const room=getRoom(d,r);
     if(!room||room.visited)return false;
     room.visited=true;
     state.pending=null;
-    abyssRoom=Math.min(ROOMS_PER_FLOOR,Number(abyssRoom)+1);
-    abyssRoomContent='Комната '+r+' пройдена. Готово к следующей комнате.';
+    if(Number(abyssFloor||1)===d&&Number(abyssRoom)<ROOMS_PER_FLOOR&&r===Number(abyssRoom)+1){
+      abyssRoom=Math.min(ROOMS_PER_FLOOR,Number(abyssRoom)+1);
+      abyssRoomContent='Комната '+r+' пройдена. Готово к следующей комнате.';
+    }
     saveState();save();update();updateAbyss();renderDynamic();
     return true;
   }
@@ -1237,7 +1251,7 @@ window.abyssKeyCaches = abyssKeyCaches;
     if(!enemy&&before){
       const d=pendingBefore?pendingBefore.depth:dBefore,roomNo=pendingBefore?pendingBefore.room:roomBefore,room=getRoom(d,roomNo);
       const isAbyssCombat=!!(room&&!room.visited&&room.type==='ambush'&&((pendingBefore&&pendingBefore.depth===d&&pendingBefore.room===roomNo)||roomNo===Number(abyssRoom)+1));
-      if(isAbyssCombat&&Number(abyssFloor||1)===d)completeAbyssCombatRoom();
+      if(isAbyssCombat&&Number(abyssFloor||1)===d)completeAbyssCombatRoom(d,roomNo);
     }
     return r
   };
