@@ -980,4 +980,145 @@ window.abyssKeyCaches = abyssKeyCaches;
   };
   renderInventory();
 })();
+</script><style id="abyss-trader-v1-style">
+.abyss-trader-panel{margin-top:9px;padding:10px;border:1px solid #8b5a16;background:linear-gradient(#120d06,#050505);box-shadow:0 0 18px rgba(210,150,40,.12),inset 0 0 14px rgba(190,120,20,.06)}
+.abyss-trader-head{display:flex;justify-content:space-between;gap:8px;align-items:center}
+.abyss-trader-name{color:#dfad42;font-size:18px}.abyss-trader-tag{color:#a88950;font:10px monospace;letter-spacing:1px}
+.abyss-trader-item{display:grid;grid-template-columns:42px 1fr auto;gap:8px;align-items:center;padding:8px;margin:6px 0;border:1px solid #5d431b;background:#080706}
+.abyss-trader-item .icon{width:40px;height:40px;display:grid;place-items:center;border:1px solid #8b651f;background:#120e08;font-size:22px}
+.abyss-trader-item b{color:#eee}.abyss-trader-item small{display:block;color:#999;margin-top:3px;line-height:1.3}
+.abyss-trader-item button{width:auto;min-width:92px;margin:0;padding:7px;font-size:11px;border-color:#9b711e}.abyss-trader-item button:disabled{opacity:.45}
+.abyss-trader-note{color:#9b8a68;font:11px monospace;text-align:center;margin:7px 0}
+</style><script id="abyss-trader-v1">
+(function(){
+  /* ABYSS-TRADER-V1
+     Очень редкий торговец на этажах 3–7.
+     Один торговец максимум за один забег. Покупка только по нажатию игрока.
+     Купленные вещи не экипируются автоматически. */
+  const TKEY='chronicles_abyss_trader_v1';
+  const TMARK='ABYSS-TRADER-V1';
+  const TRADER_ITEMS=[
+    {id:'bloodfang',name:'Кровавый Клык',type:'weapon',icon:'🗡️',attack:15,crit:.04,price:135,desc:'Редкий клинок: высокая атака и шанс критического удара.'},
+    {id:'voidmantle',name:'Мантия Пустоты',type:'armor',slot:'cloak',icon:'🧥',def:4,maxEnergy:10,price:155,desc:'Редкая мантия: защита и запас энергии.'},
+    {id:'lastchance',name:'Кольцо Последнего Шанса',type:'armor',slot:'ring',icon:'💍',def:1,crit:.08,price:175,desc:'Уникальное кольцо с повышенным шансом критического удара.'},
+    {id:'ashenward',name:'Щит Пепельного Стража',type:'armor',slot:'shield',icon:'🛡️',def:6,price:190,desc:'Тяжёлый уникальный щит с высокой защитой.'},
+    {id:'abyssheart',name:'Сердце Бездны',type:'armor',slot:'amulet',icon:'🔮',def:2,maxEnergy:18,price:210,desc:'Уникальный амулет с большим запасом энергии.'}
+  ];
+  function tState(){
+    try{
+      const x=JSON.parse(localStorage.getItem(TKEY)||'null');
+      return x&&typeof x==='object'?x:{used:false,runId:null,stock:null,depth:0,room:0,open:false};
+    }catch(e){return {used:false,runId:null,stock:null,depth:0,room:0,open:false}}
+  }
+  function tSave(x){try{localStorage.setItem(TKEY,JSON.stringify(x))}catch(e){}}
+  function tRunId(){return String(localStorage.getItem('chronicles_abyss_run_v1')||'legacy')}
+  function tChance(d){
+    d=Number(d);
+    if(d<3)return 0;
+    if(d===3)return .007;
+    if(d===4)return .01;
+    if(d===5)return .013;
+    if(d===6)return .017;
+    return .022;
+  }
+  function tClone(x){return JSON.parse(JSON.stringify(x))}
+  function tStock(d){
+    const pool=TRADER_ITEMS.slice(),out=[];
+    while(pool.length&&out.length<3){
+      const i=Math.floor(Math.random()*pool.length),x=pool.splice(i,1)[0],q=tClone(x);
+      if(q.type==='weapon')q.attack+=Math.max(0,d-3)*2;
+      if(q.def)q.def+=Math.floor(Math.max(0,d-3)/2);
+      q._traderId=q.id+'_'+Date.now().toString(36)+'_'+Math.random().toString(36).slice(2,7);
+      out.push(q);
+    }
+    return out;
+  }
+  function tFormat(x){
+    let s=[];
+    if(x.attack)s.push('⚔ '+x.attack+' атаки');
+    if(x.def)s.push('🛡 '+x.def+' защиты');
+    if(x.crit)s.push('✦ '+Math.round(x.crit*100)+'% крит');
+    if(x.maxEnergy)s.push('⚡ +'+x.maxEnergy+' энергии');
+    return s.join(' · ');
+  }
+  function tReset(){
+    tSave({used:false,runId:tRunId(),stock:null,depth:0,room:0,open:false});
+  }
+  function tAdvance(){
+    const d=Number(abyssFloor||1),r=Number(abyssRoom||0);
+    abyssRoom=Math.min(ROOMS_PER_FLOOR,r+1);
+    abyssRoomContent='Торговец Бездны покинут.';
+    const s=tState();s.open=false;s.used=true;tSave(s);
+    save();update();if(typeof updateAbyss==='function')updateAbyss();
+  }
+  function tRender(){
+    const host=el('abyssDynamicPanel');if(!host)return;
+    let box=el('abyssTraderBox');
+    if(!box){box=document.createElement('div');box.id='abyssTraderBox';host.appendChild(box)}
+    const s=tState();
+    if(!s.open){box.innerHTML='';return}
+    const stock=Array.isArray(s.stock)?s.stock:[];
+    let html='<div class="abyss-trader-panel"><div class="abyss-trader-head"><div><div class="abyss-trader-name">🧳 Странник Бездны</div><div class="abyss-trader-tag">РЕДКАЯ ВСТРЕЧА · ЭТАЖ '+Number(s.depth||abyssFloor||1)+'</div></div><span class="gold">Торговец</span></div><div class="sep"></div><div class="muted" style="line-height:1.4">«Я не прихожу туда, где меня ждут. И не продаю одну и ту же вещь дважды.»</div>';
+    stock.forEach((x,i)=>{
+      const bought=!!x._bought,can=!bought&&Number(hero.gold||0)>=Number(x.price||0)&&hero.items.length<MAX_INVENTORY;
+      html+='<div class="abyss-trader-item"><div class="icon">'+x.icon+'</div><div><b>'+x.name+'</b><small>'+tFormat(x)+'<br>'+x.desc+'</small></div><button data-trader-buy="'+i+'" '+(can?'':'disabled')+'>'+(bought?'ПРОДАНО':'Купить · '+x.price+' 🪙')+'</button></div>';
+    });
+    html+='<div class="abyss-trader-note">Можно купить каждый экземпляр только один раз. Экипировка остаётся на выбор игрока.</div><button id="abyssTraderLeave">Уйти и продолжить путь</button></div>';
+    box.innerHTML=html;
+    box.querySelectorAll('[data-trader-buy]').forEach(btn=>btn.onclick=()=>tBuy(Number(btn.dataset.traderBuy)));
+    const leave=el('abyssTraderLeave');if(leave)leave.onclick=tAdvance;
+  }
+  function tBuy(index){
+    const s=tState(),x=s.stock&&s.stock[index];if(!x||x._bought)return;
+    if(Number(hero.gold||0)<Number(x.price||0)){logEvent('ТОРГОВЕЦ','Недостаточно золота для покупки '+x.name+'.');return}
+    if(hero.items.length>=MAX_INVENTORY){logEvent('ТОРГОВЕЦ','Инвентарь заполнен. Освободите место перед покупкой.');return}
+    const item=tClone(x);delete item._bought;
+    const added=addItemToInventory(item);
+    if(!added){logEvent('ТОРГОВЕЦ','Не удалось добавить предмет в инвентарь.');return}
+    hero.gold-=Number(x.price||0);x._bought=true;s.stock[index]=x;tSave(s);
+    save();update();if(typeof updateHud==='function')updateHud();tRender();
+    sfx('buy');logEvent('ТОРГОВЕЦ','Куплено: '+x.name+' за '+x.price+' золота. Предмет оставлен в инвентаре.');
+  }
+  function tTryEncounter(){
+    const d=Number(abyssFloor||1),r=Number(abyssRoom||0)+1,s=tState();
+    if(d<3||s.used||s.open)return false;
+    if(Math.random()>=tChance(d))return false;
+    s.used=true;s.open=true;s.depth=d;s.room=r;s.stock=tStock(d);tSave(s);
+    abyssRoomContent='Торговец Бездны';
+    save();if(typeof updateAbyss==='function')updateAbyss();tRender();
+    logEvent('ТОРГОВЕЦ','Редкая встреча: в комнате появился Странник Бездны.');
+    return true;
+  }
+  const oldExploreTrader=window.explore;
+  if(typeof oldExploreTrader==='function'){
+    window.explore=function(){
+      const s=tState();
+      if(s.open){tRender();return}
+      if(tTryEncounter())return;
+      return oldExploreTrader.apply(this,arguments);
+    };
+  }
+  const oldStartTrader=window.start;
+  if(typeof oldStartTrader==='function'){
+    window.start=function(){
+      const r=oldStartTrader.apply(this,arguments);
+      try{localStorage.setItem('chronicles_abyss_run_v1',Date.now().toString(36)+'_'+Math.random().toString(36).slice(2,6))}catch(e){}
+      tReset();
+      return r;
+    };
+  }
+  const oldResetTrader=window.resetAbyss;
+  if(typeof oldResetTrader==='function'){
+    window.resetAbyss=function(){
+      const r=oldResetTrader.apply(this,arguments);tReset();return r;
+    };
+  }
+  const oldUpdateAbyssTrader=window.updateAbyss;
+  if(typeof oldUpdateAbyssTrader==='function'){
+    window.updateAbyss=function(){const r=oldUpdateAbyssTrader.apply(this,arguments);tRender();return r};
+  }
+  if(tState().runId!==tRunId())tReset();
+  window.ABYSS_TRADER_V1=TMARK;
+  setTimeout(tRender,50);
+})();
 </script>
