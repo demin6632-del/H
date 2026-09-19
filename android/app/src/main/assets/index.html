@@ -1340,7 +1340,8 @@ window.abyssKeyCaches = abyssKeyCaches;
     logEvent('ТОРГОВЕЦ','Редкая встреча: в комнате появился Странник Бездны.');
     return true;
   }
-  /* TRADER-INTERACTION-FIX-V2
+  /* APK-BUILD-VERIFY-V1: актуальная версия торговца готова к проверочной сборке. */
+/* TRADER-INTERACTION-FIX-V2
      Торговец перехватывает именно тот обработчик explore(), который вызывается
      кнопкой Бездны. Процент появления и все значения tChance() не изменяются. */
   const oldExploreTrader=explore;
