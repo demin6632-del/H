@@ -1184,7 +1184,27 @@ window.abyssKeyCaches = abyssKeyCaches;
   const oldSelect=selectAbyssDepth;selectAbyssDepth=function(){transition(()=>oldSelect.apply(this,arguments));};
   const oldExplore=explore;explore=function(){
     const d=Number(abyssFloor||1);
-    if(abyssRoom>=ROOMS_PER_FLOOR){transition(()=>oldExplore.apply(this,arguments));return;}
+    /* Переход между глубинами полностью контролируется новой системой Бездны.
+       Старый explore здесь больше не меняет этаж, чтобы глубины 1–∞ не
+       смешивались с прежней системой комнат. */
+    if(abyssRoom>=ROOMS_PER_FLOOR){
+      transition(()=>{
+        abyssFloor=Math.max(1,d+1);
+        abyssRoom=0;
+        abyssBossDefeated=false;
+        abyssRoomContent='Новая комната ещё не исследована.';
+        state.pending=null;
+        state.route=null;
+        saveState();
+        save();
+        update();
+        updateAbyss();
+        renderDynamic();
+        logEvent('ЭТАЖ',abyssFloor<=MAX_FLOOR?'Открыт этаж '+abyssFloor+'.':'Открыта новая глубина Бездны: '+abyssFloor+'.');
+        if(el('out'))el('out').innerHTML='<span class="green">'+(abyssFloor<=MAX_FLOOR?'Этаж '+abyssFloor+' открыт.':'Глубина '+abyssFloor+' открыта.')+'</span>';
+      });
+      return;
+    }
     const room=getRoom(d,Number(abyssRoom)+1);
     if(state.pending&&state.pending.depth===d&&state.pending.room===Number(abyssRoom)+1){renderDynamic();return;}
     const roomNo=Number(abyssRoom)+1;
