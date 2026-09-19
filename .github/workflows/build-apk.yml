@@ -1,5 +1,6 @@
 name: Build APK
 # Автосборка актуальной версии проекта
+# Build trigger: use current synchronized main
 
 on:
   workflow_dispatch:
