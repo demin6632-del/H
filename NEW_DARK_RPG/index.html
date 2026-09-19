@@ -577,6 +577,9 @@ window.abyssKeyCaches = abyssKeyCaches;
     abyssRoom=0;
     abyssBossDefeated=false;
     abyssRoomContent='Новая комната ещё не исследована.';
+    state.pending=null;
+    state.route=null;
+    saveState();
     save();
     updateAbyss();
     logEvent('ГЛУБИНА','Выбрана глубина '+d+'.');
@@ -1244,8 +1247,10 @@ window.abyssKeyCaches = abyssKeyCaches;
     if(!room||room.visited)return false;
     room.visited=true;
     state.pending=null;
-    if(Number(abyssFloor||1)===d&&Number(abyssRoom)<ROOMS_PER_FLOOR&&r===Number(abyssRoom)+1){
-      abyssRoom=Math.min(ROOMS_PER_FLOOR,Number(abyssRoom)+1);
+    if(Number(abyssFloor||1)===d){
+      /* Фиксируем номер комнаты явно. Старый боевой движок уже увеличивает
+         abyssRoom при победе, поэтому здесь нельзя делать ещё один +1. */
+      abyssRoom=Math.max(0,Math.min(ROOMS_PER_FLOOR,r));
       abyssRoomContent='Комната '+r+' пройдена. Готово к следующей комнате.';
     }
     saveState();save();update();updateAbyss();renderDynamic();
