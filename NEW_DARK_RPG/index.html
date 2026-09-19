@@ -1070,7 +1070,7 @@ window.abyssKeyCaches = abyssKeyCaches;
     if(!o){o=document.createElement('div');o.id='abyssDynamicOverlay';o.className='abyss-overlay hidden';o.innerHTML='<div class="abyss-overlay-box"><h3 id="abyssOverlayTitle"></h3><p id="abyssOverlayText"></p><div id="abyssOverlayBody"></div><button id="abyssOverlayMain">Продолжить</button></div>';el('game').appendChild(o)}
     return o;
   }
-  function closeOverlay(){const o=el('abyssDynamicOverlay');if(o)o.classList.add('hidden')}
+  function closeOverlay(){const o=el('abyssDynamicOverlay');if(o)o.classList.add('hidden');if(typeof updateAbyss==='function')updateAbyss();if(typeof renderDynamic==='function')renderDynamic()}
   function narrative(text,title){
     const o=ensureOverlay();el('abyssOverlayTitle').textContent=title||depthName(abyssFloor);el('abyssOverlayText').textContent=text;el('abyssOverlayBody').innerHTML='';el('abyssOverlayMain').textContent='Продолжить';el('abyssOverlayMain').onclick=closeOverlay;o.classList.remove('hidden');sfx('open');
   }
@@ -1099,7 +1099,7 @@ window.abyssKeyCaches = abyssKeyCaches;
     /* Текущая комната всегда соответствует abyssRoom+1. Если глубина была
        выбрана заново, старый флаг visited этой комнаты больше не должен
        показываться как исследованный при счётчике 0/5. */
-    if(room.visited){
+    if(Number(abyssRoom||0)===0&&room.visited){
       room.visited=false;
       room.type=null;
       room.choice=null;
