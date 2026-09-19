@@ -998,7 +998,12 @@ window.abyssKeyCaches = abyssKeyCaches;
     hero.items.forEach((raw,index)=>{
       const x=itemInfo(raw)||{},slot=typeof slotOf==='function'?slotOf(x):null;
       const equipped=!!(slot&&hero.equippedIds&&hero.equippedIds[slot]&&raw._equipUid===hero.equippedIds[slot]);
-      if(equipped)return;
+      /* EQUIP-NO-PRICE-V1: экипированный предмет не показывает цену продажи вообще. */
+      if(equipped){
+        const equippedRow=[...list.children].find(node=>node.querySelector('button[onclick*="unequipItemType"]'));
+        if(equippedRow)equippedRow.querySelectorAll('[data-base-sell-index]').forEach(node=>node.remove());
+        return;
+      }
       const row=[...list.children].find(node=>node.querySelector('button[onclick*="useInventoryItem('+index+')"],button[onclick*="unequipItemType"]'));
       if(!row)return;
       const b=document.createElement('button');b.type='button';b.dataset.baseSellIndex=String(index);b.textContent='Продать · '+sellPrice(raw)+' 🪙';
