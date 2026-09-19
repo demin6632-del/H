@@ -991,6 +991,8 @@ window.abyssKeyCaches = abyssKeyCaches;
 .abyss-trader-note{color:#9b8a68;font:11px monospace;text-align:center;margin:7px 0}
 </style><script id="abyss-trader-v1">
 (function(){
+  /* ABYSS-TRADER-V1-FIX-LAST-ROOM
+     Торговец проверяется только при входе в реальную комнату, не при переходе между этажами. */
   /* ABYSS-TRADER-V1
      Очень редкий торговец на этажах 3–7.
      Один торговец максимум за один забег. Покупка только по нажатию игрока.
@@ -1080,6 +1082,8 @@ window.abyssKeyCaches = abyssKeyCaches;
     sfx('buy');logEvent('ТОРГОВЕЦ','Куплено: '+x.name+' за '+x.price+' золота. Предмет оставлен в инвентаре.');
   }
   function tTryEncounter(){
+    /* На кнопке «Следующая глубина» торговец не должен перехватывать переход. */
+    if(Number(abyssRoom||0)>=ROOMS_PER_FLOOR)return false;
     const d=Number(abyssFloor||1),r=Number(abyssRoom||0)+1,s=tState();
     if(d<3||s.used||s.open)return false;
     if(Math.random()>=tChance(d))return false;
