@@ -1270,7 +1270,12 @@ window.abyssKeyCaches = abyssKeyCaches;
         hero.items.splice(Math.min(index,hero.items.length),0,loot);
         sfx('open');
         logEvent('РЕДКИЙ ЛУТ','Таинственный ключ открыл редкую находку: '+loot.name+'. Шанс находки — 0.5%.');
-        var mysteryKeyResultHtml='<div style="font-size:38px">🎁</div><div style="font-size:22px;font-weight:800;color:#d4af37">ВЫПАЛО!</div><div style="font-size:25px;font-weight:800;margin-top:10px">'+loot.icon+' '+loot.name+'</div><div style="margin-top:8px;color:#aaa">Редкий лут из Таинственного ключа</div>';
+        var lootStats=[];
+        if(loot.attack!=null)lootStats.push('⚔️ Атака: '+loot.attack);
+        if(loot.def!=null)lootStats.push('🛡️ Защита: '+loot.def);
+        if(loot.crit!=null)lootStats.push('🎯 Критический шанс: '+Math.round(Number(loot.crit)*100)+'%');
+        if(loot.maxEnergy!=null)lootStats.push('⚡ Макс. энергия: +'+loot.maxEnergy);
+        var mysteryKeyResultHtml='<div style="font-size:38px">🎁</div><div style="font-size:22px;font-weight:800;color:#d4af37">ВЫПАЛО!</div><div style="font-size:25px;font-weight:800;margin-top:10px">'+loot.icon+' '+loot.name+'</div><div style="margin-top:12px;padding:10px;border:1px solid rgba(212,175,55,.35);border-radius:8px;color:#eee;line-height:1.6">'+(lootStats.length?lootStats.join('<br>'):'Особые характеристики')+'</div><div style="margin-top:8px;color:#aaa">Редкий лут из Таинственного ключа · шанс 0,5%</div><div style="margin-top:6px;color:#8fd18f">Предмет добавлен в инвентарь и не экипирован автоматически.</div>';
       }else{
         sfx('click');
         logEvent('ПРЕДМЕТ','Таинственный ключ использован. Редкой находки не найдено.');
