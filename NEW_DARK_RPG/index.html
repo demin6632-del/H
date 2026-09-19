@@ -564,7 +564,23 @@ window.abyssKeyCaches = abyssKeyCaches;
   const __loadGame=loadGame; loadGame=function(){const ok=__loadGame.apply(this,arguments);try{const g=JSON.parse(localStorage.getItem('abyss_gear')||'null');if(g&&typeof g==='object')hero.gear=g;const c=JSON.parse(localStorage.getItem('abyss_key_caches')||'null');if(c&&typeof c==='object'){abyssKeyCaches=c;window.abyssKeyCaches=abyssKeyCaches}}catch(e){}ensureGear();return ok};
   function depthBest(){return Math.max(1,Number(localStorage.getItem('chronicles_abyss_infinite_best_v1')||abyssFloor||1))}
   function refreshDepthSelector(){const q=el('depthSelect');if(!q)return;const best=depthBest();q.innerHTML='';for(let d=1;d<=best;d++){const o=document.createElement('option');o.value=d;o.textContent='Глубина '+d;o.selected=d===Number(abyssFloor);q.appendChild(o)}if(el('bestDepthValue'))el('bestDepthValue').textContent=best}
-  function selectAbyssDepth(){const q=el('depthSelect');const d=Math.max(1,Math.min(depthBest(),Number(q&&q.value||1)));abyssFloor=d;abyssRoom=0;abyssBossDefeated=false;abyssRoomContent='Новая комната ещё не исследована.';save();updateAbyss();logEvent('ГЛУБИНА','Выбрана глубина '+d+'.')}
+  function selectAbyssDepth(){
+    const q=el('depthSelect'),current=Math.max(1,Number(abyssFloor||1));
+    const d=Math.max(1,Math.min(depthBest(),Number(q&&q.value||current)));
+    /* Повторный выбор уже текущей глубины не должен сбрасывать комнаты. */
+    if(d===current){
+      updateAbyss();
+      if(typeof renderDynamic==='function')renderDynamic();
+      return;
+    }
+    abyssFloor=d;
+    abyssRoom=0;
+    abyssBossDefeated=false;
+    abyssRoomContent='Новая комната ещё не исследована.';
+    save();
+    updateAbyss();
+    logEvent('ГЛУБИНА','Выбрана глубина '+d+'.');
+  }
   window.selectAbyssDepth=selectAbyssDepth; window.refreshDepthSelector=refreshDepthSelector;
   const __updateAbyss=updateAbyss; updateAbyss=function(){__updateAbyss.apply(this,arguments);refreshDepthSelector();const d=Math.max(1,Number(abyssFloor||1));const hasKey=hero&&hero.items&&hero.items.some(x=>itemInfo(x).name==='Таинственный ключ');const opened=!!(abyssKeyCaches&&abyssKeyCaches[d]);if(el('abyssKeyBtn'))el('abyssKeyBtn').style.display=hasKey&&!opened?'block':'none'};
   const __showAbyss=showAbyss; showAbyss=function(){__showAbyss.apply(this,arguments);refreshDepthSelector();updateAbyss()};
@@ -1080,6 +1096,16 @@ window.abyssKeyCaches = abyssKeyCaches;
       const anchor=el('infiniteDepthPanel')||el('abyss').firstChild;el('abyss').insertBefore(p,anchor||null);
     }
     const d=Number(abyssFloor||1),r=Math.max(1,Math.min(ROOMS_PER_FLOOR,Number(abyssRoom)+1)),room=getRoom(d,r),pending=state.pending&&state.pending.depth===d&&state.pending.room===r;
+    /* Текущая комната всегда соответствует abyssRoom+1. Если глубина была
+       выбрана заново, старый флаг visited этой комнаты больше не должен
+       показываться как исследованный при счётчике 0/5. */
+    if(room.visited){
+      room.visited=false;
+      room.type=null;
+      room.choice=null;
+      state.pending=null;
+      saveState();
+    }
     const type=room.type?typeOf(room.type):null;
     let html='<div style="display:flex;justify-content:space-between;gap:7px;align-items:center"><div><b>🌑 '+depthName(d)+'</b><div class="muted" style="font-size:11px;margin-top:3px">Уровень угрозы: '+(depthRisk(d)==='safe'?'БЕЗОПАСНО':depthRisk(d)==='risk'?'РИСКОВАННО':'СМЕРТЕЛЬНО')+'</div></div><button id="abyssMapBtn" style="width:auto;min-width:122px;margin:0">🗺️ Журнал</button></div><div class="sep"></div>';
     if(type){html+='<div style="display:flex;justify-content:space-between;align-items:center;gap:7px"><span class="abyss-room-badge '+type.id+'">'+type.icon+' '+type.name+'</span><span class="muted" style="font:11px monospace">Комната '+r+'/'+ROOMS_PER_FLOOR+'</span></div><p class="muted" style="margin:7px 0;line-height:1.4">'+type.desc+'</p>';if(pending)html+='<div id="abyssDynamicActions"></div>';else if(room.visited)html+='<div class="green" style="text-align:center;font-size:12px">✓ Комната исследована</div>'}
