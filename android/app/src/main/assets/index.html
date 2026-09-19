@@ -1270,11 +1270,11 @@ window.abyssKeyCaches = abyssKeyCaches;
         hero.items.splice(Math.min(index,hero.items.length),0,loot);
         sfx('open');
         logEvent('РЕДКИЙ ЛУТ','Таинственный ключ открыл редкую находку: '+loot.name+'. Шанс находки — 0.5%.');
-        if(el('out'))el('out').innerHTML='<span class="green">🔑 Ключ открыл редкий лут: '+loot.name+'!</span>';
+        if(el('out'))el('out').innerHTML='<div style="padding:14px;margin:8px 0;border:2px solid #d4af37;border-radius:10px;text-align:center;background:rgba(212,175,55,.12)"><div style="font-size:26px">🎁</div><div style="font-size:18px;font-weight:700;color:#d4af37">ВЫПАЛО!</div><div style="font-size:20px;font-weight:700;margin-top:6px">'+loot.icon+' '+loot.name+'</div><div class="muted" style="margin-top:5px">Редкий лут из Таинственного ключа</div></div>';
       }else{
         sfx('click');
         logEvent('ПРЕДМЕТ','Таинственный ключ использован. Редкой находки не найдено.');
-        if(el('out'))el('out').innerHTML='<span class="muted">🔑 Ключ использован. В этот раз ничего ценного.</span>';
+        if(el('out'))el('out').innerHTML='<div style="padding:12px;margin:8px 0;border:1px solid #555;border-radius:10px;text-align:center"><div style="font-size:22px">🔑</div><div style="font-weight:700">Ключ использован</div><div class="muted" style="margin-top:4px">Ничего редкого не выпало</div></div>';
       }
 
       save();update();renderInventory();
@@ -1284,6 +1284,9 @@ window.abyssKeyCaches = abyssKeyCaches;
     return oldUseKeyLoot.apply(this,arguments);
   };
 
-  window.MYSTERY_KEY_MULTI_LOOT_V1='MYSTERY-KEY-MULTI-LOOT-V1';
+  /* MYSTERY-KEY-RESULT-V2 — результат открытия теперь явно показывается игроку. */
+  const oldOut=window.useInventoryItem;
+  /* Встраиваем визуальный результат через обновление сообщения уже после основной обработки ключа. */
+  window.MYSTERY_KEY_RESULT_V2='MYSTERY-KEY-RESULT-V2';  window.MYSTERY_KEY_MULTI_LOOT_V1='MYSTERY-KEY-MULTI-LOOT-V1';
 })();
 </script>
