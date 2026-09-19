@@ -1196,8 +1196,32 @@ window.abyssKeyCaches = abyssKeyCaches;
   };
   const oldUpdate=updateAbyss;updateAbyss=function(){const r=oldUpdate.apply(this,arguments);renderDynamic();return r};
   const oldDie=die;die=function(){const d=Number(abyssFloor||1);state.deaths[d]=Number(state.deaths[d]||0)+1;state.pending=null;saveState();const r=oldDie.apply(this,arguments);renderDynamic();return r};
-  const oldTurn=turn;turn=function(){const before=enemy,pendingBefore=state.pending?{depth:Number(state.pending.depth),room:Number(state.pending.room)}:null;const dBefore=Number(abyssFloor||1),roomBefore=Math.max(1,Math.min(ROOMS_PER_FLOOR,Number(abyssRoom)+1));const r=oldTurn.apply(this,arguments);if(!enemy&&before){const d=pendingBefore?pendingBefore.depth:dBefore,roomNo=pendingBefore?pendingBefore.room:roomBefore,room=getRoom(d,roomNo),isAbyssCombat=!!(room&&!room.visited&&room.type==='ambush'&&(pendingBefore||roomNo===Number(abyssRoom)+1));if(isAbyssCombat&&Number(abyssFloor||1)===d){room.visited=true;if(pendingBefore)state.pending=null;if(Number(abyssRoom)<ROOMS_PER_FLOOR&&roomNo===Number(abyssRoom)+1){abyssRoom=Math.min(ROOMS_PER_FLOOR,Number(abyssRoom)+1);abyssRoomContent='Комната '+roomNo+' пройдена. Готово к следующей комнате.';}save();update();updateAbyss();renderDynamic();}}return r};
-  window['ABYSS-ROOM-PROGRESSION-FIX-V3']='ABYSS-ROOM-PROGRESSION-FIX-V3';
+  /* ABYSS-FLOOR-PROGRESSION-FIX-V4 — единый переход комнаты после успешной победы.
+     Любой бой, созданный системой Бездны, завершает ровно одну текущую комнату.
+     Пятая комната не перескакивает этаж и не запускается повторно: после неё
+     кнопка переводит игрока на следующий этаж. */
+  function completeAbyssCombatRoom(){
+    const d=Number(abyssFloor||1),r=Math.max(1,Math.min(ROOMS_PER_FLOOR,Number(abyssRoom)+1)),room=getRoom(d,r);
+    if(!room||room.visited)return false;
+    room.visited=true;
+    state.pending=null;
+    abyssRoom=Math.min(ROOMS_PER_FLOOR,Number(abyssRoom)+1);
+    abyssRoomContent='Комната '+r+' пройдена. Готово к следующей комнате.';
+    saveState();save();update();updateAbyss();renderDynamic();
+    return true;
+  }
+  const oldTurn=turn;turn=function(){
+    const before=enemy,pendingBefore=state.pending?{depth:Number(state.pending.depth),room:Number(state.pending.room)}:null;
+    const dBefore=Number(abyssFloor||1),roomBefore=Math.max(1,Math.min(ROOMS_PER_FLOOR,Number(abyssRoom)+1));
+    const r=oldTurn.apply(this,arguments);
+    if(!enemy&&before){
+      const d=pendingBefore?pendingBefore.depth:dBefore,roomNo=pendingBefore?pendingBefore.room:roomBefore,room=getRoom(d,roomNo);
+      const isAbyssCombat=!!(room&&!room.visited&&room.type==='ambush'&&((pendingBefore&&pendingBefore.depth===d&&pendingBefore.room===roomNo)||roomNo===Number(abyssRoom)+1));
+      if(isAbyssCombat&&Number(abyssFloor||1)===d)completeAbyssCombatRoom();
+    }
+    return r
+  };
+  window['ABYSS-FLOOR-PROGRESSION-FIX-V4']='ABYSS-FLOOR-PROGRESSION-FIX-V4';
   window.openAbyssMap=renderMap;
   setTimeout(renderDynamic,0);
 })();
