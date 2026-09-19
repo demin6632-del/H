@@ -986,8 +986,12 @@ window.abyssKeyCaches = abyssKeyCaches;
     if(!hero||!Array.isArray(hero.items))return;
     const raw=hero.items[index];if(!raw)return;const x=itemInfo(raw)||{},slot=(typeof slotOf==='function')?slotOf(x):null;
     const equipped=!!(slot&&hero.equippedIds&&hero.equippedIds[slot]&&raw._equipUid===hero.equippedIds[slot]);
-    if(equipped){sfx('error');logEvent('ТОРГОВЕЦ','Нельзя продать экипированный предмет. Сначала снимите его.');if(typeof renderInventory==='function')renderInventory();return}
     const s=JSON.parse(localStorage.getItem('chronicles_abyss_trader_v1')||'{}'),price=traderSale&&s.open&&s.talked?Math.max(1,Math.round(sellPrice(raw)*Number(s.sellRate||1))):sellPrice(raw),name=x.name||raw.name||'Предмет';
+    if(equipped){
+      /* Продажа из инвентаря разрешена и для экипированного экземпляра.
+         Перед удалением снимаем именно этот экземпляр, чтобы статы и equippedIds остались корректными. */
+      if(typeof unequipItemType==='function'&&slot)unequipItemType(slot);
+    }
     hero.items.splice(index,1);hero.gold=Math.max(0,Number(hero.gold||0)+price);save();update();if(typeof updateHud==='function')updateHud();if(typeof renderInventory==='function')renderInventory();if(typeof renderHero==='function')renderHero();if(typeof window.renderAbyssTraderSell==='function')window.renderAbyssTraderSell();sfx('buy');logEvent('ТОРГОВЕЦ','Продан: '+name+' за '+price+' золота.');if(el('out'))el('out').innerHTML='<span class="green">Странник купил: '+name+' за '+price+' золота.</span>';
   };
   const baseRenderInventory=renderInventory;
@@ -999,14 +1003,9 @@ window.abyssKeyCaches = abyssKeyCaches;
       const x=itemInfo(raw)||{},slot=typeof slotOf==='function'?slotOf(x):null;
       const equipped=!!(slot&&hero.equippedIds&&hero.equippedIds[slot]&&raw._equipUid===hero.equippedIds[slot]);
       /* EQUIP-NO-PRICE-V1: экипированный предмет не показывает цену продажи вообще. */
-      if(equipped){
-        const equippedRow=[...list.children].find(node=>node.querySelector('button[onclick*="unequipItemType"]'));
-        if(equippedRow)equippedRow.querySelectorAll('[data-base-sell-index]').forEach(node=>node.remove());
-        return;
-      }
       const row=[...list.children].find(node=>node.querySelector('button[onclick*="useInventoryItem('+index+')"],button[onclick*="unequipItemType"]'));
       if(!row)return;
-      const b=document.createElement('button');b.type='button';b.dataset.baseSellIndex=String(index);b.textContent='Продать · '+sellPrice(raw)+' 🪙';
+      const b=document.createElement('button');b.type='button';b.dataset.baseSellIndex=String(index);b.textContent=equipped?'Продать':'Продать · '+sellPrice(raw)+' 🪙';
       b.style.cssText='width:auto;min-width:108px;margin:4px 0 0 4px;padding:6px 7px;font-size:11px';
       b.onclick=()=>window.sellInventoryItem(index,false);
       const wrap=row.querySelector('div:nth-child(2)');if(wrap)wrap.appendChild(b);
