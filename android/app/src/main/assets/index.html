@@ -967,82 +967,30 @@ window.abyssKeyCaches = abyssKeyCaches;
   window.openAbyssMap=renderMap;
   setTimeout(renderDynamic,0);
 })();
-</script><script id="inventory-sell-v1">
+</script><script id="inventory-sell-v2">
 (function(){
-  /* INVENTORY-SELL-V1
-     Продажа только по явному нажатию игрока. Экипированный экземпляр
-     нельзя продать: сначала его нужно снять. */
+  /* INVENTORY-SELL-V2
+     У предмета одна фиксированная базовая цена.
+     Продажа разрешена только редкому торговцу Бездны и только после разговора с ним.
+     В обычном инвентаре кнопки продажи нет. */
   function sellPrice(raw){
-    /* Один предмет = одна фиксированная цена продажи.
-       Цена больше не зависит от характеристик конкретного экземпляра. */
     const x=itemInfo(raw)||{};
     const name=String(x.name||raw&&raw.name||'');
-    const fixedPrices={
-      'Железный меч':20,
-      'Кожаная броня':20,
-      'Стальной шлем':25,
-      'Серебряное кольцо':30,
-      'Плащ странника':22,
-      'Сапоги пустоши':20,
-      'Амулет Бездны':35,
-      'Щит пепла':40,
-      'Кровавый Клык':55,
-      'Мантия Пустоты':60,
-      'Кольцо Последнего Шанса':65,
-      'Щит Пепельного Стража':70,
-      'Сердце Бездны':75,
-      'Клинок Бездны':60,
-      'Доспех Бездны':60,
-      'Кольцо Бездны':65,
-      'Амулет Пустоты':70,
-      'Щит Бездны':75,
-      'Таинственный ключ':15,
-      'Зелье здоровья':10,
-      'Зелье маны':10,
-      'Случайный предмет':12
-    };
+    const fixedPrices={'Железный меч':20,'Кожаная броня':20,'Стальной шлем':25,'Серебряное кольцо':30,'Плащ странника':22,'Сапоги пустоши':20,'Амулет Бездны':35,'Щит пепла':40,'Кровавый Клык':55,'Мантия Пустоты':60,'Кольцо Последнего Шанса':65,'Щит Пепельного Стража':70,'Сердце Бездны':75,'Клинок Бездны':60,'Доспех Бездны':60,'Кольцо Бездны':65,'Амулет Пустоты':70,'Щит Бездны':75,'Таинственный ключ':15,'Зелье здоровья':10,'Зелье маны':10,'Случайный предмет':12};
     if(Object.prototype.hasOwnProperty.call(fixedPrices,name))return fixedPrices[name];
-    if(x.type==='consumable')return 10;
-    if(x.type==='random')return 12;
-    if(x.type==='other')return 15;
-    if(x.type==='weapon')return 20;
-    if(x.type==='armor'||x.slot)return 25;
-    return 8;
+    if(x.type==='consumable')return 10;if(x.type==='random')return 12;if(x.type==='other')return 15;if(x.type==='weapon')return 20;if(x.type==='armor'||x.slot)return 25;return 8;
   }
+  function traderSellAllowed(){try{const s=JSON.parse(localStorage.getItem('chronicles_abyss_trader_v1')||'null');return !!(s&&s.open&&s.talked)}catch(e){return false}}
   window.sellInventoryItem=function(index){
+    if(!traderSellAllowed()){sfx('error');if(el('out'))el('out').innerHTML='<span class="red">Продажа доступна только Страннику Бездны после разговора с ним.</span>';return}
     if(!hero||!Array.isArray(hero.items))return;
-    const raw=hero.items[index];if(!raw)return;
-    const x=itemInfo(raw)||{};
-    const slot=(typeof slotOf==='function')?slotOf(x):null;
+    const raw=hero.items[index];if(!raw)return;const x=itemInfo(raw)||{},slot=(typeof slotOf==='function')?slotOf(x):null;
     const equipped=!!(slot&&hero.equippedIds&&hero.equippedIds[slot]&&raw._equipUid===hero.equippedIds[slot]);
-    if(equipped){
-      sfx('error');logEvent('МАГАЗИН','Нельзя продать экипированный предмет. Сначала снимите его.');renderInventory();return;
-    }
-    const price=sellPrice(raw),name=x.name||raw.name||'Предмет';
-    hero.items.splice(index,1);hero.gold=Math.max(0,Number(hero.gold||0)+price);
-    save();update();if(typeof updateHud==='function')updateHud();renderInventory();if(typeof renderHero==='function')renderHero();
-    sfx('buy');logEvent('МАГАЗИН','Продан: '+name+' за '+price+' золота.');
-    if(el('out'))el('out').innerHTML='<span class="green">Продано: '+name+' за '+price+' золота.</span>';
+    if(equipped){sfx('error');logEvent('ТОРГОВЕЦ','Нельзя продать экипированный предмет. Сначала снимите его.');if(typeof renderInventory==='function')renderInventory();return}
+    const base=sellPrice(raw),s=JSON.parse(localStorage.getItem('chronicles_abyss_trader_v1')||'{}'),rate=Number(s.sellRate||1),price=Math.max(1,Math.round(base*rate)),name=x.name||raw.name||'Предмет';
+    hero.items.splice(index,1);hero.gold=Math.max(0,Number(hero.gold||0)+price);save();update();if(typeof updateHud==='function')updateHud();if(typeof renderInventory==='function')renderInventory();if(typeof renderHero==='function')renderHero();if(typeof window.renderAbyssTraderSell==='function')window.renderAbyssTraderSell();sfx('buy');logEvent('ТОРГОВЕЦ','Продан: '+name+' за '+price+' золота.');if(el('out'))el('out').innerHTML='<span class="green">Странник купил: '+name+' за '+price+' золота.</span>';
   };
-  window.sellPrice=sellPrice;
-  const sellRenderBase=renderInventory;
-  renderInventory=function(){
-    sellRenderBase.apply(this,arguments);
-    const list=el('inventoryList');if(!list)return;
-    list.querySelectorAll('[data-sell-index]').forEach(x=>x.remove());
-    hero.items.forEach((raw,index)=>{
-      const row=[...list.children].find(node=>node.querySelector('button[onclick*="useInventoryItem('+index+')"],button[onclick*="unequipItemType"]'));
-      if(!row)return;
-      const x=itemInfo(raw)||{},slot=typeof slotOf==='function'?slotOf(x):null;
-      const equipped=!!(slot&&hero.equippedIds&&hero.equippedIds[slot]&&raw._equipUid===hero.equippedIds[slot]);
-      if(equipped)return;
-      const b=document.createElement('button');b.type='button';b.dataset.sellIndex=String(index);b.textContent='Продать · '+sellPrice(raw)+' 🪙';
-      b.style.cssText='width:auto;min-width:108px;margin:4px 0 0 4px;padding:6px 7px;font-size:11px';
-      b.onclick=()=>window.sellInventoryItem(index);
-      const wrap=row.querySelector('div:nth-child(2)');if(wrap)wrap.appendChild(b);
-    });
-  };
-  renderInventory();
+  window.sellPrice=sellPrice;window.TRADER_SELL_V2='TRADER-SELL-V2';
 })();
 </script><style id="abyss-trader-v1-style">
 .abyss-trader-panel{margin-top:9px;padding:10px;border:1px solid #8b5a16;background:linear-gradient(#120d06,#050505);box-shadow:0 0 18px rgba(210,150,40,.12),inset 0 0 14px rgba(190,120,20,.06)}
@@ -1053,7 +1001,7 @@ window.abyssKeyCaches = abyssKeyCaches;
 .abyss-trader-item b{color:#eee}.abyss-trader-item small{display:block;color:#999;margin-top:3px;line-height:1.3}
 .abyss-trader-item button{width:auto;min-width:92px;margin:0;padding:7px;font-size:11px;border-color:#9b711e}.abyss-trader-item button:disabled{opacity:.45}
 .abyss-trader-note{color:#9b8a68;font:11px monospace;text-align:center;margin:7px 0}
-</style><script id="abyss-trader-v1">
+.abyss-trader-dialog{padding:10px;margin:8px 0;border:1px solid #76551b;background:#0a0805}.abyss-trader-dialog p{margin:6px 0;color:#bbb;line-height:1.45}.abyss-trader-sell{margin-top:10px;padding:9px;border:1px solid #5d431b;background:#070605}.abyss-trader-sell-item{display:grid;grid-template-columns:36px 1fr auto;gap:7px;align-items:center;padding:7px;margin:5px 0;border:1px solid #392b14;background:#090806}.abyss-trader-sell-item b{color:#eee;font-size:12px}.abyss-trader-sell-item small{display:block;color:#888;font:10px monospace;margin-top:2px}.abyss-trader-sell-item button{width:auto;min-width:96px;margin:0;padding:6px;font-size:10px;border-color:#9b711e}</style><script id="abyss-trader-v1">
 (function(){
   /* ABYSS-TRADER-V1-FIX-LAST-ROOM
      Торговец проверяется только при входе в реальную комнату, не при переходе между этажами. */
@@ -1073,8 +1021,8 @@ window.abyssKeyCaches = abyssKeyCaches;
   function tState(){
     try{
       const x=JSON.parse(localStorage.getItem(TKEY)||'null');
-      return x&&typeof x==='object'?x:{used:false,runId:null,stock:null,depth:0,room:0,open:false};
-    }catch(e){return {used:false,runId:null,stock:null,depth:0,room:0,open:false}}
+      return x&&typeof x==='object'?x:{used:false,runId:null,stock:null,depth:0,room:0,open:false,talked:false,sellRate:1};
+    }catch(e){return {used:false,runId:null,stock:null,depth:0,room:0,open:false,talked:false,sellRate:1}}
   }
   function tSave(x){try{localStorage.setItem(TKEY,JSON.stringify(x))}catch(e){}}
   function tRunId(){return String(localStorage.getItem('chronicles_abyss_run_v1')||'legacy')}
@@ -1108,7 +1056,7 @@ window.abyssKeyCaches = abyssKeyCaches;
     return s.join(' · ');
   }
   function tReset(){
-    tSave({used:false,runId:tRunId(),stock:null,depth:0,room:0,open:false});
+    tSave({used:false,runId:tRunId(),stock:null,depth:0,room:0,open:false,talked:false,sellRate:1});
   }
   function tAdvance(){
     /* Переход из комнаты торговца должен завершаться тем же экраном Бездны,
@@ -1119,6 +1067,8 @@ window.abyssKeyCaches = abyssKeyCaches;
     abyssRoomContent='Странник Бездны ушёл. Путь продолжается.';
     const s=tState();
     s.open=false;
+    s.talked=false;
+    s.sellRate=1;
     s.used=true;
     s.depth=Number(abyssFloor||1);
     s.room=next;
@@ -1133,23 +1083,12 @@ window.abyssKeyCaches = abyssKeyCaches;
     if(typeof updateAbyss==='function')updateAbyss();
     tRender();
   }
-  function tRender(){
-    const host=el('abyssDynamicPanel');if(!host)return;
-    let box=el('abyssTraderBox');
-    if(!box){box=document.createElement('div');box.id='abyssTraderBox';host.appendChild(box)}
-    const s=tState();
-    if(!s.open){box.innerHTML='';return}
-    const stock=Array.isArray(s.stock)?s.stock:[];
-    let html='<div class="abyss-trader-panel"><div class="abyss-trader-head"><div><div class="abyss-trader-name">🧳 Странник Бездны</div><div class="abyss-trader-tag">РЕДКАЯ ВСТРЕЧА · ЭТАЖ '+Number(s.depth||abyssFloor||1)+'</div></div><span class="gold">Торговец</span></div><div class="sep"></div><div class="muted" style="line-height:1.4">«Я не прихожу туда, где меня ждут. И не продаю одну и ту же вещь дважды.»</div>';
-    stock.forEach((x,i)=>{
-      const bought=!!x._bought,can=!bought&&Number(hero.gold||0)>=Number(x.price||0)&&hero.items.length<MAX_INVENTORY;
-      html+='<div class="abyss-trader-item"><div class="icon">'+x.icon+'</div><div><b>'+x.name+'</b><small>'+tFormat(x)+'<br>'+x.desc+'</small></div><button data-trader-buy="'+i+'" '+(can?'':'disabled')+'>'+(bought?'ПРОДАНО':'Купить · '+x.price+' 🪙')+'</button></div>';
-    });
-    html+='<div class="abyss-trader-note">Можно купить каждый экземпляр только один раз. Экипировка остаётся на выбор игрока.</div><button id="abyssTraderLeave">Уйти и продолжить путь</button></div>';
-    box.innerHTML=html;
-    box.querySelectorAll('[data-trader-buy]').forEach(btn=>btn.onclick=()=>tBuy(Number(btn.dataset.traderBuy)));
-    const leave=el('abyssTraderLeave');if(leave)leave.onclick=tAdvance;
-  }
+  function traderDialogue(){const s=tState();if(s.talked)return '';return '<div class="abyss-trader-dialog"><b class="gold">Разговор со Странником</b><p>«Прежде чем я куплю хоть что-нибудь, скажи, как ты ведёшь дела.»</p><button data-trader-talk="high">Говорить честно и уважительно</button><button data-trader-talk="low">Давить и пытаться обмануть</button></div>'}
+  function traderTalk(result){const s=tState();if(s.talked)return;s.talked=true;if(result==='high'){s.sellRate=1.3;logEvent('ТОРГОВЕЦ','Странник оценил честный разговор. Он готов платить больше.');if(el('out'))el('out').innerHTML='<span class="green">Странник решил платить выше обычной цены: +30%.</span>'}else{s.sellRate=.7;logEvent('ТОРГОВЕЦ','Странник не оценил попытку давления. Он готов платить меньше.');if(el('out'))el('out').innerHTML='<span class="red">Странник решил платить меньше обычной цены: −30%.</span>'}tSave(s);tRender()}
+  function traderSellPrice(raw){const s=tState();return Math.max(1,Math.round(Number(window.sellPrice(raw)||0)*Number(s.sellRate||1)))}
+  window.renderAbyssTraderSell=function(){const box=el('abyssTraderSellList');if(!box)return;const s=tState();if(!s.open||!s.talked){box.innerHTML='';return}if(!hero||!Array.isArray(hero.items)){box.innerHTML='';return}let html='<div class="abyss-trader-sell"><div class="gold"><b>Купить ваши предметы</b> · '+(s.sellRate>1?'торговец платит +30%':'торговец платит −30%')+'</div>';let count=0;hero.items.forEach((raw,index)=>{const x=itemInfo(raw)||{},slot=typeof slotOf==='function'?slotOf(x):null,equipped=!!(slot&&hero.equippedIds&&hero.equippedIds[slot]&&raw._equipUid===hero.equippedIds[slot]);if(equipped)return;count++;const price=traderSellPrice(raw);html+='<div class="abyss-trader-sell-item"><div>'+String(raw.icon||x.icon||'📦')+'</div><div><b>'+String(x.name||raw.name||'Предмет')+'</b><small>Цена продажи: '+price+' 🪙</small></div><button data-trader-sell="'+index+'">Продать · '+price+' 🪙</button></div>'});if(!count)html+='<div class="muted" style="padding:8px;text-align:center">Нет предметов для продажи.</div>';html+='</div>';box.innerHTML=html;box.querySelectorAll('[data-trader-sell]').forEach(btn=>btn.onclick=()=>window.sellInventoryItem(Number(btn.dataset.traderSell)))}
+  function tRender(){const host=el('abyssDynamicPanel');if(!host)return;let box=el('abyssTraderBox');if(!box){box=document.createElement('div');box.id='abyssTraderBox';host.appendChild(box)}const s=tState();if(!s.open){box.innerHTML='';return}const stock=Array.isArray(s.stock)?s.stock:[];let html='<div class="abyss-trader-panel"><div class="abyss-trader-head"><div><div class="abyss-trader-name">🧳 Странник Бездны</div><div class="abyss-trader-tag">РЕДКАЯ ВСТРЕЧА · ЭТАЖ '+Number(s.depth||abyssFloor||1)+'</div></div><span class="gold">Торговец</span></div><div class="sep"></div><div class="muted" style="line-height:1.4">«Я не прихожу туда, где меня ждут. И не продаю одну и ту же вещь дважды.»</div>'+traderDialogue();if(s.talked){stock.forEach((x,i)=>{const bought=!!x._bought,can=!bought&&Number(hero.gold||0)>=Number(x.price||0)&&hero.items.length<MAX_INVENTORY;html+='<div class="abyss-trader-item"><div class="icon">'+x.icon+'</div><div><b>'+x.name+'</b><small>'+tFormat(x)+'<br>'+x.desc+'</small></div><button data-trader-buy="'+i+'" '+(can?'':'disabled')+'>'+(bought?'ПРОДАНО':'Купить · '+x.price+' 🪙')+'</button></div>')})}else{html+='<div class="abyss-trader-note">Сначала поговорите со Странником. После разговора он решит, по какой цене будет покупать ваши вещи.</div>'}html+='<div id="abyssTraderSellList"></div><div class="abyss-trader-note">Экипированные предметы продать нельзя. Остальные остаются на вашем выборе.</div><button id="abyssTraderLeave">Уйти и продолжить путь</button></div>';box.innerHTML=html;box.querySelectorAll('[data-trader-buy]').forEach(btn=>btn.onclick=()=>tBuy(Number(btn.dataset.traderBuy)));box.querySelectorAll('[data-trader-talk]').forEach(btn=>btn.onclick=()=>traderTalk(btn.dataset.traderTalk));const leave=el('abyssTraderLeave');if(leave)leave.onclick=tAdvance;window.renderAbyssTraderSell()}
+
   function tBuy(index){
     const s=tState(),x=s.stock&&s.stock[index];if(!x||x._bought)return;
     if(Number(hero.gold||0)<Number(x.price||0)){logEvent('ТОРГОВЕЦ','Недостаточно золота для покупки '+x.name+'.');return}
@@ -1167,7 +1106,7 @@ window.abyssKeyCaches = abyssKeyCaches;
     const d=Number(abyssFloor||1),r=Number(abyssRoom||0)+1,s=tState();
     if(d<3||s.used||s.open)return false;
     if(Math.random()>=tChance(d))return false;
-    s.used=true;s.open=true;s.depth=d;s.room=r;s.stock=tStock(d);tSave(s);
+    s.used=true;s.open=true;s.talked=false;s.sellRate=1;s.depth=d;s.room=r;s.stock=tStock(d);tSave(s);
     abyssRoomContent='Торговец Бездны';
     save();if(typeof updateAbyss==='function')updateAbyss();tRender();
     logEvent('ТОРГОВЕЦ','Редкая встреча: в комнате появился Странник Бездны.');
