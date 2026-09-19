@@ -1181,12 +1181,13 @@ window.abyssKeyCaches = abyssKeyCaches;
 </script><script id="shop-one-purchase-v1">
 (function(){
   /* SHOP-ONE-PURCHASE-V1
-     Один и тот же товар магазина нельзя купить повторно, пока такой товар уже есть
-     у игрока. Проверка работает по ID товара и по имени для всех категорий. */
+     Обычные товары и ключ нельзя покупать повторно.
+     Зелья здоровья и маны — расходники: их можно покупать многократно,
+     пока хватает золота и есть место в инвентаре. */
   function shopAlreadyOwned(item){
-    /* Зелья здоровья и маны — расходники, их можно покупать сколько угодно. */
-    if(item&&(item.id==='hp'||item.id==='mp'))return false;
     if(!item||!hero||!Array.isArray(hero.items))return false;
+    /* Только зелья hp/mp исключаются из запрета повторной покупки. */
+    if(item.id==='hp'||item.id==='mp')return false;
     const id=item.id!=null?String(item.id):'';
     const name=item.name!=null?String(item.name):'';
     return hero.items.some(raw=>{
