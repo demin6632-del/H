@@ -15,6 +15,47 @@
       if(typeof start==='function'&&!start.__fixed){const old=start;const f=function(className){try{abyssKeyCaches={};window.abyssKeyCaches=abyssKeyCaches;localStorage.removeItem('abyss_key_caches');localStorage.removeItem('abyss_gear')}catch(e){}return old.apply(this,arguments)};f.__fixed=true;window.start=f;}
       if(typeof save==='function'&&!save.__fixed){const old=save;const f=function(){try{if(typeof ensureGear==='function')ensureGear();localStorage.setItem('abyss_gear',JSON.stringify(hero.gear));localStorage.setItem('abyss_key_caches',JSON.stringify(abyssKeyCaches||{}))}catch(e){}return old.apply(this,arguments)};f.__fixed=true;window.save=f;}
 
+      /* ABYSS-DEPTH-PROGRESS-FIX-V5
+         При возврате на уже открытую глубину восстанавливаем непрерывный
+         прогресс комнат вместо принудительного возврата к комнате 1. */
+      function syncAbyssDepthProgress(){
+        try{
+          if(typeof abyssFloor==='undefined'||typeof state==='undefined'||!state||!state.rooms)return;
+          const d=Math.max(1,Number(abyssFloor||1));
+          const max=typeof ROOMS_PER_FLOOR==='number'?ROOMS_PER_FLOOR:5;
+          let completed=0;
+          for(let r=1;r<=max;r++){
+            const k=typeof roomKey==='function'?roomKey(d,r):(d+':'+r);
+            const room=state.rooms[k];
+            if(room&&room.visited)completed=r;else break;
+          }
+          abyssRoom=Math.max(0,Math.min(max,completed));
+          if(state.pending&&Number(state.pending.depth)===d&&Number(state.pending.room)<=completed)state.pending=null;
+        }catch(e){}
+      }
+      if(typeof renderDynamic==='function'&&!renderDynamic.__abyssDepthProgressFix){
+        const oldRenderDynamic=renderDynamic;
+        const f=function(){
+          syncAbyssDepthProgress();
+          const r=oldRenderDynamic.apply(this,arguments);
+          syncAbyssDepthProgress();
+          return r;
+        };
+        f.__abyssDepthProgressFix=true;
+        window.renderDynamic=f;
+      }
+      if(typeof selectAbyssDepth==='function'&&!selectAbyssDepth.__abyssDepthProgressFix){
+        const oldSelectAbyssDepth=selectAbyssDepth;
+        const f=function(){
+          const r=oldSelectAbyssDepth.apply(this,arguments);
+          syncAbyssDepthProgress();
+          if(typeof saveState==='function')saveState();
+          return r;
+        };
+        f.__abyssDepthProgressFix=true;
+        window.selectAbyssDepth=f;
+      }
+
       if(typeof updateBattle==='function'&&!updateBattle.__battleArtRuntimeFix){
         const old=updateBattle;
         const f=function(){
