@@ -228,7 +228,7 @@ const saveKey='new_dark_rpg_save_v1';
 const classStats={'Воин':{hp:130,maxHp:130,energy:40,maxEnergy:40,attack:12,def:9,skill:'Сокрушительный удар'},'Маг':{hp:80,maxHp:80,energy:100,maxEnergy:100,attack:16,def:3,skill:'Огненный разряд'},'Разбойник':{hp:95,maxHp:95,energy:65,maxEnergy:65,attack:14,def:5,skill:'Смертельный выпад'},'Охотник':{hp:105,maxHp:105,energy:60,maxEnergy:60,attack:15,def:6,skill:'Точный выстрел'}};
 const skillStats={'Воин':{cost:10,damage:28},'Маг':{cost:15,damage:36},'Разбойник':{cost:12,damage:30},'Охотник':{cost:10,damage:27}};
 let hero={name:'Странник',class:'',hp:100,maxHp:100,energy:50,maxEnergy:50,attack:10,def:5,level:1,xp:0,items:[],weapon:'Нет',armor:'Нет',gold:100,allies:[],crit:0};
-const screens=['menu','classes','main','abyss','battle','inventory','equipment','hero','stats','skills','shop','tavern','settings','journal','death'];
+const screens=['menu','classes','main','abyss','battle','inventory','equipment','blacksmith','hero','stats','skills','shop','tavern','settings','journal','death'];
 const el=id=>document.getElementById(id);
 function resetAbyss(){abyssFloor=1;abyssRoom=0;abyssBossDefeated=false;abyssRoomContent='Новая комната ещё не исследована.';updateAbyss()}
 function updateAbyss(){if(el('abyssFloor'))el('abyssFloor').textContent=abyssFloor+(abyssFloor>=8?' · Глубины':'/'+MAX_FLOOR);if(el('abyssRoomInfo'))el('abyssRoomInfo').innerHTML='<b>Комната '+Math.min(ROOMS_PER_FLOOR,abyssRoom+1)+'/'+ROOMS_PER_FLOOR+'</b><br><span class="muted">'+abyssRoomContent+'</span>';if(el('abyssRooms'))el('abyssRooms').textContent=abyssRoom+'/'+ROOMS_PER_FLOOR;if(el('exploreBtn'))el('exploreBtn').textContent=abyssRoom>=ROOMS_PER_FLOOR?'Следующая глубина':'Войти в комнату'}
