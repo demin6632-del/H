@@ -1047,11 +1047,27 @@ window.abyssKeyCaches = abyssKeyCaches;
     tSave({used:false,runId:tRunId(),stock:null,depth:0,room:0,open:false});
   }
   function tAdvance(){
-    const d=Number(abyssFloor||1),r=Number(abyssRoom||0);
-    abyssRoom=Math.min(ROOMS_PER_FLOOR,r+1);
-    abyssRoomContent='Торговец Бездны покинут.';
-    const s=tState();s.open=false;s.used=true;tSave(s);
-    save();update();if(typeof updateAbyss==='function')updateAbyss();
+    /* Переход из комнаты торговца должен завершаться тем же экраном Бездны,
+       что и обычное завершение комнаты. Нельзя оставлять игрока в состоянии open. */
+    const r=Math.max(0,Number(abyssRoom||0));
+    const next=Math.min(ROOMS_PER_FLOOR,r+1);
+    abyssRoom=next;
+    abyssRoomContent='Странник Бездны ушёл. Путь продолжается.';
+    const s=tState();
+    s.open=false;
+    s.used=true;
+    s.depth=Number(abyssFloor||1);
+    s.room=next;
+    tSave(s);
+    save();
+    update();
+    if(typeof updateAbyss==='function')updateAbyss();
+    if(el('out'))el('out').innerHTML='<span class="green">Торговец ушёл. Следующая комната готова.</span>';
+    screenHistory=['menu','main','abyss'];
+    history.replaceState({screen:'abyss'},'','#abyss');
+    setScreen('abyss',false);
+    if(typeof updateAbyss==='function')updateAbyss();
+    tRender();
   }
   function tRender(){
     const host=el('abyssDynamicPanel');if(!host)return;
