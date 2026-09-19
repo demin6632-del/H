@@ -216,6 +216,11 @@
 @media(max-width:380px){
   #blacksmithList.blacksmith-grid{grid-template-columns:1fr;}
 }
+</style><style id="blacksmith-grouped-v3">
+#blacksmithList .blacksmith-quantity{display:block;color:#d9b86c;font-size:12px;margin-top:4px}
+#blacksmithList .blacksmith-card{min-height:0}
+#blacksmithList .blacksmith-batch-btn{margin-top:6px}
+#blacksmithBatchModal .modal-box{max-width:380px}
 </style></head>
 <body><div id="game">
 <div id="menu"><div class="title-wrap"><div class="title-main">ХРОНИКИ<span>БЕЗДНЫ</span></div><div class="subtitle">ТЕКСТОВАЯ ROGUELIKE-RPG</div></div><button class="start-hit" onclick="showClasses()">Начать игру</button><button id="continueHit" class="continue-hit" onclick="continueGame()">Продолжить</button><div class="loading"><span></span></div><div class="loading-text">Загрузка...</div></div>
@@ -232,7 +237,18 @@
 <div id="settings" class="screen hidden"><div class="screen-title"><button class="back-mini" onclick="goBack()">← Назад</button><h2>Настройки</h2></div><div class="panel"><div class="info-row"><span>Звук</span><input id="sfxVolume" class="range" type="range" min="0" max="1" step="0.01" value="0.55" oninput="setSfxVolume(this.value)"></div><div class="info-row"><span>Музыка</span><input id="musicVolume" class="range" type="range" min="0" max="1" step="0.01" value="1" oninput="setMusicVolume(this.value)"></div><div class="info-row"><span>Аудио</span><button onclick="setAudioEnabled(!audioEnabled);this.innerHTML=audioEnabled?'Включено':'Выключено'">Включено</button></div><div class="info-row"><span>Графика</span><button onclick="cycleSetting('graphics',this)">‹ Высокое ›</button></div><div class="info-row"><span>Язык</span><button onclick="cycleSetting('language',this)">‹ Русский ›</button></div><button onclick="goBack()">Назад</button></div></div>
 <div id="journal" class="screen hidden"><div class="screen-title"><button class="back-mini" onclick="goBack()">← Назад</button><h2>Журнал</h2></div><div class="panel"><div class="log" id="journalLog"></div><button onclick="goBack()">Назад</button></div></div>
 <div id="death" class="screen hidden"><div class="screen-title"><h2>Поражение</h2></div><div class="panel" style="text-align:center"><div style="font-size:72px;margin:18px 0">💀</div><h3>Ты пал в Бездне</h3><p class="muted">Текущий забег завершён. Уровень, предметы и золото сохранены.</p><div class="sep"></div><button onclick="returnFromDeath()">Вернуться в город</button><button onclick="mainMenu()">Главное меню</button></div></div>
-<div id="modal" class="modal hidden"><div class="modal-box"><h2>Выйти из игры?</h2><p style="text-align:center;color:#aaa;margin-bottom:14px">Твой прогресс сохранён.</p><button onclick="closeModal()">Нет</button><button onclick="mainMenu()">Да</button></div></div><div id="choiceModal" class="modal hidden"><div class="modal-box"><h2 id="choiceTitle">Событие</h2><p id="choiceText" style="text-align:center;color:#aaa;line-height:1.5;margin-bottom:14px"></p><button id="choiceAcceptBtn" onclick="resolveAbyssEvent(true)">Взаимодействовать</button><button onclick="resolveAbyssEvent(false)">Пройти мимо</button></div></div>
+<div id="modal" class="modal hidden"><div class="modal-box"><h2>Выйти из игры?</h2><p style="text-align:center;color:#aaa;margin-bottom:14px">Твой прогресс сохранён.</p><button onclick="closeModal()">Нет</button><button onclick="mainMenu()">Да</button></div></div><div id="blacksmithBatchModal" class="modal hidden"><div class="modal-box">
+<h2 id="blacksmithBatchTitle">Массовое улучшение</h2>
+<p id="blacksmithBatchText" style="text-align:center;color:#aaa;line-height:1.5;margin-bottom:12px"></p>
+<div style="display:flex;align-items:center;justify-content:center;gap:12px;margin:12px 0">
+<button style="width:54px" onclick="changeBlacksmithBatch(-1)">−</button>
+<strong id="blacksmithBatchCount" style="font-size:24px;min-width:42px;text-align:center">1</strong>
+<button style="width:54px" onclick="changeBlacksmithBatch(1)">+</button>
+</div>
+<p id="blacksmithBatchCost" style="text-align:center;color:#e7c95c;margin:8px 0"></p>
+<button onclick="confirmBlacksmithBatch()">Улучшить выбранное</button>
+<button onclick="closeBlacksmithBatch()">Отмена</button>
+</div></div><div id="choiceModal" class="modal hidden"><div class="modal-box"><h2 id="choiceTitle">Событие</h2><p id="choiceText" style="text-align:center;color:#aaa;line-height:1.5;margin-bottom:14px"></p><button id="choiceAcceptBtn" onclick="resolveAbyssEvent(true)">Взаимодействовать</button><button onclick="resolveAbyssEvent(false)">Пройти мимо</button></div></div>
 <script>
 /* Аудиосистема: процедурная тёмная музыка и звуки без внешних файлов */
 let audioCtx=null,audioMaster=null,musicGain=null,sfxGain=null,musicCompressor=null,musicTimer=null,musicStep=0;
@@ -325,32 +341,103 @@ const BLACKSMITH_MAX=5;
 function blacksmithUpgradeCost(level){const n=Math.max(0,Number(level||0));return [50,100,175,275,400][n]||400}
 function blacksmithDisplayName(item){const x=itemInfo(item);const lvl=Math.max(0,Number(item&&item.upgradeLevel||0));return x.name+(lvl>0?' +'+lvl:'')}
 function blacksmithBonusText(item){const x=itemInfo(item);const lvl=Math.max(0,Number(item&&item.upgradeLevel||0));if(!lvl)return x.desc||'Без улучшения';if(x.attack)return '+'+(Number(x.attack)+lvl)+' к атаке';if(x.def)return '+'+(Number(x.def)+lvl)+' к защите';if(x.crit)return '+'+Math.round((Number(x.crit)+lvl*.01)*100)+'% к криту';if(x.maxEnergy)return '+'+(Number(x.maxEnergy)+lvl)+' к максимуму энергии';return 'Улучшение +'+lvl}
+function blacksmithGroupedItems(){
+ const groups=new Map();
+ hero.items.forEach((raw,index)=>{
+   const x=itemInfo(raw);
+   const valid=x.type==='weapon'||x.type==='armor'||['head','ring','boots','cloak','amulet','shield'].includes(x.slot);
+   if(!valid)return;
+   const key=x.name;
+   if(!groups.has(key))groups.set(key,{name:key,items:[],x});
+   groups.get(key).items.push({raw,index});
+ });
+ return [...groups.values()];
+}
+function blacksmithGroupCost(group,count){
+ return group.items.slice().sort((a,b)=>Number(a.raw.upgradeLevel||0)-Number(b.raw.upgradeLevel||0))
+   .filter(o=>Number(o.raw.upgradeLevel||0)<BLACKSMITH_MAX).slice(0,count)
+   .reduce((sum,o)=>sum+blacksmithUpgradeCost(Number(o.raw.upgradeLevel||0)),0);
+}
 function renderBlacksmith(){
  const list=el('blacksmithList');if(!list)return;
- const items=hero.items.map((raw,index)=>({raw,index,x:itemInfo(raw)})).filter(o=>['weapon','armor'].includes(o.x.type)||['head','ring','boots','cloak','amulet','shield'].includes(o.x.slot));
  if(el('blacksmithGold'))el('blacksmithGold').textContent=getGold()+' 🪙';
- if(!items.length){list.innerHTML='<div class="muted" style="padding:16px;text-align:center">Нет снаряжения для улучшения.</div>';return}
+ const groups=blacksmithGroupedItems();
+ if(!groups.length){list.innerHTML='<div class="muted" style="padding:16px;text-align:center">Нет снаряжения для улучшения.</div>';return}
  list.className='blacksmith-grid';
- list.innerHTML=items.map(({raw,index,x})=>{
-   const lvl=Math.max(0,Number(raw.upgradeLevel||0));
-   const max=lvl>=BLACKSMITH_MAX;
-   const cost=blacksmithUpgradeCost(lvl);
-   const slot=typeof slotOf==='function'?slotOf(raw):null;
-   const equipped=!!(slot&&hero.equippedIds&&raw._equipUid&&hero.equippedIds[slot]===raw._equipUid);
-   const bonus=blacksmithBonusText(raw);
-   const button=max?'Максимум':('Улучшить · '+cost+' 🪙');
+ list.innerHTML=groups.map((g,gi)=>{
+   const levels={};
+   g.items.forEach(o=>{const l=Math.max(0,Number(o.raw.upgradeLevel||0));levels[l]=(levels[l]||0)+1});
+   const levelText=Object.keys(levels).sort((a,b)=>Number(a)-Number(b)).map(l=>'+'+l+' ×'+levels[l]).join(' · ');
+   const maxCount=g.items.filter(o=>Number(o.raw.upgradeLevel||0)<BLACKSMITH_MAX).length;
+   const oneCost=blacksmithGroupCost(g,1);
+   const bonus=blacksmithBonusText(g.items.slice().sort((a,b)=>Number(b.raw.upgradeLevel||0)-Number(a.raw.upgradeLevel||0))[0].raw);
+   const equippedCount=g.items.filter(o=>{
+     const slot=typeof slotOf==='function'?slotOf(o.raw):null;
+     return !!(slot&&hero.equippedIds&&o.raw._equipUid&&hero.equippedIds[slot]===o.raw._equipUid);
+   }).length;
    return '<div class="blacksmith-card">'+
      '<div class="blacksmith-card-top">'+
-       '<div class="item-icon">'+(x.icon||'⚒️')+'</div>'+
-       '<div class="blacksmith-card-name"><b>'+blacksmithDisplayName(raw)+'</b>'+
-         (equipped?'<span class="equipped-badge">✓ ЭКИПИРОВАНО</span>':'')+
+       '<div class="item-icon">'+(g.x.icon||'⚒️')+'</div>'+
+       '<div class="blacksmith-card-name"><b>'+g.name+'</b>'+
+         '<span class="blacksmith-quantity">×'+g.items.length+' в наличии</span>'+
+         (equippedCount?'<span class="equipped-badge">✓ ЭКИПИРОВАНО: '+equippedCount+'</span>':'')+
        '</div>'+
      '</div>'+
-     '<div class="blacksmith-level">+'+lvl+' / '+BLACKSMITH_MAX+'</div>'+
+     '<div class="blacksmith-level">'+levelText+' / 5</div>'+
      '<div class="blacksmith-bonus">'+bonus+'</div>'+
-     '<button class="blacksmith-upgrade-btn" '+(max?'disabled':'onclick="upgradeBlacksmithItem('+index+')"')+'>'+button+'</button>'+
+     '<button class="blacksmith-upgrade-btn" '+(maxCount?'':'disabled')+' onclick="upgradeBlacksmithGroupOne('+gi+')">Улучшить 1 · '+oneCost+' 🪙</button>'+
+     (maxCount>1?'<button class="blacksmith-upgrade-btn blacksmith-batch-btn" onclick="openBlacksmithBatch('+gi+')">Улучшить несколько</button>':'')+
    '</div>';
  }).join('');
+ window._blacksmithGroups=groups;
+}
+function upgradeBlacksmithGroupOne(groupIndex){
+ const g=(window._blacksmithGroups||[])[groupIndex];if(!g)return;
+ const candidates=g.items.slice().sort((a,b)=>Number(a.raw.upgradeLevel||0)-Number(b.raw.upgradeLevel||0));
+ const target=candidates.find(o=>Number(o.raw.upgradeLevel||0)<BLACKSMITH_MAX);
+ if(target)upgradeBlacksmithItem(target.index);
+}
+let blacksmithBatchGroup=null,blacksmithBatchCount=1;
+function openBlacksmithBatch(groupIndex){
+ const g=(window._blacksmithGroups||[])[groupIndex];if(!g)return;
+ blacksmithBatchGroup=g;blacksmithBatchCount=2;
+ const max=g.items.filter(o=>Number(o.raw.upgradeLevel||0)<BLACKSMITH_MAX).length;
+ blacksmithBatchCount=Math.min(blacksmithBatchCount,max);
+ el('blacksmithBatchModal').classList.remove('hidden');
+ updateBlacksmithBatchModal();
+}
+function closeBlacksmithBatch(){blacksmithBatchGroup=null;el('blacksmithBatchModal').classList.add('hidden')}
+function changeBlacksmithBatch(delta){
+ if(!blacksmithBatchGroup)return;
+ const max=blacksmithBatchGroup.items.filter(o=>Number(o.raw.upgradeLevel||0)<BLACKSMITH_MAX).length;
+ blacksmithBatchCount=Math.max(1,Math.min(max,blacksmithBatchCount+delta));
+ updateBlacksmithBatchModal();
+}
+function updateBlacksmithBatchModal(){
+ if(!blacksmithBatchGroup)return;
+ const g=blacksmithBatchGroup,max=g.items.filter(o=>Number(o.raw.upgradeLevel||0)<BLACKSMITH_MAX).length;
+ const cost=blacksmithGroupCost(g,blacksmithBatchCount);
+ el('blacksmithBatchTitle').textContent='Улучшение: '+g.name;
+ el('blacksmithBatchText').textContent='Выбрано предметов: '+blacksmithBatchCount+' из '+max+'. Улучшатся отдельные экземпляры, начиная с самых низких уровней.';
+ el('blacksmithBatchCount').textContent=blacksmithBatchCount;
+ el('blacksmithBatchCost').textContent='Стоимость: '+cost+' 🪙';
+}
+function confirmBlacksmithBatch(){
+ const g=blacksmithBatchGroup;if(!g)return;
+ const targets=g.items.slice().sort((a,b)=>Number(a.raw.upgradeLevel||0)-Number(b.raw.upgradeLevel||0))
+   .filter(o=>Number(o.raw.upgradeLevel||0)<BLACKSMITH_MAX).slice(0,blacksmithBatchCount);
+ const total=targets.reduce((sum,o)=>sum+blacksmithUpgradeCost(Number(o.raw.upgradeLevel||0)),0);
+ if(getGold()<total){sfx('error');if(el('out'))el('out').innerHTML='<span class="red">Недостаточно золота для выбранного количества улучшений.</span>';return}
+ targets.forEach(o=>{
+   const item=o.raw,x=itemInfo(item),old=Math.max(0,Number(item.upgradeLevel||0));
+   item.upgradeLevel=old+1;
+   const slot=typeof slotOf==='function'?slotOf(item):null;
+   const equipped=!!(slot&&hero.equippedIds&&item._equipUid&&hero.equippedIds[slot]===item._equipUid);
+   if(equipped)bsApplyUpgrade(item,1);
+ });
+ hero.gold-=total;
+ save();update();renderBlacksmith();closeBlacksmithBatch();
+ if(el('out'))el('out').innerHTML='<span class="green">Кузнец: улучшено предметов — '+targets.length+'.</span>';
 }
 function upgradeBlacksmithItem(index){
  const item=hero.items[index];if(!item)return;const x=itemInfo(item);const valid=x.type==='weapon'||x.type==='armor'||['head','ring','boots','cloak','amulet','shield'].includes(x.slot);if(!valid)return;
