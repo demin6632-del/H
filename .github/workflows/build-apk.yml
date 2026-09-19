@@ -52,8 +52,8 @@ jobs:
           for bad in ['dispatchTouchFallback','setOnTouchListener','TOUCH-BUTTON-FIX-V39','ANDROID-TOUCH-FIX-V42','ANDROID-TOUCH-FIX-V54','ANDROID-CLASS-SELECT-FIX-V43']:
             if bad in s or bad in runtime: raise SystemExit('Legacy touch code remains: '+bad)
           gradle=(root/'android/app/build.gradle').read_text()
-          if 'versionCode 43' not in gradle: raise SystemExit('Bad versionCode')
-          if "versionName '4.3.2'" not in gradle: raise SystemExit('Bad versionName')
+          if 'versionCode 44' not in gradle: raise SystemExit('Bad versionCode')
+          if "versionName '4.3.3'" not in gradle: raise SystemExit('Bad versionName')
           print('SOURCE AUDIT: PASS')
           PY
 
@@ -97,32 +97,32 @@ jobs:
         run: |
           rm -rf release-package
           mkdir -p release-package
-          cp app/build/outputs/apk/release/app-release.apk release-package/ChroniclesOfTheAbyss-v4.3.2.apk
-          sha256sum release-package/ChroniclesOfTheAbyss-v4.3.2.apk > release-package/SHA256SUMS.txt
+          cp app/build/outputs/apk/release/app-release.apk release-package/ChroniclesOfTheAbyss-v4.3.3.apk
+          sha256sum release-package/ChroniclesOfTheAbyss-v4.3.3.apk > release-package/SHA256SUMS.txt
           cd release-package
-          zip -9 ../ChroniclesOfTheAbyss-v4.3.2-APK.zip *
+          zip -9 ../ChroniclesOfTheAbyss-v4.3.3-APK.zip *
 
       - name: Package PROJECT ZIP
         run: |
           rm -rf /tmp/ChroniclesOfTheAbyss_PROJECT
           rsync -a --exclude='.git' --exclude='android/.gradle' --exclude='android/app/build' --exclude='android/release-package' --exclude='android/*.zip' ./ /tmp/ChroniclesOfTheAbyss_PROJECT/
           cd /tmp
-          zip -9 -r ChroniclesOfTheAbyss_PROJECT-v4.3.2.zip ChroniclesOfTheAbyss_PROJECT >/dev/null
+          zip -9 -r ChroniclesOfTheAbyss_PROJECT-v4.3.3.zip ChroniclesOfTheAbyss_PROJECT >/dev/null
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: ChroniclesOfTheAbyss-v4.3.2-apk
+          name: ChroniclesOfTheAbyss-v4.3.3-apk
           path: android/app/build/outputs/apk/release/app-release.apk
 
       - name: Upload APK ZIP
         uses: actions/upload-artifact@v4
         with:
-          name: ChroniclesOfTheAbyss-v4.3.2-apk-zip
-          path: android/ChroniclesOfTheAbyss-v4.3.2-APK.zip
+          name: ChroniclesOfTheAbyss-v4.3.3-apk-zip
+          path: android/ChroniclesOfTheAbyss-v4.3.3-APK.zip
 
       - name: Upload PROJECT ZIP
         uses: actions/upload-artifact@v4
         with:
-          name: ChroniclesOfTheAbyss_PROJECT-v4.3.2
-          path: /tmp/ChroniclesOfTheAbyss_PROJECT-v4.3.2.zip
+          name: ChroniclesOfTheAbyss_PROJECT-v4.3.3
+          path: /tmp/ChroniclesOfTheAbyss_PROJECT-v4.3.3.zip
