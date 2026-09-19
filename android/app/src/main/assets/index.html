@@ -1184,6 +1184,8 @@ window.abyssKeyCaches = abyssKeyCaches;
      Один и тот же товар магазина нельзя купить повторно, пока такой товар уже есть
      у игрока. Проверка работает по ID товара и по имени для всех категорий. */
   function shopAlreadyOwned(item){
+    /* Зелья здоровья и маны — расходники, их можно покупать сколько угодно. */
+    if(item&&(item.id==='hp'||item.id==='mp'))return false;
     if(!item||!hero||!Array.isArray(hero.items))return false;
     const id=item.id!=null?String(item.id):'';
     const name=item.name!=null?String(item.name):'';
