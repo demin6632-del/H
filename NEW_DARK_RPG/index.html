@@ -1295,3 +1295,23 @@ window.abyssKeyCaches = abyssKeyCaches;
   window.MYSTERY_KEY_RESULT_V3='MYSTERY-KEY-RESULT-V3';
 })();
 </script>
+<script id="equip-no-duplicate-price-v2">
+(function(){
+  /* EQUIP-NO-DUPLICATE-PRICE-V2 — у экипированного предмета не должно быть повторяющихся цен. */
+  const baseInventoryRender=renderInventory;
+  function cleanEquippedPrices(){
+    const list=el('inventoryList');
+    if(!list)return;
+    list.querySelectorAll('.inventory-equipped [data-base-sell-index]').forEach(node=>node.remove());
+    list.querySelectorAll('.item').forEach(row=>{
+      const prices=row.querySelectorAll('[data-base-sell-index]');
+      for(let i=1;i<prices.length;i++)prices[i].remove();
+    });
+  }
+  renderInventory=function(){
+    baseInventoryRender.apply(this,arguments);
+    cleanEquippedPrices();
+  };
+  window.EQUIP_NO_DUPLICATE_PRICE_V2='EQUIP-NO-DUPLICATE-PRICE-V2';
+})();
+</script>
