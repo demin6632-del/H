@@ -971,8 +971,8 @@ window.abyssKeyCaches = abyssKeyCaches;
 (function(){
   /* INVENTORY-SELL-V2
      У предмета одна фиксированная базовая цена.
-     Продажа разрешена только редкому торговцу Бездны и только после разговора с ним.
-     В обычном инвентаре кнопки продажи нет. */
+     В обычном инвентаре предмет продаётся по базовой цене.
+     У редкого торговца после разговора цена может измениться. */
   function sellPrice(raw){
     const x=itemInfo(raw)||{};
     const name=String(x.name||raw&&raw.name||'');
@@ -981,16 +981,33 @@ window.abyssKeyCaches = abyssKeyCaches;
     if(x.type==='consumable')return 10;if(x.type==='random')return 12;if(x.type==='other')return 15;if(x.type==='weapon')return 20;if(x.type==='armor'||x.slot)return 25;return 8;
   }
   function traderSellAllowed(){try{const s=JSON.parse(localStorage.getItem('chronicles_abyss_trader_v1')||'null');return !!(s&&s.open&&s.talked)}catch(e){return false}}
+  function sellCurrentPrice(raw){const s=JSON.parse(localStorage.getItem('chronicles_abyss_trader_v1')||'{}');return s.open&&s.talked?Math.max(1,Math.round(sellPrice(raw)*Number(s.sellRate||1))):sellPrice(raw)}
   window.sellInventoryItem=function(index){
-    if(!traderSellAllowed()){sfx('error');if(el('out'))el('out').innerHTML='<span class="red">Продажа доступна только Страннику Бездны после разговора с ним.</span>';return}
     if(!hero||!Array.isArray(hero.items))return;
     const raw=hero.items[index];if(!raw)return;const x=itemInfo(raw)||{},slot=(typeof slotOf==='function')?slotOf(x):null;
     const equipped=!!(slot&&hero.equippedIds&&hero.equippedIds[slot]&&raw._equipUid===hero.equippedIds[slot]);
     if(equipped){sfx('error');logEvent('ТОРГОВЕЦ','Нельзя продать экипированный предмет. Сначала снимите его.');if(typeof renderInventory==='function')renderInventory();return}
-    const base=sellPrice(raw),s=JSON.parse(localStorage.getItem('chronicles_abyss_trader_v1')||'{}'),rate=Number(s.sellRate||1),price=Math.max(1,Math.round(base*rate)),name=x.name||raw.name||'Предмет';
+    const s=JSON.parse(localStorage.getItem('chronicles_abyss_trader_v1')||'{}'),price=s.open&&s.talked?Math.max(1,Math.round(sellPrice(raw)*Number(s.sellRate||1))):sellPrice(raw),name=x.name||raw.name||'Предмет';
     hero.items.splice(index,1);hero.gold=Math.max(0,Number(hero.gold||0)+price);save();update();if(typeof updateHud==='function')updateHud();if(typeof renderInventory==='function')renderInventory();if(typeof renderHero==='function')renderHero();if(typeof window.renderAbyssTraderSell==='function')window.renderAbyssTraderSell();sfx('buy');logEvent('ТОРГОВЕЦ','Продан: '+name+' за '+price+' золота.');if(el('out'))el('out').innerHTML='<span class="green">Странник купил: '+name+' за '+price+' золота.</span>';
   };
-  window.sellPrice=sellPrice;window.TRADER_SELL_V2='TRADER-SELL-V2';
+  const baseRenderInventory=renderInventory;
+  renderInventory=function(){
+    baseRenderInventory.apply(this,arguments);
+    const list=el('inventoryList');if(!list||!hero||!Array.isArray(hero.items))return;
+    list.querySelectorAll('[data-base-sell-index]').forEach(x=>x.remove());
+    hero.items.forEach((raw,index)=>{
+      const x=itemInfo(raw)||{},slot=typeof slotOf==='function'?slotOf(x):null;
+      const equipped=!!(slot&&hero.equippedIds&&hero.equippedIds[slot]&&raw._equipUid===hero.equippedIds[slot]);
+      if(equipped)return;
+      const row=[...list.children].find(node=>node.querySelector('button[onclick*="useInventoryItem('+index+')"],button[onclick*="unequipItemType"]'));
+      if(!row)return;
+      const b=document.createElement('button');b.type='button';b.dataset.baseSellIndex=String(index);b.textContent='Продать · '+sellPrice(raw)+' 🪙';
+      b.style.cssText='width:auto;min-width:108px;margin:4px 0 0 4px;padding:6px 7px;font-size:11px';
+      b.onclick=()=>window.sellInventoryItem(index);
+      const wrap=row.querySelector('div:nth-child(2)');if(wrap)wrap.appendChild(b);
+    });
+  };
+  window.sellPrice=sellPrice;window.sellCurrentPrice=sellCurrentPrice;window.TRADER_SELL_V2='TRADER-SELL-V2';
 })();
 </script><style id="abyss-trader-v1-style">
 .abyss-trader-panel{margin-top:9px;padding:10px;border:1px solid #8b5a16;background:linear-gradient(#120d06,#050505);box-shadow:0 0 18px rgba(210,150,40,.12),inset 0 0 14px rgba(190,120,20,.06)}
