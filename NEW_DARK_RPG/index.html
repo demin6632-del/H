@@ -1914,7 +1914,7 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
   window.PROGRESSION_SYSTEMS_V2='PROGRESSION-SYSTEMS-V2';
   const KEY='chronicles_abyss_progression_v2';
   const def={arena:{wave:0,best:0,enemy:0,hp:0,active:false},raid:{boss:0,max:0,wins:0,active:false,phase:1},guild:{name:'',level:0,members:0,rep:0,quests:0,donations:0},fish:{casts:0,common:0,rare:0,legendary:0},alchemy:{herbs:0,essence:0,fish:0,crafted:0},prestige:0,ng:0,legacy:{atk:0,hp:0,energy:0}};
-  function load(){try{return Object.assign(JSON.parse(JSON.stringify(def)),JSON.parse(localStorage.getItem(KEY)||'{}'))}catch(e){return JSON.parse(JSON.stringify(def))}}
+  function load(){try{var raw=JSON.parse(localStorage.getItem(KEY)||'{}');var base=JSON.parse(JSON.stringify(def));function merge(d,x){if(!x||typeof x!=='object')return d;Object.keys(d).forEach(function(k){if(x[k]!==undefined){if(d[k]&&typeof d[k]==='object'&&!Array.isArray(d[k]))d[k]=merge(d[k],x[k]);else d[k]=x[k]}});return d}return merge(base,raw)}catch(e){return JSON.parse(JSON.stringify(def))}}
   let S=load();
   function save2(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){};try{if(typeof save==='function')save()}catch(e){}}
   function gold(n){if(typeof hero!=='undefined'&&hero)hero.gold=Math.max(0,Number(hero.gold||0)+n)}
@@ -1926,14 +1926,14 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
     let m=document.getElementById('ps44v2');if(!m){m=document.createElement('div');m.id='ps44v2';m.style.cssText='position:fixed;inset:0;z-index:11000;background:#000e;display:none;align-items:center;justify-content:center;padding:10px';m.innerHTML='<div style="width:min(100%,480px);max-height:94dvh;overflow:auto;border:2px solid #b21a1a;background:linear-gradient(#170707,#050505);padding:12px"><div style="display:flex;justify-content:space-between;align-items:center"><h2 id="ps44v2title">Расширенные системы</h2><button id="ps44v2close" style="width:auto;margin:0">✕</button></div><div id="ps44v2tabs" style="display:grid;grid-template-columns:repeat(4,1fr);gap:4px;margin:7px 0"></div><div id="ps44v2body"></div></div>';document.body.appendChild(m);document.getElementById('ps44v2close').onclick=()=>m.style.display='none'}
     const tabs=[['overview','Обзор'],['arena','⚔️ Арена'],['raid','👹 Рейд'],['guild','🏰 Гильдия'],['craft','⚗️ Алхимия'],['fish','🎣 Рыбалка'],['meta','👑 Прогресс']];
     document.getElementById('ps44v2tabs').innerHTML=tabs.map(t=>'<button data-t="'+t[0]+'">'+t[1]+'</button>').join('');
-    document.querySelectorAll('#ps44v2tabs button').forEach(b=>b.onclick=()=>draw(b.dataset.t));
+    document.querySelectorAll('#ps44v2tabs button').forEach(b=>{b.style.minWidth='0';b.style.width='100%';b.style.fontSize='12px';b.style.padding='6px 3px';b.style.whiteSpace='normal';b.onclick=()=>draw(b.dataset.t)});
     m.style.display='flex';draw(tab);
   }
   function draw(tab){
     S=load();const b=document.getElementById('ps44v2body');if(!b)return;
     let html='';
     if(tab==='overview'){
-      html=panel('⚔️ Расширенные системы 4.4.2','<p style="color:#aaa;font-size:11px">Усиленные офлайн-режимы с прогрессией, масштабированием сложности и постоянными наградами.</p><div style="display:grid;grid-template-columns:1fr 1fr;gap:5px"><button onclick="ps44v2open(\'arena\')">Арена</button><button onclick="ps44v2open(\'raid\')">Рейд</button><button onclick="ps44v2open(\'guild\')">Гильдия</button><button onclick="ps44v2open(\'craft\')">Алхимия</button><button onclick="ps44v2open(\'fish\')">Рыбалка</button><button onclick="ps44v2open(\'meta\')">Престиж / NG+</button></div>')+
+      html=panel('⚔️ Расширенные системы 4.4.3','<p style="color:#aaa;font-size:11px">Усиленные офлайн-режимы с прогрессией, масштабированием сложности и постоянными наградами.</p><div style="display:grid;grid-template-columns:1fr 1fr;gap:5px"><button onclick="ps44v2open(\'arena\')">Арена</button><button onclick="ps44v2open(\'raid\')">Рейд</button><button onclick="ps44v2open(\'guild\')">Гильдия</button><button onclick="ps44v2open(\'craft\')">Алхимия</button><button onclick="ps44v2open(\'fish\')">Рыбалка</button><button onclick="ps44v2open(\'meta\')">Престиж / NG+</button></div>')+
       panel('📊 Постоянный прогресс','<div class="pr"><span>Престиж</span><b>'+S.prestige+'</b></div><div class="pr"><span>NG+</span><b>'+S.ng+'</b></div><div class="pr"><span>Наследие атаки</span><b>+'+S.legacy.atk+'</b></div><div class="pr"><span>Наследие HP</span><b>+'+S.legacy.hp+'</b></div>');
     }else if(tab==='arena'){
       if(!S.arena.active)html=panel('⚔️ Арена','<div class="pr"><span>Лучший результат</span><b>'+S.arena.best+'</b></div><button onclick="ps44v2arenaStart()">Начать волну</button>');
@@ -1953,7 +1953,7 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
       html=panel('👑 Престиж','<div class="pr"><span>Текущий</span><b>'+S.prestige+'</b></div><div class="pr"><span>Требуемый уровень</span><b>'+req+'</b></div><button onclick="ps44v2prestige()">Вознести персонажа</button>')+
       panel('♻️ New Game+','<div class="pr"><span>Цикл</span><b>'+S.ng+'</b></div><button onclick="ps44v2ng()">Начать NG+</button>');
     }
-    b.innerHTML=html;document.querySelectorAll('#ps44v2tabs button').forEach(x=>x.style.borderColor=x.dataset.t===tab?'#e22':'#951818');
+    b.innerHTML=html;document.querySelectorAll('#ps44v2tabs button').forEach(x=>{x.style.minWidth='0';x.style.width='100%';x.style.fontSize='12px';x.style.padding='6px 3px';x.style.whiteSpace='normal';x.style.borderColor=x.dataset.t===tab?'#e22':'#951818'});
   }
   window.ps44v2open=open;
   window.ps44v2arenaStart=function(){if(!hero)return;S.arena={active:true,wave:1,best:S.arena.best,enemy:Math.max(60,Math.floor((hero.attack||10)*7)),hp:Math.max(1,hero.maxHp)};save2();open('arena')};
