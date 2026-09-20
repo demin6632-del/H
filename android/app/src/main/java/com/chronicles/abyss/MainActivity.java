@@ -20,7 +20,7 @@ public class MainActivity extends Activity {
     private TouchWebView web;
     private FrameLayout root;
 
-    /* ANDROID-NATIVE-TOUCH-FALLBACK-V60 — штатный WebView + резервный DOM tap. */
+    /* ANDROID-NATIVE-TOUCH-FALLBACK-V61 — резервный DOM tap подключён к реальному JS bridge. */
     private static final class TouchWebView extends WebView {
         private final Handler handler = new Handler(Looper.getMainLooper());
         private float downX, downY;
@@ -51,7 +51,8 @@ public class MainActivity extends Activity {
             final float cssY = y / Math.max(1f, density);
             fallback = () -> {
                 fallback = null;
-                String js = "(function(){if(typeof window.__nativeTapFallbackAt==='function'){window.__nativeTapFallbackAt(" + cssX + "," + cssY + ");}})()";
+                String js = "(function(){if(typeof window.__nativeTapFallbackAt==='function'){" +
+                        "window.__nativeTapFallbackAt(" + cssX + "," + cssY + ");}})()";
                 evaluateJavascript(js, null);
             };
             handler.postDelayed(fallback, 180);
@@ -68,7 +69,8 @@ public class MainActivity extends Activity {
                     moved = false;
                     break;
                 case MotionEvent.ACTION_MOVE:
-                    if (Math.abs(event.getX() - downX) > touchSlop || Math.abs(event.getY() - downY) > touchSlop) {
+                    if (Math.abs(event.getX() - downX) > touchSlop ||
+                            Math.abs(event.getY() - downY) > touchSlop) {
                         moved = true;
                         cancelFallback();
                     }
@@ -96,6 +98,33 @@ public class MainActivity extends Activity {
         }
     }
 
+    private void installNativeTapBridge() {
+        String js =
+                "(function(){" +
+                "if(window.__nativeTapBridgeV61)return;" +
+                "window.__nativeTapBridgeV61=1;" +
+                "window.__nativeTapLastClick=0;" +
+                "document.addEventListener('click',function(e){" +
+                "var r=e.target&&e.target.getBoundingClientRect?e.target.getBoundingClientRect():null;" +
+                "window.__nativeTapLastClick={t:Date.now(),x:e.clientX,y:e.clientY,r:r};" +
+                "},true);" +
+                "window.__nativeTapFallbackAt=function(x,y){" +
+                "try{" +
+                "var now=Date.now(),last=window.__nativeTapLastClick;" +
+                "if(last&&now-last.t<350&&Math.abs(last.x-x)<28&&Math.abs(last.y-y)<28)return;" +
+                "var el=document.elementFromPoint(x,y);" +
+                "if(!el)return;" +
+                "var target=el.closest?el.closest('button,a,input,select,textarea,[role=button],[onclick]'):el;" +
+                "if(!target)return;" +
+                "target.focus&&target.focus();" +
+                "target.dispatchEvent(new MouseEvent('mousedown',{bubbles:true,cancelable:true,clientX:x,clientY:y,view:window}));" +
+                "target.dispatchEvent(new MouseEvent('mouseup',{bubbles:true,cancelable:true,clientX:x,clientY:y,view:window}));" +
+                "target.click&&target.click();" +
+                "}catch(e){}};" +
+                "})();";
+        web.evaluateJavascript(js, null);
+    }
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         SplashScreen splashScreen = SplashScreen.installSplashScreen(this);
@@ -121,10 +150,12 @@ public class MainActivity extends Activity {
         web.setWebViewClient(new WebViewClient() {
             @Override public void onPageCommitVisible(WebView view, String url) {
                 webViewReady = true;
+                installNativeTapBridge();
                 super.onPageCommitVisible(view, url);
             }
             @Override public void onPageFinished(WebView view, String url) {
                 webViewReady = true;
+                installNativeTapBridge();
                 super.onPageFinished(view, url);
             }
         });
