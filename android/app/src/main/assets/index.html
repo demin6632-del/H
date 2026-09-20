@@ -1908,3 +1908,70 @@ function hooks(){var os=window.save;if(os&&!os.ps44){window.save=function(){S();
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',function(){install();hooks()});else{install();hooks()}setTimeout(function(){install();hooks()},700);setTimeout(function(){install();hooks()},1800);
 })();
 </script>
+<script id="progression-systems-v2-enhancement">
+(function(){
+  if(window.PROGRESSION_SYSTEMS_V2)return;
+  window.PROGRESSION_SYSTEMS_V2='PROGRESSION-SYSTEMS-V2';
+  const KEY='chronicles_abyss_progression_v2';
+  const def={arena:{wave:0,best:0,enemy:0,hp:0,active:false},raid:{boss:0,max:0,wins:0,active:false,phase:1},guild:{name:'',level:0,members:0,rep:0,quests:0,donations:0},fish:{casts:0,common:0,rare:0,legendary:0},alchemy:{herbs:0,essence:0,fish:0,crafted:0},prestige:0,ng:0,legacy:{atk:0,hp:0,energy:0}};
+  function load(){try{return Object.assign(JSON.parse(JSON.stringify(def)),JSON.parse(localStorage.getItem(KEY)||'{}'))}catch(e){return JSON.parse(JSON.stringify(def))}}
+  let S=load();
+  function save2(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){};try{if(typeof save==='function')save()}catch(e){}}
+  function gold(n){if(typeof hero!=='undefined'&&hero)hero.gold=Math.max(0,Number(hero.gold||0)+n)}
+  function esc(s){return String(s||'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]))}
+  function refresh(){try{if(typeof update==='function')update();if(typeof updateHud==='function')updateHud();if(typeof renderHero==='function')renderHero()}catch(e){}}
+  function panel(title,body){return '<div class="pc"><h3>'+title+'</h3>'+body+'</div>'}
+  function open(tab='overview'){
+    S=load();
+    let m=document.getElementById('ps44v2');if(!m){m=document.createElement('div');m.id='ps44v2';m.style.cssText='position:fixed;inset:0;z-index:11000;background:#000e;display:none;align-items:center;justify-content:center;padding:10px';m.innerHTML='<div style="width:min(100%,480px);max-height:94dvh;overflow:auto;border:2px solid #b21a1a;background:linear-gradient(#170707,#050505);padding:12px"><div style="display:flex;justify-content:space-between;align-items:center"><h2 id="ps44v2title">Расширенные системы</h2><button id="ps44v2close" style="width:auto;margin:0">✕</button></div><div id="ps44v2tabs" style="display:grid;grid-template-columns:repeat(4,1fr);gap:4px;margin:7px 0"></div><div id="ps44v2body"></div></div>';document.body.appendChild(m);document.getElementById('ps44v2close').onclick=()=>m.style.display='none'}
+    const tabs=[['overview','Обзор'],['arena','⚔️ Арена'],['raid','👹 Рейд'],['guild','🏰 Гильдия'],['craft','⚗️ Алхимия'],['fish','🎣 Рыбалка'],['meta','👑 Прогресс']];
+    document.getElementById('ps44v2tabs').innerHTML=tabs.map(t=>'<button data-t="'+t[0]+'">'+t[1]+'</button>').join('');
+    document.querySelectorAll('#ps44v2tabs button').forEach(b=>b.onclick=()=>draw(b.dataset.t));
+    m.style.display='flex';draw(tab);
+  }
+  function draw(tab){
+    S=load();const b=document.getElementById('ps44v2body');if(!b)return;
+    let html='';
+    if(tab==='overview'){
+      html=panel('⚔️ Расширенные системы 4.4.2','<p style="color:#aaa;font-size:11px">Усиленные офлайн-режимы с прогрессией, масштабированием сложности и постоянными наградами.</p><div style="display:grid;grid-template-columns:1fr 1fr;gap:5px"><button onclick="ps44v2open(\'arena\')">Арена</button><button onclick="ps44v2open(\'raid\')">Рейд</button><button onclick="ps44v2open(\'guild\')">Гильдия</button><button onclick="ps44v2open(\'craft\')">Алхимия</button><button onclick="ps44v2open(\'fish\')">Рыбалка</button><button onclick="ps44v2open(\'meta\')">Престиж / NG+</button></div>')+
+      panel('📊 Постоянный прогресс','<div class="pr"><span>Престиж</span><b>'+S.prestige+'</b></div><div class="pr"><span>NG+</span><b>'+S.ng+'</b></div><div class="pr"><span>Наследие атаки</span><b>+'+S.legacy.atk+'</b></div><div class="pr"><span>Наследие HP</span><b>+'+S.legacy.hp+'</b></div>');
+    }else if(tab==='arena'){
+      if(!S.arena.active)html=panel('⚔️ Арена','<div class="pr"><span>Лучший результат</span><b>'+S.arena.best+'</b></div><button onclick="ps44v2arenaStart()">Начать волну</button>');
+      else html=panel('⚔️ Волна '+S.arena.wave,'<div class="pr"><span>Враг</span><b>'+Math.max(0,S.arena.enemy)+'</b></div><div class="pr"><span>Ваш HP</span><b>'+Math.max(0,S.arena.hp)+'</b></div><button onclick="ps44v2arenaHit()">⚔️ Атаковать</button><button onclick="ps44v2arenaHeal()">🧪 Лечение</button><button onclick="ps44v2arenaExit()">↩ Завершить забег</button>');
+    }else if(tab==='raid'){
+      if(!S.raid.active)html=panel('👹 Рейдовый босс','<div class="pr"><span>Победы</span><b>'+S.raid.wins+'</b></div><button onclick="ps44v2raidStart()">Начать рейд</button>');
+      else html=panel('👹 Пожиратель Душ · фаза '+S.raid.phase,'<div class="pr"><span>HP босса</span><b>'+Math.max(0,S.raid.boss)+' / '+S.raid.max+'</b></div><button onclick="ps44v2raidHit()">⚔️ Ударить</button><button onclick="ps44v2raidExit()">↩ Отступить</button>');
+    }else if(tab==='guild'){
+      if(!S.guild.level)html=panel('🏰 Гильдия','<p style="color:#aaa;font-size:11px">Создание: 500 золота.</p><button onclick="ps44v2guildCreate()">Создать гильдию</button>');
+      else html=panel('🏰 '+esc(S.guild.name),'<div class="pr"><span>Уровень</span><b>'+S.guild.level+'</b></div><div class="pr"><span>Участники</span><b>'+S.guild.members+'</b></div><div class="pr"><span>Репутация</span><b>'+S.guild.rep+'</b></div><div class="pr"><span>Задания</span><b>'+S.guild.quests+'</b></div><button onclick="ps44v2guildQuest()">📜 Выполнить задание</button><button onclick="ps44v2guildDonate()">💰 Внести 100 золота</button>');
+    }else if(tab==='craft'){
+      html=panel('⚗️ Алхимия','<div class="pr"><span>🌿 Травы</span><b>'+S.alchemy.herbs+'</b></div><div class="pr"><span>🔮 Эссенция</span><b>'+S.alchemy.essence+'</b></div><div class="pr"><span>🐟 Рыба</span><b>'+S.alchemy.fish+'</b></div><div class="pr"><span>Создано</span><b>'+S.alchemy.crafted+'</b></div><button onclick="ps44v2craft(1)">🧪 Великое зелье · 3 травы</button><button onclick="ps44v2craft(2)">🔵 Великая энергия · 3 эссенции</button><button onclick="ps44v2craft(3)">🧬 Эликсир Бездны · 3 травы + 2 эссенции</button>');
+    }else if(tab==='fish'){
+      html=panel('🎣 Рыбалка','<div class="pr"><span>Забросов</span><b>'+S.fish.casts+'</b></div><div class="pr"><span>Обычных</span><b>'+S.fish.common+'</b></div><div class="pr"><span>Редких</span><b>'+S.fish.rare+'</b></div><div class="pr"><span>Легендарных</span><b>'+S.fish.legendary+'</b></div><button onclick="ps44v2fish()">🎣 Забросить удочку · 4 энергии</button>');
+    }else{
+      const req=20+S.prestige*5;
+      html=panel('👑 Престиж','<div class="pr"><span>Текущий</span><b>'+S.prestige+'</b></div><div class="pr"><span>Требуемый уровень</span><b>'+req+'</b></div><button onclick="ps44v2prestige()">Вознести персонажа</button>')+
+      panel('♻️ New Game+','<div class="pr"><span>Цикл</span><b>'+S.ng+'</b></div><button onclick="ps44v2ng()">Начать NG+</button>');
+    }
+    b.innerHTML=html;document.querySelectorAll('#ps44v2tabs button').forEach(x=>x.style.borderColor=x.dataset.t===tab?'#e22':'#951818');
+  }
+  window.ps44v2open=open;
+  window.ps44v2arenaStart=function(){if(!hero)return;S.arena={active:true,wave:1,best:S.arena.best,enemy:Math.max(60,Math.floor((hero.attack||10)*7)),hp:Math.max(1,hero.maxHp)};save2();open('arena')};
+  window.ps44v2arenaHit=function(){let a=S.arena;if(!a.active)return;let dmg=Math.max(7,Math.floor((hero.attack||10)*(1+a.wave*.08)*(Math.random()*.35+.85)));a.enemy-=dmg;if(a.enemy<=0){a.wave++;a.best=Math.max(a.best,a.wave-1);gold(40+a.wave*15);a.enemy=Math.floor((hero.attack||10)*7*(1+a.wave*.15));a.hp=Math.min(hero.maxHp,a.hp+Math.floor(hero.maxHp*.15))}else{a.hp-=Math.max(3,Math.floor(5+a.wave*1.2-(hero.def||0)*.15));if(a.hp<=0){a.active=false;a.hp=1}}save2();refresh();open('arena')};
+  window.ps44v2arenaHeal=function(){let a=S.arena;if(a.active){a.hp=Math.min(hero.maxHp,a.hp+Math.floor(hero.maxHp*.2));save2();open('arena')}};
+  window.ps44v2arenaExit=function(){S.arena.active=false;save2();open('arena')};
+  window.ps44v2raidStart=function(){if(!hero)return;let depth=typeof abyssFloor==='number'?abyssFloor:1;let max=Math.floor(1200+depth*60+S.prestige*250+S.ng*200);S.raid={active:true,boss:max,max:max,wins:S.raid.wins,phase:1};save2();open('raid')};
+  window.ps44v2raidHit=function(){let r=S.raid;if(!r.active)return;let ratio=r.boss/r.max;r.phase=ratio>.75?1:ratio>.5?2:ratio>.25?3:4;let dmg=Math.max(10,Math.floor((hero.attack||10)*(Math.random()+1)));r.boss-=dmg;if(r.boss<=0){r.active=false;r.wins++;gold(500+r.phase*100);S.alchemy.herbs+=5;S.alchemy.essence+=5;if(typeof addItemToInventory==='function')addItemToInventory({name:'Легендарный рейдовый трофей',type:'other',icon:'🏆'})}else hero.hp=Math.max(1,hero.hp-Math.max(4,8+r.phase*4-Math.floor((hero.def||0)*.15)));save2();refresh();open('raid')};
+  window.ps44v2raidExit=function(){S.raid.active=false;save2();open('raid')};
+  window.ps44v2guildCreate=function(){if(!hero)return;let n=prompt('Название гильдии','Стражи Бездны');if(!n||(hero.gold||0)<500)return;hero.gold-=500;S.guild={name:n.slice(0,24),level:1,members:3,rep:0,quests:0,donations:0};save2();refresh();open('guild')};
+  window.ps44v2guildQuest=function(){if(!S.guild.level)return;S.guild.quests++;S.guild.rep+=10;gold(100+S.guild.level*50);save2();refresh();open('guild')};
+  window.ps44v2guildDonate=function(){if(!S.guild.level||!hero||(hero.gold||0)<100)return;hero.gold-=100;S.guild.donations++;S.guild.rep+=5;if(S.guild.donations%5===0)S.guild.members++;save2();refresh();open('guild')};
+  window.ps44v2craft=function(t){let a=S.alchemy,o=null;if(t===1&&a.herbs>=3){a.herbs-=3;o={name:'Великое зелье здоровья',type:'consumable',effect:'hp',icon:'🧪'}}else if(t===2&&a.essence>=3){a.essence-=3;o={name:'Великая энергия',type:'consumable',effect:'mp',icon:'🔵'}}else if(t===3&&a.herbs>=3&&a.essence>=2){a.herbs-=3;a.essence-=2;o={name:'Эликсир Бездны II',type:'consumable',effect:'hp',icon:'🧬'}}if(o){a.crafted++;if(typeof addItemToInventory==='function')addItemToInventory(o);save2();refresh()}open('craft')};
+  window.ps44v2fish=function(){if(!hero||(hero.energy||0)<4)return;hero.energy-=4;let q=Math.random(),k=q<.02?'legendary':q<.16?'rare':'common';S.fish.casts++;S.fish[k]++;S.alchemy.fish++;if(k==='legendary'){S.alchemy.essence+=3;gold(120)}else if(k==='rare'){S.alchemy.essence++;gold(55)}else{S.alchemy.herbs++;gold(18)}save2();refresh();open('fish')};
+  window.ps44v2prestige=function(){if(!hero)return;let req=20+S.prestige*5;if(hero.level<req)return;if(!confirm('Престиж сбросит текущий забег. Продолжить?'))return;S.prestige++;S.legacy.atk+=4;S.legacy.hp+=20;S.legacy.energy+=5;let c=hero.class,s=classStats[c];hero={name:'Странник',class:c,hp:s.hp+S.legacy.hp,maxHp:s.hp+S.legacy.hp,energy:s.energy+S.legacy.energy,maxEnergy:s.energy+S.legacy.energy,attack:s.attack+S.legacy.atk,def:s.def,level:1,xp:0,items:[],weapon:'Нет',armor:'Нет',gold:150,allies:[],crit:0,skillLevel:1,skillPoints:0};if(typeof resetAbyss==='function')resetAbyss();save2();refresh();document.getElementById('ps44v2').style.display='none';if(typeof setScreen==='function')setScreen('main')};
+  window.ps44v2ng=function(){if(!hero||S.prestige<1)return;if(!confirm('Начать New Game+?'))return;S.ng++;let n=S.ng,c=hero.class,s=classStats[c];hero={name:'Странник+',class:c,hp:s.hp+S.legacy.hp+n*15,maxHp:s.hp+S.legacy.hp+n*15,energy:s.energy+S.legacy.energy+n*4,maxEnergy:s.energy+S.legacy.energy+n*4,attack:s.attack+S.legacy.atk+n*3,def:s.def+n,level:1,xp:0,items:[],weapon:'Нет',armor:'Нет',gold:200+n*100,allies:[],crit:0,skillLevel:1,skillPoints:0};if(typeof resetAbyss==='function')resetAbyss();save2();refresh();document.getElementById('ps44v2').style.display='none';if(typeof setScreen==='function')setScreen('main')};
+  function hookButton(){let b=document.getElementById('ps44open');if(b){b.onclick=function(){ps44v2open('overview')};b.innerHTML='<span>✦</span>Расширенные системы';}}
+  function boot(){hookButton();setTimeout(hookButton,700);setTimeout(hookButton,1800)}
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot);else boot();
+})();
+</script>
