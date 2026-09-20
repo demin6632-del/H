@@ -221,7 +221,9 @@
 #blacksmithList .blacksmith-card{min-height:0}
 #blacksmithList .blacksmith-batch-btn{margin-top:6px}
 #blacksmithBatchModal .modal-box{max-width:380px}
-</style></head>
+</style>
+<style id="ps44-fallback-open-style-v1">#ps44open.ps44-fallback-open{display:block;width:100%;min-height:44px;margin:6px 0;padding:8px;border:1px solid #8f1818;border-radius:5px;background:linear-gradient(#180808,#070707);color:#eee;font:14px Georgia,"Times New Roman",serif}#ps44open.ps44-fallback-open span{color:#e22;margin-right:6px}</style>
+</head>
 <body><div id="game">
 <div id="menu"><div class="title-wrap"><div class="title-main">ХРОНИКИ<span>БЕЗДНЫ</span></div><div class="subtitle">ТЕКСТОВАЯ ROGUELIKE-RPG</div></div><button class="start-hit" onclick="showClasses()">Начать игру</button><button id="continueHit" class="continue-hit" onclick="continueGame()">Продолжить</button><div class="loading"><span></span></div><div class="loading-text">Загрузка...</div></div>
 <div id="classes" class="screen hidden"><div class="screen-title"><button class="back-mini" onclick="goBack()">← Назад</button><h2>Выбор класса</h2></div><div class="panel"><div class="muted" style="text-align:center;margin-bottom:8px">Выбери путь, который проведёт тебя через Бездну.</div><div class="class-grid"><button class="class-card" onclick="start('Воин')"><span class="class-icon">⚔️</span><strong>Воин</strong><small>Сила и выносливость.<br>Выдерживает бой.</small><small>❤️ 130 · ✨ 40<br>⚔️ 12 · 🛡️ 9</small></button><button class="class-card" onclick="start('Разбойник')"><span class="class-icon">🗡️</span><strong>Разбойник</strong><small>Ловкость и скорость.<br>Критические удары.</small><small>❤️ 95 · ✨ 65<br>⚔️ 14 · 🛡️ 5</small></button><button class="class-card" onclick="start('Маг')"><span class="class-icon">🔮</span><strong>Маг</strong><small>Мана и заклинания.<br>Дальний бой.</small><small>❤️ 80 · ✨ 100<br>⚔️ 16 · 🛡️ 3</small></button><button class="class-card" onclick="start('Охотник')"><span class="class-icon">🏹</span><strong>Охотник</strong><small>Точный выстрел.<br>Держит дистанцию.</small><small>❤️ 105 · ✨ 60<br>⚔️ 15 · 🛡️ 6</small></button></div><button onclick="goBack()">← Назад</button></div></div>
@@ -1971,8 +1973,28 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
   window.ps44v2fish=function(){if(!hero||(hero.energy||0)<4)return;hero.energy-=4;let q=Math.random(),k=q<.02?'legendary':q<.16?'rare':'common';S.fish.casts++;S.fish[k]++;S.alchemy.fish++;if(k==='legendary'){S.alchemy.essence+=3;gold(120)}else if(k==='rare'){S.alchemy.essence++;gold(55)}else{S.alchemy.herbs++;gold(18)}persist();refresh();open('fish')};
   window.ps44v2prestige=function(){if(!hero)return;let req=20+S.prestige*5;if(hero.level<req)return;if(!confirm('Престиж сбросит текущий забег. Продолжить?'))return;S.prestige++;S.legacy.atk+=4;S.legacy.hp+=20;S.legacy.energy+=5;let c=hero.class,s=classStats[c];hero={name:'Странник',class:c,hp:s.hp+S.legacy.hp,maxHp:s.hp+S.legacy.hp,energy:s.energy+S.legacy.energy,maxEnergy:s.energy+S.legacy.energy,attack:s.attack+S.legacy.atk,def:s.def,level:1,xp:0,items:[],weapon:'Нет',armor:'Нет',gold:150,allies:[],crit:0,skillLevel:1,skillPoints:0};if(typeof resetAbyss==='function')resetAbyss();persist();refresh();document.getElementById('ps44v2').style.display='none';if(typeof setScreen==='function')setScreen('main')};
   window.ps44v2ng=function(){if(!hero||S.prestige<1)return;if(!confirm('Начать New Game+?'))return;S.ng++;let n=S.ng,c=hero.class,s=classStats[c];hero={name:'Странник+',class:c,hp:s.hp+S.legacy.hp+n*15,maxHp:s.hp+S.legacy.hp+n*15,energy:s.energy+S.legacy.energy+n*4,maxEnergy:s.energy+S.legacy.energy+n*4,attack:s.attack+S.legacy.atk+n*3,def:s.def+n,level:1,xp:0,items:[],weapon:'Нет',armor:'Нет',gold:200+n*100,allies:[],crit:0,skillLevel:1,skillPoints:0};if(typeof resetAbyss==='function')resetAbyss();persist();refresh();document.getElementById('ps44v2').style.display='none';if(typeof setScreen==='function')setScreen('main')};
-  function hookButton(){let b=document.getElementById('ps44open');if(b){b.onclick=function(){ps44v2open('overview')};b.innerHTML='<span>✦</span>Расширенные системы';}}
-  function hookButton(){let b=document.getElementById('ps44open');if(b){b.onclick=function(e){if(e){e.preventDefault();e.stopPropagation();}ps44v2open('overview')};b.innerHTML='<span>✦</span>Расширенные системы';}}
+  function hookButton(){
+    let b=document.getElementById('ps44open');
+    if(!b){
+      const main=document.getElementById('main');
+      const list=main&&main.querySelector('.city-list');
+      const host=list||main;
+      if(host){
+        b=document.createElement('button');
+        b.id='ps44open';
+        b.className='ps44-fallback-open';
+        b.innerHTML='<span>✦</span>Расширенные системы';
+        host.appendChild(b);
+      }
+    }
+    if(b){
+      b.onclick=function(e){
+        if(e){e.preventDefault();e.stopPropagation();}
+        if(typeof window.ps44v2open==='function') window.ps44v2open('overview');
+      };
+      b.innerHTML='<span>✦</span>Расширенные системы';
+    }
+  }
   function boot(){
     hookButton();
     setTimeout(hookButton,300);setTimeout(hookButton,700);setTimeout(hookButton,1200);setTimeout(hookButton,1800);setTimeout(hookButton,3000);
