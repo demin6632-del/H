@@ -44,11 +44,11 @@ jobs:
           subprocess.run(['node','--check','/tmp/game.js'],check=True)
           subprocess.run(['node','--check',str(v4)],check=True)
           subprocess.run(['node','--check',str(core)],check=True)
-          ids=re.findall(r"\\bid=[\"']([^\"']+)",s,re.I)
+          ids=re.findall(r"\bid=[\"']([^\"']+)",s,re.I)
           dup=sorted({x for x in ids if ids.count(x)>1})
           if dup: raise SystemExit(f'Duplicate IDs: {dup}')
           runtime=v4.read_text(encoding='utf-8')
-          for marker in ['ART-ATLAS-V4-RUNTIME','setScreen(id)','abyssKeyCaches={};window.abyssKeyCaches=abyssKeyCaches','__battleArtRuntimeFix','400% 600%']:
+          for marker in ['ART-ATLAS-V4-RUNTIME','setScreen(id)','abyssKeyCaches={};window.abyssKeyCaches=abyssKeyCaches','__ART_ATLAS_V4_BATTLE_FIX','400% 600%']:
             if marker not in runtime: raise SystemExit('Missing runtime fix: '+marker)
           for bad in ['dispatchTouchFallback','setOnTouchListener','TOUCH-BUTTON-FIX-V39','ANDROID-TOUCH-FIX-V42','ANDROID-TOUCH-FIX-V54','ANDROID-CLASS-SELECT-FIX-V43']:
             if bad in s or bad in runtime: raise SystemExit('Legacy touch code remains: '+bad)
