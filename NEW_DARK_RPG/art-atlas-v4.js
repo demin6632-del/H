@@ -157,3 +157,100 @@
   };
   document.head.appendChild(core);
 })();
+
+      /* MYSTERY-KEY-STACK-V1
+         Таинственные ключи объединяются в один стак.
+         Остальные предметы не изменяются. */
+      setTimeout(function(){
+        try{
+          function isMysteryKey(raw){return !!(raw&&String(raw.name||'')==='Таинственный ключ');}
+          function normalizeMysteryKeys(){
+            if(!hero||!Array.isArray(hero.items))return;
+            let first=-1,total=0;
+            for(let i=0;i<hero.items.length;i++){
+              if(!isMysteryKey(hero.items[i]))continue;
+              if(first<0){first=i;total=Math.max(1,Number(hero.items[i].quantity||1));hero.items[i].quantity=total}
+              else{total+=Math.max(1,Number(hero.items[i].quantity||1));hero.items.splice(i,1);i--;}
+            }
+            if(first>=0)hero.items[first].quantity=total;
+          }
+          normalizeMysteryKeys();
+
+          const __addItemWithKeys=addItemToInventory;
+          addItemToInventory=function(item){
+            if(isMysteryKey(item)){
+              normalizeMysteryKeys();
+              const existing=hero.items.find(isMysteryKey);
+              if(existing){existing.quantity=Math.max(1,Number(existing.quantity||1))+Math.max(1,Number(item.quantity||1));return true;}
+              if(!inventoryHasSpace())return false;
+              item.quantity=Math.max(1,Number(item.quantity||1));
+              hero.items.push(item);
+              return true;
+            }
+            return __addItemWithKeys.apply(this,arguments);
+          };
+
+          const __buyKeyStack=buyKey;
+          buyKey=function(){
+            normalizeMysteryKeys();
+            const existing=hero.items.find(isMysteryKey);
+            if(existing){
+              const price=75;
+              if(getGold()<price){sfx('error');if(el('out'))el('out').innerHTML='<span class="red">Недостаточно золота.</span>';return;}
+              hero.gold-=price;
+              existing.quantity=Math.max(1,Number(existing.quantity||1))+1;
+              save();update();sfx('buy');logEvent('МАГАЗИН','Куплен Таинственный ключ. В стаке: '+existing.quantity+'.');
+              if(el('out'))el('out').innerHTML='<span class="green">Таинственный ключ ×'+existing.quantity+'.</span>';
+              if(typeof shopTab==='function')shopTab('other');
+              return;
+            }
+            return __buyKeyStack.apply(this,arguments);
+          };
+
+          const __useKeyStack=useInventoryItem;
+          useInventoryItem=function(index){
+            normalizeMysteryKeys();
+            const raw=hero.items[index];
+            if(isMysteryKey(raw)){
+              raw.quantity=Math.max(0,Number(raw.quantity||1)-1);
+              const remaining=raw.quantity;
+              if(remaining<=0)hero.items.splice(index,1);
+              save();update();renderInventory();
+              if(typeof logEvent==='function')logEvent('ПРЕДМЕТ','Таинственный ключ использован. Осталось: '+remaining+'.');
+              if(typeof __useKeyStack==='function'){
+                /* Передаём один ключ старой логике через временный слот,
+                   чтобы редкий лут и тайник сохранили существующее поведение. */
+                hero.items.splice(index,0,{name:'Таинственный ключ',type:'other',icon:'🔑'});
+                const result=__useKeyStack.apply(this,arguments);
+                const inserted=hero.items.findIndex((x,i)=>i===index&&isMysteryKey(x));
+                if(inserted>=0)hero.items.splice(inserted,1);
+                return result;
+              }
+              return;
+            }
+            return __useKeyStack.apply(this,arguments);
+          };
+
+          const __renderInventoryKeys=renderInventory;
+          renderInventory=function(){
+            normalizeMysteryKeys();
+            __renderInventoryKeys.apply(this,arguments);
+            const list=el('inventoryList'); if(!list)return;
+            list.querySelectorAll('button[onclick*="useInventoryItem("]').forEach(btn=>{
+              const m=String(btn.getAttribute('onclick')||'').match(/useInventoryItem\((\d+)\)/);
+              if(!m)return;
+              const raw=hero.items[Number(m[1])];
+              if(!isMysteryKey(raw)||Number(raw.quantity||1)<=1)return;
+              const row=btn.closest('.item'),nameBox=row&&row.children&&row.children[1];
+              if(!nameBox)return;
+              const badge=document.createElement('span');
+              badge.textContent=' ×'+Number(raw.quantity);
+              badge.style.cssText='color:#e7b34a;font-weight:bold;margin-left:4px';
+              nameBox.appendChild(badge);
+            });
+          };
+          window.MYSTERY_KEY_STACK_V1='MYSTERY-KEY-STACK-V1';
+          save();
+        }catch(e){console.warn('MYSTERY-KEY-STACK-V1',e);}
+      },0);
+
