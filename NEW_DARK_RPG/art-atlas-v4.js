@@ -47,47 +47,6 @@
       renderInventory=function(){normalizePotionStacks();__renderInventoryPotion.apply(this,arguments);const list=el('inventoryList');if(!list)return;list.querySelectorAll('button[onclick*="useInventoryItem("]').forEach(btn=>{const m=String(btn.getAttribute('onclick')||'').match(/useInventoryItem\((\d+)\)/);if(!m)return;const index=Number(m[1]),raw=hero.items[index];if(!isStackablePotion(raw)||Number(raw.quantity||1)<=1)return;const row=btn.closest('.item'),nameBox=row&&row.children&&row.children[1];if(!nameBox)return;const badge=document.createElement('span');badge.textContent=' ×'+Number(raw.quantity);badge.style.cssText='color:#e7b34a;font-weight:bold;margin-left:4px';nameBox.firstChild&&nameBox.firstChild.parentNode.insertBefore(badge,nameBox.firstChild.nextSibling)})};
       window.POTION_STACK_V1='POTION-STACK-V1';
 
-      /* ABYSS-DEPTH-PROGRESS-FIX-V5
-         При возврате на уже открытую глубину восстанавливаем непрерывный
-         прогресс комнат вместо принудительного возврата к комнате 1. */
-      function syncAbyssDepthProgress(){
-        try{
-          if(typeof abyssFloor==='undefined'||typeof state==='undefined'||!state||!state.rooms)return;
-          const d=Math.max(1,Number(abyssFloor||1));
-          const max=typeof ROOMS_PER_FLOOR==='number'?ROOMS_PER_FLOOR:5;
-          let completed=0;
-          for(let r=1;r<=max;r++){
-            const k=typeof roomKey==='function'?roomKey(d,r):(d+':'+r);
-            const room=state.rooms[k];
-            if(room&&room.visited)completed=r;else break;
-          }
-          abyssRoom=Math.max(0,Math.min(max,completed));
-          if(state.pending&&Number(state.pending.depth)===d&&Number(state.pending.room)<=completed)state.pending=null;
-        }catch(e){}
-      }
-      if(typeof renderDynamic==='function'&&!renderDynamic.__abyssDepthProgressFix){
-        const oldRenderDynamic=renderDynamic;
-        const f=function(){
-          syncAbyssDepthProgress();
-          const r=oldRenderDynamic.apply(this,arguments);
-          syncAbyssDepthProgress();
-          return r;
-        };
-        f.__abyssDepthProgressFix=true;
-        window.renderDynamic=f;
-      }
-      if(typeof selectAbyssDepth==='function'&&!selectAbyssDepth.__abyssDepthProgressFix){
-        const oldSelectAbyssDepth=selectAbyssDepth;
-        const f=function(){
-          const r=oldSelectAbyssDepth.apply(this,arguments);
-          syncAbyssDepthProgress();
-          if(typeof saveState==='function')saveState();
-          return r;
-        };
-        f.__abyssDepthProgressFix=true;
-        window.selectAbyssDepth=f;
-      }
-
       if(typeof updateBattle==='function'&&!updateBattle.__battleArtRuntimeFix){
         const old=updateBattle;
         const f=function(){
