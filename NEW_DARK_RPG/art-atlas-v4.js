@@ -15,6 +15,23 @@
       if(typeof start==='function'&&!start.__fixed){const old=start;const f=function(className){try{abyssKeyCaches={};window.abyssKeyCaches=abyssKeyCaches;localStorage.removeItem('abyss_key_caches');localStorage.removeItem('abyss_gear')}catch(e){}return old.apply(this,arguments)};f.__fixed=true;window.start=f;}
       if(typeof save==='function'&&!save.__fixed){const old=save;const f=function(){try{if(typeof ensureGear==='function')ensureGear();localStorage.setItem('abyss_gear',JSON.stringify(hero.gear));localStorage.setItem('abyss_key_caches',JSON.stringify(abyssKeyCaches||{}))}catch(e){}return old.apply(this,arguments)};f.__fixed=true;window.save=f;}
 
+      /* POTION-STACK-V1
+         Только зелья здоровья и маны объединяются в один слот.
+         Остальные предметы инвентаря работают без изменений. */
+      const POTION_STACK_TYPES=['hp','mp'];
+      function isStackablePotion(raw){const x=typeof itemInfo==='function'?itemInfo(raw):raw;return !!(x&&x.type==='consumable'&&POTION_STACK_TYPES.includes(String(x.effect||'')));}
+      function potionKey(raw){const x=typeof itemInfo==='function'?itemInfo(raw):raw;return String(x&&x.effect||'');}
+      function normalizePotionStacks(){if(!hero||!Array.isArray(hero.items))return;const first={};for(let i=hero.items.length-1;i>=0;i--){const raw=hero.items[i];if(!isStackablePotion(raw))continue;const key=potionKey(raw),q=Math.max(1,Number(raw&&raw.quantity||1));if(first[key]===undefined){raw.quantity=q;first[key]=i}else{hero.items[first[key]].quantity=Math.max(1,Number(hero.items[first[key]].quantity||1))+q;hero.items.splice(i,1);if(first[key]>i)first[key]--;}}}
+      const __addItemToInventoryPotion=addItemToInventory;
+      addItemToInventory=function(item){if(isStackablePotion(item)){normalizePotionStacks();const key=potionKey(item),existing=hero.items.find(raw=>isStackablePotion(raw)&&potionKey(raw)===key);if(existing){existing.quantity=Math.max(1,Number(existing.quantity||1))+Math.max(1,Number(item.quantity||1));return true}if(!inventoryHasSpace())return false;item.quantity=Math.max(1,Number(item.quantity||1));hero.items.push(item);return true}return __addItemToInventoryPotion.apply(this,arguments)};
+      const __buyItemPotion=buyItem;
+      buyItem=function(id){const item=shopItems.find(x=>x.id===id);if(item&&(item.id==='hp'||item.id==='mp')){normalizePotionStacks();if(!inventoryHasSpace()&&!hero.items.some(raw=>isStackablePotion(raw)&&potionKey(raw)===String(item.id))){sfx('error');if(el('out'))el('out').innerHTML='<span class="red">Инвентарь заполнен (24/24).</span>';return}}return __buyItemPotion.apply(this,arguments)};
+      const __useInventoryItemPotion=useInventoryItem;
+      useInventoryItem=function(index){normalizePotionStacks();const raw=hero.items[index];if(isStackablePotion(raw)){const item=itemInfo(raw);if(item.effect==='hp')hero.hp=Math.min(hero.maxHp,hero.hp+50);if(item.effect==='mp')hero.energy=Math.min(hero.maxEnergy,hero.energy+30);raw.quantity=Math.max(0,Number(raw.quantity||1)-1);if(raw.quantity<=0)hero.items.splice(index,1);sfx('buy');logEvent('ПРЕДМЕТ',item.name+' использовано. Осталось: '+(raw.quantity>0?raw.quantity:0)+'.');save();update();renderInventory();const fromBattle=screenHistory[screenHistory.length-1]==='inventory'&&screenHistory[screenHistory.length-2]==='battle';if(fromBattle){goBack();enemyTurn()}return}return __useInventoryItemPotion.apply(this,arguments)};
+      const __renderInventoryPotion=renderInventory;
+      renderInventory=function(){normalizePotionStacks();__renderInventoryPotion.apply(this,arguments);const list=el('inventoryList');if(!list)return;list.querySelectorAll('button[onclick*="useInventoryItem("]').forEach(btn=>{const m=String(btn.getAttribute('onclick')||'').match(/useInventoryItem\((\d+)\)/);if(!m)return;const index=Number(m[1]),raw=hero.items[index];if(!isStackablePotion(raw)||Number(raw.quantity||1)<=1)return;const row=btn.closest('.item'),nameBox=row&&row.children&&row.children[1];if(!nameBox)return;const badge=document.createElement('span');badge.textContent=' ×'+Number(raw.quantity);badge.style.cssText='color:#e7b34a;font-weight:bold;margin-left:4px';nameBox.firstChild&&nameBox.firstChild.parentNode.insertBefore(badge,nameBox.firstChild.nextSibling)})};
+      window.POTION_STACK_V1='POTION-STACK-V1';
+
       /* ABYSS-DEPTH-PROGRESS-FIX-V5
          При возврате на уже открытую глубину восстанавливаем непрерывный
          прогресс комнат вместо принудительного возврата к комнате 1. */
