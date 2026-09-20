@@ -44,6 +44,7 @@ jobs:
           if dup: raise SystemExit(f"Duplicate IDs: {dup}")
           required=[
             "PROGRESSION-SYSTEMS-V1",
+            "PROGRESSION-SYSTEMS-V2",
             "ps44open","ps44arenaStart","ps44raidStart","ps44craft",
             "ps44fish","ps44prestige","ps44ng","ps44guild"
           ]
@@ -58,8 +59,8 @@ jobs:
           for marker in ["ANDROID-NATIVE-TOUCH-FALLBACK-V61","__nativeTapBridgeV61","__nativeTapFallbackAt"]:
             if marker not in a: raise SystemExit("Missing Android touch bridge marker: "+marker)
           gradle=(root/"android/app/build.gradle").read_text()
-          if "versionCode 46" not in gradle: raise SystemExit("Bad versionCode")
-          if "versionName '4.4.1'" not in gradle: raise SystemExit("Bad versionName")
+          if "versionCode 47" not in gradle: raise SystemExit("Bad versionCode")
+          if "versionName '4.4.2'" not in gradle: raise SystemExit("Bad versionName")
           print("SOURCE AUDIT: PASS")
           PY
       - name: Prepare permanent signing key
@@ -85,7 +86,7 @@ jobs:
           BUILD_TOOLS=$(find "$ANDROID_HOME/build-tools" -maxdepth 1 -mindepth 1 -type d | sort -V | tail -1)
           "$BUILD_TOOLS/apksigner" verify --verbose "$APK"
           BADGING=$("$BUILD_TOOLS/aapt" dump badging "$APK")
-          echo "$BADGING" | grep -F "package: name='com.chronicles.abyss' versionCode='46' versionName='4.4.1'"
+          echo "$BADGING" | grep -F "package: name='com.chronicles.abyss' versionCode='47' versionName='4.4.2'"
           unzip -l "$APK" | grep -E 'assets/(index.html|art-atlas-v4.js|art-atlas-v4-core.js)$'
           unzip -p "$APK" assets/index.html > /tmp/apk-index.html
           unzip -p "$APK" assets/art-atlas-v4.js > /tmp/apk-v4.js
@@ -99,28 +100,28 @@ jobs:
         run: |
           rm -rf release-package
           mkdir -p release-package
-          cp app/build/outputs/apk/release/app-release.apk release-package/ChroniclesOfTheAbyss-v4.4.1.apk
-          sha256sum release-package/ChroniclesOfTheAbyss-v4.4.1.apk > release-package/SHA256SUMS.txt
+          cp app/build/outputs/apk/release/app-release.apk release-package/ChroniclesOfTheAbyss-v4.4.2.apk
+          sha256sum release-package/ChroniclesOfTheAbyss-v4.4.2.apk > release-package/SHA256SUMS.txt
           cd release-package
-          zip -9 ../ChroniclesOfTheAbyss-v4.4.1-APK.zip *
+          zip -9 ../ChroniclesOfTheAbyss-v4.4.2-APK.zip *
       - name: Package PROJECT ZIP
         run: |
           rm -rf /tmp/ChroniclesOfTheAbyss_PROJECT
           rsync -a --exclude=".git" --exclude="android/.gradle" --exclude="android/app/build" --exclude="android/release-package" --exclude="android/*.zip" ./ /tmp/ChroniclesOfTheAbyss_PROJECT/
           cd /tmp
-          zip -9 -r ChroniclesOfTheAbyss_PROJECT-v4.4.1.zip ChroniclesOfTheAbyss_PROJECT >/dev/null
+          zip -9 -r ChroniclesOfTheAbyss_PROJECT-v4.4.2.zip ChroniclesOfTheAbyss_PROJECT >/dev/null
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: ChroniclesOfTheAbyss-v4.4.1-apk
+          name: ChroniclesOfTheAbyss-v4.4.2-apk
           path: android/app/build/outputs/apk/release/app-release.apk
       - name: Upload APK ZIP
         uses: actions/upload-artifact@v4
         with:
-          name: ChroniclesOfTheAbyss-v4.4.1-apk-zip
-          path: android/ChroniclesOfTheAbyss-v4.4.1-APK.zip
+          name: ChroniclesOfTheAbyss-v4.4.2-apk-zip
+          path: android/ChroniclesOfTheAbyss-v4.4.2-APK.zip
       - name: Upload PROJECT ZIP
         uses: actions/upload-artifact@v4
         with:
-          name: ChroniclesOfTheAbyss_PROJECT-v4.4.1
-          path: /tmp/ChroniclesOfTheAbyss_PROJECT-v4.4.1.zip
+          name: ChroniclesOfTheAbyss_PROJECT-v4.4.2
+          path: /tmp/ChroniclesOfTheAbyss_PROJECT-v4.4.2.zip
