@@ -274,3 +274,45 @@
         }
         window.STACK_SELL_FIX_V1='STACK-SELL-FIX-V1';
       }catch(e){console.warn('STACK-SELL-FIX-V1',e);}},100);
+
+      /* ABYSS-DEPTH7-ROOM-RECOVERY-V1
+         Восстановление застрявшего состояния комнаты на глубине 7.
+         Не пропускает непроигранную комнату: исправляет только устаревший
+         pending/visited и приводит номера depth/room к числам. */
+      setTimeout(function(){
+        try{
+          if(typeof renderDynamic!=='function'||typeof getRoom!=='function'||typeof state==='undefined'||!state)return;
+          const oldRender=renderDynamic;
+          if(oldRender.__depth7RoomRecovery)return;
+          const f=function(){
+            try{
+              const d=Number(abyssFloor||1);
+              if(d===7){
+                if(state.pending&&typeof state.pending==='object'){
+                  state.pending.depth=Number(state.pending.depth);
+                  state.pending.room=Number(state.pending.room);
+                }
+                let completed=0;
+                for(let r=1;r<=ROOMS_PER_FLOOR;r++){
+                  const rr=getRoom(d,r);
+                  if(rr&&rr.visited)completed=r;else break;
+                }
+                abyssRoom=Math.max(0,Math.min(ROOMS_PER_FLOOR,completed));
+                const current=Math.max(1,Math.min(ROOMS_PER_FLOOR,Number(abyssRoom)+1));
+                const room=getRoom(d,current);
+                if(state.pending){
+                  const pd=Number(state.pending.depth),pr=Number(state.pending.room);
+                  if(pd!==d||pr!==current||(room&&room.visited)){
+                    state.pending=null;
+                    if(typeof saveState==='function')saveState();
+                  }
+                }
+              }
+            }catch(e){}
+            return oldRender.apply(this,arguments);
+          };
+          f.__depth7RoomRecovery=true;
+          window.renderDynamic=f;
+        }catch(e){console.warn('ABYSS-DEPTH7-ROOM-RECOVERY-V1',e);}
+      },350);
+
