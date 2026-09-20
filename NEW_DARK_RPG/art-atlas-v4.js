@@ -212,21 +212,14 @@
             normalizeMysteryKeys();
             const raw=hero.items[index];
             if(isMysteryKey(raw)){
-              raw.quantity=Math.max(0,Number(raw.quantity||1)-1);
-              const remaining=raw.quantity;
-              if(remaining<=0)hero.items.splice(index,1);
-              save();update();renderInventory();
-              if(typeof logEvent==='function')logEvent('ПРЕДМЕТ','Таинственный ключ использован. Осталось: '+remaining+'.');
-              if(typeof __useKeyStack==='function'){
-                /* Передаём один ключ старой логике через временный слот,
-                   чтобы редкий лут и тайник сохранили существующее поведение. */
-                hero.items.splice(index,0,{name:'Таинственный ключ',type:'other',icon:'🔑'});
-                const result=__useKeyStack.apply(this,arguments);
-                const inserted=hero.items.findIndex((x,i)=>i===index&&isMysteryKey(x));
-                if(inserted>=0)hero.items.splice(inserted,1);
-                return result;
+              const count=Math.max(1,Number(raw.quantity||1));
+              raw.quantity=1;
+              const result=__useKeyStack.apply(this,arguments);
+              if(count>1){
+                hero.items.splice(Math.min(index,hero.items.length),0,{name:'Таинственный ключ',type:'other',icon:'🔑',quantity:count-1});
+                save();update();renderInventory();
               }
-              return;
+              return result;
             }
             return __useKeyStack.apply(this,arguments);
           };
