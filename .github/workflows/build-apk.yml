@@ -1,11 +1,8 @@
 name: Build APK
-# Автосборка актуальной версии проекта
-# Build trigger: use current synchronized main
-
 on:
   workflow_dispatch:
   push:
-    branches: [ "main" ]
+    branches: ["main"]
 
 jobs:
   build:
@@ -13,51 +10,47 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-
       - name: Set up Java
         uses: actions/setup-java@v4
         with:
           distribution: temurin
-          java-version: '17'
-
+          java-version: "17"
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v4
-
       - name: Full source audit
         run: |
           python - <<'PY'
           from pathlib import Path
           import re, subprocess
-          root=Path('.')
-          web=root/'NEW_DARK_RPG/index.html'
-          android=root/'android/app/src/main/assets/index.html'
-          v4=root/'NEW_DARK_RPG/art-atlas-v4.js'
-          av4=root/'android/app/src/main/assets/art-atlas-v4.js'
-          core=root/'NEW_DARK_RPG/art-atlas-v4-core.js'
-          acore=root/'android/app/src/main/assets/art-atlas-v4-core.js'
-          if web.read_bytes()!=android.read_bytes(): raise SystemExit('Web/Android HTML mismatch')
-          if v4.read_bytes()!=av4.read_bytes(): raise SystemExit('V4 runtime mismatch')
-          if core.read_bytes()!=acore.read_bytes(): raise SystemExit('V4 core mismatch')
-          s=web.read_text(encoding='utf-8')
-          js='\n'.join(m.group(1) for m in re.finditer(r'<script[^>]*>(.*?)</script>',s,re.S))
-          Path('/tmp/game.js').write_text(js,encoding='utf-8')
-          subprocess.run(['node','--check','/tmp/game.js'],check=True)
-          subprocess.run(['node','--check',str(v4)],check=True)
-          subprocess.run(['node','--check',str(core)],check=True)
+          root=Path(".")
+          web=root/"NEW_DARK_RPG/index.html"
+          android=root/"android/app/src/main/assets/index.html"
+          v4=root/"NEW_DARK_RPG/art-atlas-v4.js"
+          av4=root/"android/app/src/main/assets/art-atlas-v4.js"
+          core=root/"NEW_DARK_RPG/art-atlas-v4-core.js"
+          acore=root/"android/app/src/main/assets/art-atlas-v4-core.js"
+          if web.read_bytes()!=android.read_bytes(): raise SystemExit("Web/Android HTML mismatch")
+          if v4.read_bytes()!=av4.read_bytes(): raise SystemExit("V4 runtime mismatch")
+          if core.read_bytes()!=acore.read_bytes(): raise SystemExit("V4 core mismatch")
+          s=web.read_text(encoding="utf-8")
+          js="\n".join(m.group(1) for m in re.finditer(r"<script[^>]*>(.*?)</script>",s,re.S))
+          Path("/tmp/game.js").write_text(js,encoding="utf-8")
+          subprocess.run(["node","--check","/tmp/game.js"],check=True)
+          subprocess.run(["node","--check",str(v4)],check=True)
+          subprocess.run(["node","--check",str(core)],check=True)
           ids=re.findall(r"\bid=[\"']([^\"']+)",s,re.I)
           dup=sorted({x for x in ids if ids.count(x)>1})
-          if dup: raise SystemExit(f'Duplicate IDs: {dup}')
-          runtime=v4.read_text(encoding='utf-8')
-          for marker in ['ART-ATLAS-V4-RUNTIME','setScreen(id)','abyssKeyCaches={};window.abyssKeyCaches=abyssKeyCaches','__ART_ATLAS_V4_BATTLE_FIX','400% 600%']:
-            if marker not in runtime: raise SystemExit('Missing runtime fix: '+marker)
-          for bad in ['dispatchTouchFallback','setOnTouchListener','TOUCH-BUTTON-FIX-V39','ANDROID-TOUCH-FIX-V42','ANDROID-TOUCH-FIX-V54','ANDROID-CLASS-SELECT-FIX-V43']:
-            if bad in s or bad in runtime: raise SystemExit('Legacy touch code remains: '+bad)
-          gradle=(root/'android/app/build.gradle').read_text()
-          if 'versionCode 44' not in gradle: raise SystemExit('Bad versionCode')
-          if "versionName '4.3.3'" not in gradle: raise SystemExit('Bad versionName')
-          print('SOURCE AUDIT: PASS')
+          if dup: raise SystemExit(f"Duplicate IDs: {dup}")
+          runtime=v4.read_text(encoding="utf-8")
+          for marker in ["ART-ATLAS-V4-RUNTIME","setScreen(id)","abyssKeyCaches={};window.abyssKeyCaches=abyssKeyCaches","__battleArtRuntimeFix","400% 600%"]:
+            if marker not in runtime: raise SystemExit("Missing runtime fix: "+marker)
+          for bad in ["dispatchTouchFallback","setOnTouchListener","TOUCH-BUTTON-FIX-V39","ANDROID-TOUCH-FIX-V42","ANDROID-TOUCH-FIX-V54","ANDROID-CLASS-SELECT-FIX-V43"]:
+            if bad in s or bad in runtime: raise SystemExit("Legacy touch code remains: "+bad)
+          gradle=(root/"android/app/build.gradle").read_text()
+          if "versionCode 44" not in gradle: raise SystemExit("Bad versionCode")
+          if "versionName '4.3.3'" not in gradle: raise SystemExit("Bad versionName")
+          print("SOURCE AUDIT: PASS")
           PY
-
       - name: Prepare permanent signing key
         env:
           ANDROID_KEYSTORE_B64: ${{ secrets.ANDROID_KEYSTORE_B64 }}
@@ -65,17 +58,15 @@ jobs:
           ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
           ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
         run: |
-          test -n "$ANDROID_KEYSTORE_B64" || (echo 'Missing ANDROID_KEYSTORE_B64 secret' && exit 1)
+          test -n "$ANDROID_KEYSTORE_B64" || (echo "Missing ANDROID_KEYSTORE_B64 secret" && exit 1)
           echo "$ANDROID_KEYSTORE_B64" | base64 --decode > "$RUNNER_TEMP/release.keystore"
           echo "ANDROID_KEYSTORE_PATH=$RUNNER_TEMP/release.keystore" >> "$GITHUB_ENV"
           echo "ANDROID_KEYSTORE_PASSWORD=$ANDROID_KEYSTORE_PASSWORD" >> "$GITHUB_ENV"
           echo "ANDROID_KEY_ALIAS=$ANDROID_KEY_ALIAS" >> "$GITHUB_ENV"
           echo "ANDROID_KEY_PASSWORD=$ANDROID_KEY_PASSWORD" >> "$GITHUB_ENV"
-
       - name: Build signed release APK
         working-directory: android
         run: gradle clean assembleRelease --no-daemon
-
       - name: Verify APK
         working-directory: android
         run: |
@@ -88,11 +79,10 @@ jobs:
           unzip -p "$APK" assets/index.html > /tmp/apk-index.html
           unzip -p "$APK" assets/art-atlas-v4.js > /tmp/apk-v4.js
           unzip -p "$APK" assets/art-atlas-v4-core.js > /tmp/apk-v4-core.js
-          cmp -s /tmp/apk-index.html ../NEW_DARK_RPG/index.html || (echo 'APK HTML MISMATCH' && exit 1)
-          cmp -s /tmp/apk-v4.js ../NEW_DARK_RPG/art-atlas-v4.js || (echo 'APK V4 RUNTIME MISMATCH' && exit 1)
-          cmp -s /tmp/apk-v4-core.js ../NEW_DARK_RPG/art-atlas-v4-core.js || (echo 'APK V4 CORE MISMATCH' && exit 1)
+          cmp -s /tmp/apk-index.html ../NEW_DARK_RPG/index.html || (echo "APK HTML MISMATCH" && exit 1)
+          cmp -s /tmp/apk-v4.js ../NEW_DARK_RPG/art-atlas-v4.js || (echo "APK V4 RUNTIME MISMATCH" && exit 1)
+          cmp -s /tmp/apk-v4-core.js ../NEW_DARK_RPG/art-atlas-v4-core.js || (echo "APK V4 CORE MISMATCH" && exit 1)
           echo "APK CONTENT AUDIT: PASS"
-
       - name: Package APK ZIP
         working-directory: android
         run: |
@@ -102,26 +92,22 @@ jobs:
           sha256sum release-package/ChroniclesOfTheAbyss-v4.3.3.apk > release-package/SHA256SUMS.txt
           cd release-package
           zip -9 ../ChroniclesOfTheAbyss-v4.3.3-APK.zip *
-
       - name: Package PROJECT ZIP
         run: |
           rm -rf /tmp/ChroniclesOfTheAbyss_PROJECT
-          rsync -a --exclude='.git' --exclude='android/.gradle' --exclude='android/app/build' --exclude='android/release-package' --exclude='android/*.zip' ./ /tmp/ChroniclesOfTheAbyss_PROJECT/
+          rsync -a --exclude=".git" --exclude="android/.gradle" --exclude="android/app/build" --exclude="android/release-package" --exclude="android/*.zip" ./ /tmp/ChroniclesOfTheAbyss_PROJECT/
           cd /tmp
           zip -9 -r ChroniclesOfTheAbyss_PROJECT-v4.3.3.zip ChroniclesOfTheAbyss_PROJECT >/dev/null
-
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
           name: ChroniclesOfTheAbyss-v4.3.3-apk
           path: android/app/build/outputs/apk/release/app-release.apk
-
       - name: Upload APK ZIP
         uses: actions/upload-artifact@v4
         with:
           name: ChroniclesOfTheAbyss-v4.3.3-apk-zip
           path: android/ChroniclesOfTheAbyss-v4.3.3-APK.zip
-
       - name: Upload PROJECT ZIP
         uses: actions/upload-artifact@v4
         with:
