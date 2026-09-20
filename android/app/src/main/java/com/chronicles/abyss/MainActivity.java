@@ -20,7 +20,7 @@ public class MainActivity extends Activity {
     private TouchWebView web;
     private FrameLayout root;
 
-    /* ANDROID-NATIVE-TOUCH-FALLBACK-V61 — резервный DOM tap подключён к реальному JS bridge. */
+    /* ANDROID-NATIVE-TOUCH-FALLBACK-V62 — резервный DOM tap подключён к реальному JS bridge. */
     private static final class TouchWebView extends WebView {
         private final Handler handler = new Handler(Looper.getMainLooper());
         private float downX, downY;
@@ -114,6 +114,10 @@ public class MainActivity extends Activity {
                 "if(last&&now-last.t<350&&Math.abs(last.x-x)<28&&Math.abs(last.y-y)<28)return;" +
                 "var el=document.elementFromPoint(x,y);" +
                 "if(!el)return;" +
+                "var startup=el.closest?el.closest('#continueHit,.start-hit'):null;" +
+                "if(startup&&typeof window.__nativeStartupTap==='function'){" +
+                "var isContinue=startup.id==='continueHit',isStart=startup.classList&&startup.classList.contains('start-hit');" +
+                "if(isContinue||isStart){window.__nativeStartupTap(isContinue?'continue':'start');return;}}" +
                 "var target=el.closest?el.closest('button,a,input,select,textarea,[role=button],[onclick]'):el;" +
                 "if(!target)return;" +
                 "target.focus&&target.focus();" +
