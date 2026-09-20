@@ -1959,7 +1959,7 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
     b.innerHTML=html;document.querySelectorAll('#ps44v2tabs button').forEach(x=>{x.style.minWidth='0';x.style.width='100%';x.style.fontSize='12px';x.style.padding='6px 3px';x.style.whiteSpace='normal';x.style.borderColor=x.dataset.t===tab?'#e22':'#951818'});
   }
   window.ps44v2open=open;
-  window.ps44v2arenaStart=function(){if(!hero)return;S.arena={active:true,wave:1,best:S.arena.best,enemy:Math.max(60,Math.floor((hero.attack||10)*7)),hp:Math.max(1,hero.maxHp)};persist();open('arena')};
+  window.ps44v2arenaStart=function(){if(!hero)return;let mhp=Math.max(1,Number(hero.maxHp||hero.hp||1));hero.maxHp=mhp;S.arena={active:true,wave:1,best:Number(S.arena.best||0),enemy:Math.max(60,Math.floor((hero.attack||10)*7)),hp:mhp};persist();open('arena')};
   window.ps44v2arenaHit=function(){let a=S.arena;if(!a.active)return;let dmg=Math.max(7,Math.floor((hero.attack||10)*(1+a.wave*.08)*(Math.random()*.35+.85)));a.enemy-=dmg;if(a.enemy<=0){a.wave++;a.best=Math.max(a.best,a.wave-1);gold(40+a.wave*15);a.enemy=Math.floor((hero.attack||10)*7*(1+a.wave*.15));a.hp=Math.min(hero.maxHp,a.hp+Math.floor(hero.maxHp*.15))}else{a.hp-=Math.max(3,Math.floor(5+a.wave*1.2-(hero.def||0)*.15));if(a.hp<=0){a.active=false;a.hp=1}}persist();refresh();open('arena')};
   window.ps44v2arenaHeal=function(){let a=S.arena;if(a.active){a.hp=Math.min(hero.maxHp,a.hp+Math.floor(hero.maxHp*.2));persist();open('arena')}};
   window.ps44v2arenaExit=function(){S.arena.active=false;persist();open('arena')};
