@@ -1,7 +1,7 @@
-CHRONICLES OF THE ABYSS — v4.4.2
+CHRONICLES OF THE ABYSS — v4.4.3
 
 УСТАНОВКА APK
-1. Скачайте файл ChroniclesOfTheAbyss-v4.4.2.apk.
+1. Скачайте файл ChroniclesOfTheAbyss-v4.4.3.apk.
 2. Откройте APK на Android.
 3. Если Android попросит разрешение на установку из этого источника, разрешите установку для используемого файлового менеджера/браузера.
 4. Нажмите «Установить».
@@ -14,7 +14,7 @@ CHRONICLES OF THE ABYSS — v4.4.2
 Сохранения игры хранятся локально на устройстве. Не удаляйте данные приложения, если хотите сохранить локальный прогресс.
 
 ВЕРСИЯ
-versionName: 4.4.2
+versionName: 4.4.3
 versionCode: 47
 package: com.chronicles.abyss
 
@@ -22,4 +22,4 @@ package: com.chronicles.abyss
 После скачивания APK можно проверить SHA-256 средствами Android/ПК. Эталонная контрольная сумма будет указана в артефакте сборки SHA256SUMS.txt.
 
 ПРОЕКТ
-Архив ChroniclesOfTheAbyss_PROJECT-v4.4.2.zip содержит Android-проект и исходные файлы игры.
+Архив ChroniclesOfTheAbyss_PROJECT-v4.4.3.zip содержит Android-проект и исходные файлы игры.
