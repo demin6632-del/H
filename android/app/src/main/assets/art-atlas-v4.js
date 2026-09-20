@@ -25,7 +25,22 @@
       const __addItemToInventoryPotion=addItemToInventory;
       addItemToInventory=function(item){if(isStackablePotion(item)){normalizePotionStacks();const key=potionKey(item),existing=hero.items.find(raw=>isStackablePotion(raw)&&potionKey(raw)===key);if(existing){existing.quantity=Math.max(1,Number(existing.quantity||1))+Math.max(1,Number(item.quantity||1));return true}if(!inventoryHasSpace())return false;item.quantity=Math.max(1,Number(item.quantity||1));hero.items.push(item);return true}return __addItemToInventoryPotion.apply(this,arguments)};
       const __buyItemPotion=buyItem;
-      buyItem=function(id){const item=shopItems.find(x=>x.id===id);if(item&&(item.id==='hp'||item.id==='mp')){normalizePotionStacks();if(!inventoryHasSpace()&&!hero.items.some(raw=>isStackablePotion(raw)&&potionKey(raw)===String(item.id))){sfx('error');if(el('out'))el('out').innerHTML='<span class="red">Инвентарь заполнен (24/24).</span>';return}}return __buyItemPotion.apply(this,arguments)};
+      buyItem=function(id){
+        const item=shopItems.find(x=>x.id===id);
+        if(item&&(item.id==='hp'||item.id==='mp')){
+          normalizePotionStacks();
+          if(getGold()<item.price){sfx('error');if(el('out'))el('out').innerHTML='<span class="red">Недостаточно золота.</span>';return}
+          if(!inventoryHasSpace()&&!hero.items.some(raw=>isStackablePotion(raw)&&potionKey(raw)===String(item.id))){sfx('error');if(el('out'))el('out').innerHTML='<span class="red">Инвентарь заполнен (24/24).</span>';return}
+          hero.gold=getGold()-item.price;
+          const added=addItemToInventory({name:item.name,type:'consumable',effect:item.id==='hp'?'hp':'mp',icon:item.icon});
+          if(!added){hero.gold+=item.price;sfx('error');if(el('out'))el('out').innerHTML='<span class="red">Инвентарь заполнен (24/24).</span>';return}
+          save();update();sfx('buy');logEvent('МАГАЗИН','Куплено: '+item.name+' за '+item.price+' золота.');
+          if(el('out'))el('out').innerHTML='<span class="green">Куплено: '+item.name+'. В стаке: '+(hero.items.find(raw=>isStackablePotion(raw)&&potionKey(raw)===(item.id==='hp'?'hp':'mp'))?.quantity||1)+'.</span>';
+          shopTab(shopCategory);
+          return;
+        }
+        return __buyItemPotion.apply(this,arguments);
+      };
       const __useInventoryItemPotion=useInventoryItem;
       useInventoryItem=function(index){normalizePotionStacks();const raw=hero.items[index];if(isStackablePotion(raw)){const item=itemInfo(raw);if(item.effect==='hp')hero.hp=Math.min(hero.maxHp,hero.hp+50);if(item.effect==='mp')hero.energy=Math.min(hero.maxEnergy,hero.energy+30);raw.quantity=Math.max(0,Number(raw.quantity||1)-1);if(raw.quantity<=0)hero.items.splice(index,1);sfx('buy');logEvent('ПРЕДМЕТ',item.name+' использовано. Осталось: '+(raw.quantity>0?raw.quantity:0)+'.');save();update();renderInventory();const fromBattle=screenHistory[screenHistory.length-1]==='inventory'&&screenHistory[screenHistory.length-2]==='battle';if(fromBattle){goBack();enemyTurn()}return}return __useInventoryItemPotion.apply(this,arguments)};
       const __renderInventoryPotion=renderInventory;
