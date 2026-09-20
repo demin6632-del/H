@@ -570,27 +570,52 @@ window.abyssKeyCaches = abyssKeyCaches;
   function selectAbyssDepth(){
     const q=el('depthSelect'),current=Math.max(1,Number(abyssFloor||1));
     const d=Math.max(1,Math.min(depthBest(),Number(q&&q.value||current)));
-    /* Повторный выбор уже текущей глубины не должен сбрасывать комнаты. */
+    /* Повторный выбор уже текущей глубины ничего не сбрасывает. */
     if(d===current){
       updateAbyss();
       if(typeof renderDynamic==='function')renderDynamic();
       return;
     }
-    abyssFloor=d;
-    let completed=0;
-    for(let i=1;i<=ROOMS_PER_FLOOR;i++){
-      const rr=getRoom(d,i);
-      if(rr&&rr.visited)completed=i;else break;
+    /* Сначала показываем предупреждение. Новая глубина применяется только после подтверждения. */
+    showAbyssDepthWarning(d,current);
+  }
+  function showAbyssDepthWarning(depth,current){
+    let modal=document.getElementById('abyssDepthWarning');
+    if(!modal){
+      modal=document.createElement('div');
+      modal.id='abyssDepthWarning';
+      modal.className='modal';
+      document.body.appendChild(modal);
     }
-    abyssRoom=Math.min(ROOMS_PER_FLOOR,completed);
-    abyssBossDefeated=false;
-    abyssRoomContent='Новая комната ещё не исследована.';
-    state.pending=null;
-    state.route=null;
-    saveState();
-    save();
-    updateAbyss();
-    logEvent('ГЛУБИНА','Выбрана глубина '+d+'.');
+    modal.innerHTML='<div class="modal-box" style="max-width:390px;text-align:center">'+
+      '<div style="font-size:27px;margin-bottom:8px">⚠️</div>'+
+      '<h3 style="font-size:20px;margin-bottom:10px">ВНИМАНИЕ</h3>'+
+      '<div style="line-height:1.6;color:#ddd">Вы входите в глубину <b class="red">'+depth+'</b>.<br>'+
+      'Комнаты этой глубины будут исследованы заново.<br>'+
+      '<span class="muted">После подтверждения текущий прогресс комнат этой глубины начнётся с комнаты 1.</span></div>'+
+      '<button id="abyssDepthConfirm" style="margin-top:16px">Войти в глубину '+depth+'</button>'+
+      '<button id="abyssDepthCancel">Отмена</button>'+
+      '</div>';
+    modal.classList.remove('hidden');
+    const close=()=>modal.classList.add('hidden');
+    const confirm=()=>{
+      close();
+      abyssFloor=Math.max(1,Number(depth));
+      abyssRoom=0;
+      abyssBossDefeated=false;
+      abyssRoomContent='Новая комната ещё не исследована.';
+      state.pending=null;
+      state.route=null;
+      saveState();
+      save();
+      update();
+      updateAbyss();
+      if(typeof renderDynamic==='function')renderDynamic();
+      logEvent('ГЛУБИНА','Открыта глубина '+abyssFloor+'.');
+    };
+    const ok=document.getElementById('abyssDepthConfirm'),cancel=document.getElementById('abyssDepthCancel');
+    if(ok)ok.onclick=confirm;
+    if(cancel)cancel.onclick=close;
   }
   window.selectAbyssDepth=selectAbyssDepth; window.refreshDepthSelector=refreshDepthSelector;
   const __updateAbyss=updateAbyss; updateAbyss=function(){__updateAbyss.apply(this,arguments);refreshDepthSelector();const d=Math.max(1,Number(abyssFloor||1));const hasKey=hero&&hero.items&&hero.items.some(x=>itemInfo(x).name==='Таинственный ключ');const opened=!!(abyssKeyCaches&&abyssKeyCaches[d]);if(el('abyssKeyBtn'))el('abyssKeyBtn').style.display=hasKey&&!opened?'block':'none'};
