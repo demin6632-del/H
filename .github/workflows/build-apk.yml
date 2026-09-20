@@ -42,7 +42,8 @@ jobs:
           dup=sorted({x for x in ids if ids.count(x)>1})
           if dup: raise SystemExit(f"Duplicate IDs: {dup}")
           runtime=v4.read_text(encoding="utf-8")
-          for marker in ["PROGRESSION-SYSTEMS-V1","ART-ATLAS-V4-RUNTIME","setScreen(id)","abyssKeyCaches={};window.abyssKeyCaches=abyssKeyCaches","__battleArtRuntimeFix","400% 600%"]:
+          if "PROGRESSION-SYSTEMS-V1" not in s: raise SystemExit("Missing progression systems marker")
+          for marker in ["ART-ATLAS-V4-RUNTIME","setScreen(id)","abyssKeyCaches={};window.abyssKeyCaches=abyssKeyCaches","__battleArtRuntimeFix","400% 600%"]:
             if marker not in runtime: raise SystemExit("Missing runtime fix: "+marker)
           for bad in ["dispatchTouchFallback","setOnTouchListener","TOUCH-BUTTON-FIX-V39","ANDROID-TOUCH-FIX-V42","ANDROID-TOUCH-FIX-V54","ANDROID-CLASS-SELECT-FIX-V43"]:
             if bad in s or bad in runtime: raise SystemExit("Legacy touch code remains: "+bad)
