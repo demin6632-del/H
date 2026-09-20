@@ -1975,14 +1975,54 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot);else boot();
 })();
 </script>
-<script id="START-CONTINUE-RECOVERY-V1">
+<script id="START-CONTINUE-RECOVERY-V2">
 (function(){
-if(window['START-CONTINUE-RECOVERY-V1'])return;window['START-CONTINUE-RECOVERY-V1']=true;
-function menuOpen(){var m=document.getElementById('menu');if(!m)return false;var s=getComputedStyle(m);return s.display!=='none'&&s.visibility!=='hidden'&&s.opacity!=='0';}
-function callFirst(a){for(var i=0;i<a.length;i++){try{if(typeof window[a[i]]==='function'){window[a[i]]();return true;}}catch(e){}}return false;}
-function startFallback(){if(!menuOpen())return;if(callFirst(['newGame','startGame','startNewGame','beginGame','newGameStart','createHero']))return;var n=document.querySelectorAll('.screen');for(var i=0;i<n.length;i++){if(n[i].id&&n[i].querySelector('.class-grid,.class-card')&&typeof window.setScreen==='function'){try{window.setScreen(n[i].id);return;}catch(e){}}}if(typeof window.setScreen==='function'){['class','classes','character','create','main'].some(function(id){try{if(document.getElementById(id)){window.setScreen(id);return true;}}catch(e){}return false;});}}
-function continueFallback(){if(!menuOpen())return;if(callFirst(['continueGame','loadGame','resumeGame','loadSave','continueSave','loadProgress']))return;try{if(typeof window.load==='function')window.load();}catch(e){}try{if(typeof window.setScreen==='function')window.setScreen('main');}catch(e){}}
-function bind(){if(document.documentElement.dataset.scrV1)return;document.documentElement.dataset.scrV1='1';document.addEventListener('click',function(e){var t=e.target&&e.target.closest?e.target.closest('button,a,[role=button],[onclick]'):e.target;if(!t)return;var x=((t.innerText||t.textContent||'')+'').replace(/\s+/g,' ').trim().toLowerCase();var c=x.indexOf('продолжить')>=0,s=!c&&(x.indexOf('начать')>=0||x.indexOf('новая игра')>=0);if(!c&&!s)return;setTimeout(function(){s?startFallback():continueFallback();},140);},true);}
-if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',bind);else bind();setTimeout(bind,700);setTimeout(bind,1800);
+  if(window.__START_CONTINUE_RECOVERY_V2__)return;
+  window.__START_CONTINUE_RECOVERY_V2__=true;
+  var last=0;
+  function run(fn){
+    var now=Date.now();
+    if(now-last<450)return;
+    last=now;
+    try{
+      if(typeof window[fn]==='function'){window[fn]();return true;}
+    }catch(e){
+      try{localStorage.setItem('chronicles_last_start_error',String(e&&e.stack||e))}catch(_){}
+    }
+    return false;
+  }
+  function isStart(t){return !!(t&&((t.id==='startHit')||(t.classList&&t.classList.contains('start-hit'))));}
+  function isContinue(t){return !!(t&&((t.id==='continueHit')||(t.classList&&t.classList.contains('continue-hit'))));}
+  function bind(){
+    var start=document.querySelector('.start-hit'),cont=document.getElementById('continueHit');
+    if(start){
+      start.addEventListener('pointerup',function(e){e.preventDefault();e.stopPropagation();run('showClasses')},{capture:true});
+      start.addEventListener('touchend',function(e){e.preventDefault();e.stopPropagation();run('showClasses')},{capture:true,passive:false});
+    }
+    if(cont){
+      cont.addEventListener('pointerup',function(e){e.preventDefault();e.stopPropagation();run('continueGame')},{capture:true});
+      cont.addEventListener('touchend',function(e){e.preventDefault();e.stopPropagation();run('continueGame')},{capture:true,passive:false});
+    }
+  }
+  function bridge(){
+    window.__nativeStartupTap=function(which){
+      if(which==='start')return run('showClasses');
+      if(which==='continue')return run('continueGame');
+      return false;
+    };
+    var b=window.__nativeTapFallbackAt;
+    if(typeof b==='function'&&!b.__startupV2){
+      window.__nativeTapFallbackAt=function(x,y){
+        try{
+          var el=document.elementFromPoint(x,y),t=el&&el.closest?el.closest('#continueHit,.start-hit'):null;
+          if(t){if(isContinue(t)){run('continueGame');return;}if(isStart(t)){run('showClasses');return;}}
+        }catch(e){}
+        return b(x,y);
+      };
+      window.__nativeTapFallbackAt.__startupV2=true;
+    }
+  }
+  function boot(){bind();bridge();setTimeout(function(){bind();bridge()},500);setTimeout(function(){bind();bridge()},1500)}
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot);else boot();
 })();
 </script>
