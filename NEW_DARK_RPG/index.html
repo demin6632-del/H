@@ -1928,8 +1928,40 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
     S=load();
     let m=document.getElementById('ps44v2');if(!m){m=document.createElement('div');m.id='ps44v2';m.style.cssText='position:fixed;inset:0;z-index:11000;background:#000e;display:none;align-items:center;justify-content:center;padding:10px';m.innerHTML='<div style="width:min(100%,480px);max-height:94dvh;overflow:auto;border:2px solid #b21a1a;background:linear-gradient(#170707,#050505);padding:12px"><div style="display:flex;justify-content:space-between;align-items:center"><h2 id="ps44v2title">Расширенные системы</h2><button id="ps44v2close" style="width:auto;margin:0">✕</button></div><div id="ps44v2tabs" style="display:grid;grid-template-columns:repeat(4,1fr);gap:4px;margin:7px 0"></div><div id="ps44v2body"></div></div>';document.body.appendChild(m);document.getElementById('ps44v2close').onclick=()=>m.style.display='none'}
     const tabs=[['overview','Обзор'],['arena','⚔️ Арена'],['raid','👹 Рейд'],['guild','🏰 Гильдия'],['craft','⚗️ Алхимия'],['fish','🎣 Рыбалка'],['meta','👑 Прогресс']];
-    document.getElementById('ps44v2tabs').innerHTML=tabs.map(t=>'<button data-t="'+t[0]+'">'+t[1]+'</button>').join('');
-    document.querySelectorAll('#ps44v2tabs button').forEach(b=>{b.style.minWidth='0';b.style.width='100%';b.style.fontSize='12px';b.style.padding='6px 3px';b.style.whiteSpace='normal';b.onclick=()=>draw(b.dataset.t)});
+    const tabHost=document.getElementById('ps44v2tabs');
+    tabHost.innerHTML=tabs.map(t=>'<button type="button" data-t="'+t[0]+'">'+t[1]+'</button>').join('');
+    document.querySelectorAll('#ps44v2tabs button').forEach(b=>{
+      b.style.minWidth='0';b.style.width='100%';b.style.fontSize='12px';b.style.padding='6px 3px';b.style.whiteSpace='normal';b.style.touchAction='manipulation';
+      b.onclick=()=>draw(b.dataset.t);
+    });
+    const bodyHost=document.getElementById('ps44v2body');
+    if(!window.__PS44V2_TOUCH_V1__){
+      window.__PS44V2_TOUCH_V1__=1;
+      window.__PS44V2_TOUCH_LAST__=0;
+      function bindTouchHost(host){
+        if(!host||host.__ps44TouchV1)return;
+        host.__ps44TouchV1=1;
+        host.addEventListener('pointerup',function(e){
+          const b=e.target&&e.target.closest?e.target.closest('button'):null;
+          if(!b||!host.contains(b))return;
+          const now=Date.now();
+          if(now-window.__PS44V2_TOUCH_LAST__<350){e.preventDefault();e.stopPropagation();return;}
+          window.__PS44V2_TOUCH_LAST__=now;
+          e.preventDefault();e.stopPropagation();
+          try{b.click()}catch(_){}
+        },true);
+        host.addEventListener('touchend',function(e){
+          const b=e.target&&e.target.closest?e.target.closest('button'):null;
+          if(!b||!host.contains(b))return;
+          const now=Date.now();
+          if(now-window.__PS44V2_TOUCH_LAST__<350){e.preventDefault();e.stopPropagation();return;}
+          window.__PS44V2_TOUCH_LAST__=now;
+          e.preventDefault();e.stopPropagation();
+          try{b.click()}catch(_){}
+        },true);
+      }
+      bindTouchHost(tabHost);bindTouchHost(bodyHost);
+    }
     m.style.display='flex';draw(tab);
   }
   function draw(tab){
