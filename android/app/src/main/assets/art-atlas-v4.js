@@ -247,3 +247,30 @@
         }catch(e){console.warn('MYSTERY-KEY-STACK-V1',e);}
       },0);
 
+
+      /* STACK-SELL-FIX-V1
+         Для стакуемых предметов: цена продажи в инвентаре показывает стоимость всего стака,
+         а кнопка продаёт только 1 экземпляр. Остальные предметы не изменяются. */
+      setTimeout(function(){try{
+        const __sellStackFix=window.sellInventoryItem;
+        if(typeof __sellStackFix==='function'&&!__sellStackFix.__stackSellFix){
+          const f=function(index,traderSale){
+            const raw=hero&&Array.isArray(hero.items)?hero.items[index]:null;
+            const q=raw?Math.max(1,Number(raw.quantity||1)):1;
+            if(raw&&q>1){
+              const unit=traderSale&&typeof window.sellCurrentPrice==='function'?Math.max(1,Number(window.sellCurrentPrice(raw)||0)):Math.max(1,Number(window.sellPrice(raw)||0));
+              const name=(typeof itemInfo==='function'&&itemInfo(raw)||{}).name||raw.name||'Предмет';
+              raw.quantity=q-1;hero.gold=Math.max(0,Number(hero.gold||0)+unit);save();update();
+              if(typeof updateHud==='function')updateHud();if(typeof renderInventory==='function')renderInventory();if(typeof renderHero==='function')renderHero();if(typeof window.renderAbyssTraderSell==='function')window.renderAbyssTraderSell();
+              sfx('buy');logEvent('ТОРГОВЕЦ','Продан 1: '+name+' за '+unit+' золота. Осталось: '+raw.quantity+'.');
+              if(el('out'))el('out').innerHTML='<span class="green">Продан 1: '+name+' за '+unit+' золота. В стаке осталось: '+raw.quantity+'.</span>';return;
+            }
+            return __sellStackFix.apply(this,arguments);
+          };f.__stackSellFix=true;window.sellInventoryItem=f;
+        }
+        const __renderStackSell=renderInventory;
+        if(typeof __renderStackSell==='function'&&!__renderStackSell.__stackSellPriceFix){
+          const f=function(){__renderStackSell.apply(this,arguments);const list=el('inventoryList');if(!list||!hero||!Array.isArray(hero.items))return;list.querySelectorAll('[data-base-sell-index]').forEach(btn=>{const index=Number(btn.dataset.baseSellIndex),raw=hero.items[index],q=raw?Math.max(1,Number(raw.quantity||1)):1;if(!raw||q<=1)return;const unit=Math.max(1,Number(typeof window.sellPrice==='function'?window.sellPrice(raw):0));btn.textContent='Продать 1 · '+unit+' 🪙  (всего: '+(unit*q)+' 🪙)';});};f.__stackSellPriceFix=true;window.renderInventory=f;
+        }
+        window.STACK_SELL_FIX_V1='STACK-SELL-FIX-V1';
+      }catch(e){console.warn('STACK-SELL-FIX-V1',e);}},100);
