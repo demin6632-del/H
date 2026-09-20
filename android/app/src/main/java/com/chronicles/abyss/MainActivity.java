@@ -46,9 +46,12 @@ public class MainActivity extends Activity {
 
         private void scheduleFallback(final float x, final float y) {
             cancelFallback();
+            /* ANDROID-NATIVE-TOUCH-FALLBACK-V63 — WebView CSS scale is the source of truth. */
             final float density = getResources().getDisplayMetrics().density;
-            final float cssX = x / Math.max(1f, density);
-            final float cssY = y / Math.max(1f, density);
+            final float webScale = getScale();
+            final float scale = webScale > 0.01f ? webScale : Math.max(1f, density);
+            final float cssX = x / scale;
+            final float cssY = y / scale;
             fallback = () -> {
                 fallback = null;
                 String js = "(function(){if(typeof window.__nativeTapFallbackAt==='function'){" +
