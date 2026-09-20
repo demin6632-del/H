@@ -1975,3 +1975,14 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot);else boot();
 })();
 </script>
+<script id="START-CONTINUE-RECOVERY-V1">
+(function(){
+if(window.START-CONTINUE-RECOVERY-V1)return;window.START-CONTINUE-RECOVERY-V1=true;
+function menuOpen(){var m=document.getElementById('menu');if(!m)return false;var s=getComputedStyle(m);return s.display!=='none'&&s.visibility!=='hidden'&&s.opacity!=='0';}
+function callFirst(a){for(var i=0;i<a.length;i++){try{if(typeof window[a[i]]==='function'){window[a[i]]();return true;}}catch(e){}}return false;}
+function startFallback(){if(!menuOpen())return;if(callFirst(['newGame','startGame','startNewGame','beginGame','newGameStart','createHero']))return;var n=document.querySelectorAll('.screen');for(var i=0;i<n.length;i++){if(n[i].id&&n[i].querySelector('.class-grid,.class-card')&&typeof window.setScreen==='function'){try{window.setScreen(n[i].id);return;}catch(e){}}}if(typeof window.setScreen==='function'){['class','classes','character','create','main'].some(function(id){try{if(document.getElementById(id)){window.setScreen(id);return true;}}catch(e){}return false;});}}
+function continueFallback(){if(!menuOpen())return;if(callFirst(['continueGame','loadGame','resumeGame','loadSave','continueSave','loadProgress']))return;try{if(typeof window.load==='function')window.load();}catch(e){}try{if(typeof window.setScreen==='function')window.setScreen('main');}catch(e){}}
+function bind(){if(document.documentElement.dataset.scrV1)return;document.documentElement.dataset.scrV1='1';document.addEventListener('click',function(e){var t=e.target&&e.target.closest?e.target.closest('button,a,[role=button],[onclick]'):e.target;if(!t)return;var x=((t.innerText||t.textContent||'')+'').replace(/\s+/g,' ').trim().toLowerCase();var c=x.indexOf('продолжить')>=0,s=!c&&(x.indexOf('начать')>=0||x.indexOf('новая игра')>=0);if(!c&&!s)return;setTimeout(function(){s?startFallback():continueFallback();},140);},true);}
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',bind);else bind();setTimeout(bind,700);setTimeout(bind,1800);
+})();
+</script>
