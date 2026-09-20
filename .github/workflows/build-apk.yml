@@ -46,7 +46,7 @@ jobs:
             "PROGRESSION-SYSTEMS-V1",
             "PROGRESSION-SYSTEMS-V2",
             "ps44open","ps44arenaStart","ps44raidStart","ps44craft",
-            "ps44fish","ps44prestige","ps44ng","ps44guild"
+            "ps44fish","ps44prestige","ps44ng","ps44guild","START-CONTINUE-RECOVERY-V2"
           ]
           for marker in required:
             if marker not in s: raise SystemExit("Missing progression feature: "+marker)
