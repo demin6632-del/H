@@ -8,12 +8,10 @@ android {
         applicationId 'com.chronicles.abyss'
         minSdk 24
         targetSdk 35
-        versionCode 45
-        versionName '4.4.0'
+        versionCode 46
+        versionName '4.4.1'
     }
 
-    // Постоянная release-подпись берётся из переменных GitHub Actions.
-    // Сам приватный ключ в репозиторий не помещается.
     signingConfigs {
         release {
             def keystorePath = System.getenv('ANDROID_KEYSTORE_PATH')

@@ -29,6 +29,7 @@ jobs:
           av4=root/"android/app/src/main/assets/art-atlas-v4.js"
           core=root/"NEW_DARK_RPG/art-atlas-v4-core.js"
           acore=root/"android/app/src/main/assets/art-atlas-v4-core.js"
+          activity=root/"android/app/src/main/java/com/chronicles/abyss/MainActivity.java"
           if web.read_bytes()!=android.read_bytes(): raise SystemExit("Web/Android HTML mismatch")
           if v4.read_bytes()!=av4.read_bytes(): raise SystemExit("V4 runtime mismatch")
           if core.read_bytes()!=acore.read_bytes(): raise SystemExit("V4 core mismatch")
@@ -41,23 +42,32 @@ jobs:
           ids=re.findall(r"\bid=[\"']([^\"']+)",s,re.I)
           dup=sorted({x for x in ids if ids.count(x)>1})
           if dup: raise SystemExit(f"Duplicate IDs: {dup}")
+          required=[
+            "PROGRESSION-SYSTEMS-V1",
+            "ps44open","ps44arenaStart","ps44raidStart","ps44craft",
+            "ps44fish","ps44prestige","ps44ng","ps44guild"
+          ]
+          for marker in required:
+            if marker not in s: raise SystemExit("Missing progression feature: "+marker)
           runtime=v4.read_text(encoding="utf-8")
-          if "PROGRESSION-SYSTEMS-V1" not in s: raise SystemExit("Missing progression systems marker")
           for marker in ["ART-ATLAS-V4-RUNTIME","setScreen(id)","abyssKeyCaches={};window.abyssKeyCaches=abyssKeyCaches","__battleArtRuntimeFix","400% 600%"]:
             if marker not in runtime: raise SystemExit("Missing runtime fix: "+marker)
           for bad in ["dispatchTouchFallback","setOnTouchListener","TOUCH-BUTTON-FIX-V39","ANDROID-TOUCH-FIX-V42","ANDROID-TOUCH-FIX-V54","ANDROID-CLASS-SELECT-FIX-V43"]:
             if bad in s or bad in runtime: raise SystemExit("Legacy touch code remains: "+bad)
+          a=activity.read_text(encoding="utf-8")
+          for marker in ["ANDROID-NATIVE-TOUCH-FALLBACK-V61","__nativeTapBridgeV61","__nativeTapFallbackAt"]:
+            if marker not in a: raise SystemExit("Missing Android touch bridge marker: "+marker)
           gradle=(root/"android/app/build.gradle").read_text()
-          if "versionCode 45" not in gradle: raise SystemExit("Bad versionCode")
-          if "versionName '4.4.0'" not in gradle: raise SystemExit("Bad versionName")
+          if "versionCode 46" not in gradle: raise SystemExit("Bad versionCode")
+          if "versionName '4.4.1'" not in gradle: raise SystemExit("Bad versionName")
           print("SOURCE AUDIT: PASS")
           PY
       - name: Prepare permanent signing key
         env:
-          ANDROID_KEYSTORE_B64: ${{ secrets.ANDROID_KEYSTORE_B64 }}
-          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
-          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
-          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+          ANDROID_KEYSTORE_B64: ${ secrets.ANDROID_KEYSTORE_B64 }
+          ANDROID_KEYSTORE_PASSWORD: ${ secrets.ANDROID_KEYSTORE_PASSWORD }
+          ANDROID_KEY_ALIAS: ${ secrets.ANDROID_KEY_ALIAS }
+          ANDROID_KEY_PASSWORD: ${ secrets.ANDROID_KEY_PASSWORD }
         run: |
           test -n "$ANDROID_KEYSTORE_B64" || (echo "Missing ANDROID_KEYSTORE_B64 secret" && exit 1)
           echo "$ANDROID_KEYSTORE_B64" | base64 --decode > "$RUNNER_TEMP/release.keystore"
@@ -75,7 +85,7 @@ jobs:
           BUILD_TOOLS=$(find "$ANDROID_HOME/build-tools" -maxdepth 1 -mindepth 1 -type d | sort -V | tail -1)
           "$BUILD_TOOLS/apksigner" verify --verbose "$APK"
           BADGING=$("$BUILD_TOOLS/aapt" dump badging "$APK")
-          echo "$BADGING" | grep -F "package: name='com.chronicles.abyss' versionCode='45' versionName='4.4.0'"
+          echo "$BADGING" | grep -F "package: name='com.chronicles.abyss' versionCode='46' versionName='4.4.1'"
           unzip -l "$APK" | grep -E 'assets/(index.html|art-atlas-v4.js|art-atlas-v4-core.js)$'
           unzip -p "$APK" assets/index.html > /tmp/apk-index.html
           unzip -p "$APK" assets/art-atlas-v4.js > /tmp/apk-v4.js
@@ -89,28 +99,28 @@ jobs:
         run: |
           rm -rf release-package
           mkdir -p release-package
-          cp app/build/outputs/apk/release/app-release.apk release-package/ChroniclesOfTheAbyss-v4.4.0.apk
-          sha256sum release-package/ChroniclesOfTheAbyss-v4.4.0.apk > release-package/SHA256SUMS.txt
+          cp app/build/outputs/apk/release/app-release.apk release-package/ChroniclesOfTheAbyss-v4.4.1.apk
+          sha256sum release-package/ChroniclesOfTheAbyss-v4.4.1.apk > release-package/SHA256SUMS.txt
           cd release-package
-          zip -9 ../ChroniclesOfTheAbyss-v4.4.0-APK.zip *
+          zip -9 ../ChroniclesOfTheAbyss-v4.4.1-APK.zip *
       - name: Package PROJECT ZIP
         run: |
           rm -rf /tmp/ChroniclesOfTheAbyss_PROJECT
           rsync -a --exclude=".git" --exclude="android/.gradle" --exclude="android/app/build" --exclude="android/release-package" --exclude="android/*.zip" ./ /tmp/ChroniclesOfTheAbyss_PROJECT/
           cd /tmp
-          zip -9 -r ChroniclesOfTheAbyss_PROJECT-v4.4.0.zip ChroniclesOfTheAbyss_PROJECT >/dev/null
+          zip -9 -r ChroniclesOfTheAbyss_PROJECT-v4.4.1.zip ChroniclesOfTheAbyss_PROJECT >/dev/null
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: ChroniclesOfTheAbyss-v4.4.0-apk
+          name: ChroniclesOfTheAbyss-v4.4.1-apk
           path: android/app/build/outputs/apk/release/app-release.apk
       - name: Upload APK ZIP
         uses: actions/upload-artifact@v4
         with:
-          name: ChroniclesOfTheAbyss-v4.4.0-apk-zip
-          path: android/ChroniclesOfTheAbyss-v4.4.0-APK.zip
+          name: ChroniclesOfTheAbyss-v4.4.1-apk-zip
+          path: android/ChroniclesOfTheAbyss-v4.4.1-APK.zip
       - name: Upload PROJECT ZIP
         uses: actions/upload-artifact@v4
         with:
-          name: ChroniclesOfTheAbyss_PROJECT-v4.4.0
-          path: /tmp/ChroniclesOfTheAbyss_PROJECT-v4.4.0.zip
+          name: ChroniclesOfTheAbyss_PROJECT-v4.4.1
+          path: /tmp/ChroniclesOfTheAbyss_PROJECT-v4.4.1.zip
