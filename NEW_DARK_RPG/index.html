@@ -1992,7 +1992,19 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
         if(e){e.preventDefault();e.stopPropagation();}
         if(typeof window.ps44v2open==='function') window.ps44v2open('overview');
       };
+      if(!b.__ps44TouchBound){
+        b.__ps44TouchBound=true;
+        b.addEventListener('pointerup',function(e){
+          e.preventDefault();e.stopPropagation();
+          if(typeof window.ps44v2open==='function') window.ps44v2open('overview');
+        },{capture:true});
+        b.addEventListener('touchend',function(e){
+          e.preventDefault();e.stopPropagation();
+          if(typeof window.ps44v2open==='function') window.ps44v2open('overview');
+        },{capture:true,passive:false});
+      }
       b.classList.add('ps44-fallback-open');
+      b.style.touchAction='manipulation';
       const label='<span>✦</span>Расширенные системы';
       if(b.innerHTML!==label) b.innerHTML=label;
     }
