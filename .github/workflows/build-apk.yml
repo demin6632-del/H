@@ -56,7 +56,7 @@ jobs:
           for bad in ["dispatchTouchFallback","setOnTouchListener","TOUCH-BUTTON-FIX-V39","ANDROID-TOUCH-FIX-V42","ANDROID-TOUCH-FIX-V54","ANDROID-CLASS-SELECT-FIX-V43"]:
             if bad in s or bad in runtime: raise SystemExit("Legacy touch code remains: "+bad)
           a=activity.read_text(encoding="utf-8")
-          for marker in ["ANDROID-NATIVE-TOUCH-FALLBACK-V62","__nativeTapBridgeV62","__nativeTapFallbackAt"]:
+          for marker in ["ANDROID-NATIVE-TOUCH-FALLBACK-V62","__nativeTapBridgeV61","__nativeTapFallbackAt"]:
             if marker not in a: raise SystemExit("Missing Android touch bridge marker: "+marker)
           gradle=(root/"android/app/build.gradle").read_text()
           if "versionCode 48" not in gradle: raise SystemExit("Bad versionCode")
