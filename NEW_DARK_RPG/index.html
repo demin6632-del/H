@@ -1992,7 +1992,9 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
         if(e){e.preventDefault();e.stopPropagation();}
         if(typeof window.ps44v2open==='function') window.ps44v2open('overview');
       };
-      b.innerHTML='<span>✦</span>Расширенные системы';
+      b.classList.add('ps44-fallback-open');
+      const label='<span>✦</span>Расширенные системы';
+      if(b.innerHTML!==label) b.innerHTML=label;
     }
   }
   function boot(){
