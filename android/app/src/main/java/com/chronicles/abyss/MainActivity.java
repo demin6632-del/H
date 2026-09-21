@@ -134,7 +134,7 @@ public class MainActivity extends Activity {
     private void installNativeTapBridge() {
         String js =
                 "(function(){" +
-                "if(window.__nativeTapBridgeV62)return;" +
+                "if(window.__nativeTapBridgeV61)return;" +
                 "window.__nativeTapBridgeV61=1;" +
                 "window.__nativeTapLastClick=0;" +
                 "document.addEventListener('click',function(e){" +
