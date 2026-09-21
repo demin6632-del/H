@@ -2200,6 +2200,7 @@ window.abyssKeyCaches = abyssKeyCaches;
  function depth(){return Math.max(1,Number(window.abyssFloor||1));}
  function sceneName(){return scenes[(depth()-1)%scenes.length];}
  function applyScene(){
+   if(window.__ART_ATLAS_V4)return;
    try{
     var n=sceneName(),url='url("'+base+n+'.png")';
     document.querySelectorAll('.scene').forEach(function(s){
@@ -2254,6 +2255,7 @@ window.abyssKeyCaches = abyssKeyCaches;
  function depth(){try{return Math.max(1,Number(window.abyssFloor||document.body.getAttribute('data-abyss-floor')||1)||1)}catch(e){return 1}}
  function sceneName(){return scenes[(depth()-1)%scenes.length]}
  function setSceneMedia(){
+   if(window.__ART_ATLAS_V4)return;
    try{
      var name=sceneName(), url='url("'+base+name+'.png")';
      document.querySelectorAll('.scene:not(.battle)').forEach(function(el){
@@ -2291,3 +2293,5 @@ window.abyssKeyCaches = abyssKeyCaches;
  setInterval(setSceneMedia,1200);
 })();
 </script>
+
+<script src="art-atlas-v4-core.js"></script>
