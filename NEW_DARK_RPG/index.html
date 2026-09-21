@@ -2165,7 +2165,55 @@ window.abyssKeyCaches = abyssKeyCaches;
   }
  }catch(e){}
 })();
-</script>\n<!-- MEDIA-PACK-V46-RUNTIME -->
+</script>\n
+<!-- MEDIA-PACK-V46-CONTENT-BINDING-V2: every generated scene and every generated track is used by gameplay. -->
+<script>
+(function(){
+ if(window.__COA_MEDIA_V46_BINDING_V2__)return;
+ window.__COA_MEDIA_V46_BINDING_V2__=true;
+ var base='assets/generated/';
+ var scenes=['abyss_gate','blood_rift','ash_citadel','bone_catacomb','shadow_forest','void_bridge','fallen_temple','red_chasm','obsidian_hall','forgotten_throne','night_marsh','iron_ruins','cursed_library','black_keep','wraith_gallery','deep_lair','hell_stairs','starless_vault','crimson_arena','ancient_gate','abyss_core','archon_chamber','endless_depth','rift_lord'];
+ var tracks=['abyss_00.wav','abyss_01.wav','battle_00.wav','battle_01.wav','boss_00.wav','dungeon_00.wav','victory_00.wav','death_00.wav'];
+ window.COA_MEDIA_SCENES_V2=scenes.slice();window.COA_MEDIA_TRACKS_V2=tracks.slice();
+ scenes.forEach(function(n){try{var im=new Image();im.src=base+n+'.png'}catch(e){}});
+ function depth(){return Math.max(1,Number(window.abyssFloor||1));}
+ function sceneName(){return scenes[(depth()-1)%scenes.length];}
+ function applyScene(){
+   try{
+    var n=sceneName(),url='url("'+base+n+'.png")';
+    document.querySelectorAll('.scene').forEach(function(s){
+      if(s.classList.contains('battle')) return;
+      s.style.backgroundImage='linear-gradient(rgba(5,0,4,.22),rgba(0,0,0,.50)),'+url;
+      s.style.backgroundSize='cover';s.style.backgroundPosition='center';
+    });
+   }catch(e){}
+ }
+ function chooseTrack(){
+   var id=(location.hash||'#menu').replace('#','');
+   if(id==='battle'){
+     var boss=window.enemy&&window.enemy.isBoss;
+     return boss?'boss_00.wav':tracks[depth()%2+2];
+   }
+   if(id==='death')return 'death_00.wav';
+   if(id==='abyss'||id==='main'||id==='hero'||id==='inventory'||id==='equipment')return tracks[depth()%2];
+   return 'abyss_00.wav';
+ }
+ function playBound(){try{
+   var n=chooseTrack(),src=base+n;
+   if(window.__coaBoundAudio&&window.__coaBoundAudio.src.indexOf(src)!==-1){if(window.__coaBoundAudio.paused)window.__coaBoundAudio.play().catch(function(){});return;}
+   if(window.__coaBoundAudio){window.__coaBoundAudio.pause();window.__coaBoundAudio=null;}
+   var a=new Audio(src);a.loop=true;a.volume=(n.indexOf('battle')===0||n.indexOf('boss')===0)?.16:.11;a.preload='auto';window.__coaBoundAudio=a;a.play().catch(function(){});
+  }catch(e){}}
+ function refresh(){applyScene();playBound();}
+ window.COARefreshMediaV2=refresh;
+ window.addEventListener('hashchange',refresh);
+ document.addEventListener('click',function(){setTimeout(refresh,80)},{passive:true});
+ document.addEventListener('touchend',function(){setTimeout(refresh,80)},{passive:true});
+ setInterval(refresh,1200);
+ setTimeout(refresh,300);setTimeout(refresh,1200);
+})();
+</script>
+<!-- MEDIA-PACK-V46-RUNTIME -->
 <style id="media-pack-v46-style">
 #menu{background-image:linear-gradient(180deg,rgba(2,5,7,.30),rgba(8,3,7,.72)),url("assets/generated/abyss_gate.png")!important;background-size:cover!important;background-position:center!important}
 .scene.abyss{background-image:linear-gradient(rgba(20,0,0,.25),rgba(3,0,4,.45)),url("assets/generated/abyss_core.png")!important;background-size:cover!important;background-position:center!important}
