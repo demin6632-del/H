@@ -61,7 +61,7 @@ def art(name, idx):
         d.ellipse((x-r,y-r,x+r,y+r), fill=(250,48,25,alpha))
     for q in range(18):
         x=int(rng.integers(100,W-100)); y=int(rng.integers(100,H-100))
-        d.regular_polygon((x,y,int(rng.integers(25,70)),6), fill=(170,20,30,38), outline=(250,80,40,95), width=3)
+        d.regular_polygon((x,y,int(rng.integers(25,70))), 6, fill=(170,20,30,38), outline=(250,80,40,95), width=3)
     img.save(WEB / f"{name}.png", "PNG", optimize=True)
     (ANDROID / f"{name}.png").write_bytes((WEB / f"{name}.png").read_bytes())
 
