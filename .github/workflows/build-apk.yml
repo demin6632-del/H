@@ -17,6 +17,15 @@ jobs:
           java-version: "17"
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v4
+      - name: Generate real offline media pack
+        run: |
+          python -m pip install --disable-pip-version-check --no-input pillow
+          python tools/generate_media_pack_v46.py
+          test -d NEW_DARK_RPG/assets/generated
+          rm -rf android/app/src/main/assets/generated
+          mkdir -p android/app/src/main/assets/generated
+          cp -a NEW_DARK_RPG/assets/generated/. android/app/src/main/assets/generated/
+          du -sh NEW_DARK_RPG/assets/generated
       - name: Full source audit
         run: |
           python - <<'PY'
@@ -42,12 +51,12 @@ jobs:
           ids=re.findall(r"\bid=[\"']([^\"']+)",s,re.I)
           dup=sorted({x for x in ids if ids.count(x)>1})
           if dup: raise SystemExit(f"Duplicate IDs: {dup}")
-          if "COA_VERSION='4.5.0'" not in s: raise SystemExit("Missing v4.5.0 runtime marker")
+          if "COA_VERSION='4.6.0'" not in s: raise SystemExit("Missing v4.5.0 runtime marker")
           required=[
             "PROGRESSION-SYSTEMS-V2",
             "ps44open","ps44v2open","ps44v2arenaStart","ps44v2raidStart",
             "ps44v2craft","ps44v2fish","ps44v2prestige","ps44v2ng","ps44v2guildCreate",
-            "START-CONTINUE-RECOVERY-V2","chronicles_abyss_progression_v2_enhanced","PROGRESSION-V1-MIGRATION-ONCE", "ABYSS-DEPTHS-V45"
+            "START-CONTINUE-RECOVERY-V2","chronicles_abyss_progression_v2_enhanced","PROGRESSION-V1-MIGRATION-ONCE", "ABYSS-DEPTHS-V45","MEDIA-PACK-V46"
           ]
           for marker in required:
             if marker not in s: raise SystemExit("Missing progression feature: "+marker)
@@ -60,8 +69,8 @@ jobs:
           for marker in ["ANDROID-NATIVE-TOUCH-FALLBACK-V64","__nativeTapBridgeV61","__nativeTapFallbackAt","enableImmersiveFullscreen"]:
             if marker not in a: raise SystemExit("Missing Android touch bridge marker: "+marker)
           gradle=(root/"android/app/build.gradle").read_text()
-          if "versionCode 54" not in gradle: raise SystemExit("Bad versionCode")
-          if "versionName '4.5.0'" not in gradle: raise SystemExit("Bad versionName")
+          if "versionCode 55" not in gradle: raise SystemExit("Bad versionCode")
+          if "versionName '4.6.0'" not in gradle: raise SystemExit("Bad versionName")
           print("SOURCE AUDIT: PASS")
           PY
       - name: Prepare permanent signing key
@@ -87,8 +96,54 @@ jobs:
           BUILD_TOOLS=$(find "$ANDROID_HOME/build-tools" -maxdepth 1 -mindepth 1 -type d | sort -V | tail -1)
           "$BUILD_TOOLS/apksigner" verify --verbose "$APK"
           BADGING=$("$BUILD_TOOLS/aapt" dump badging "$APK")
-          echo "$BADGING" | grep -F "package: name='com.chronicles.abyss' versionCode='54' versionName='4.5.0'"
-          unzip -l "$APK" | grep -E 'assets/(index.html|art-atlas-v4.js|art-atlas-v4-core.js)$'
+          echo "$BADGING" | grep -F "package: name='com.chronicles.abyss' versionCode='54' versionName='4.6.0'"
+          unzip -l "$APK" | grep -E 'assets/(index.html|art-atlas-v4.js|art-atlas-v4-core.js)
+          unzip -p "$APK" assets/index.html > /tmp/apk-index.html
+          unzip -p "$APK" assets/art-atlas-v4.js > /tmp/apk-v4.js
+          unzip -p "$APK" assets/art-atlas-v4-core.js > /tmp/apk-v4-core.js
+          cmp -s /tmp/apk-index.html ../NEW_DARK_RPG/index.html || (echo "APK HTML MISMATCH" && exit 1)
+          cmp -s /tmp/apk-v4.js ../NEW_DARK_RPG/art-atlas-v4.js || (echo "APK V4 RUNTIME MISMATCH" && exit 1)
+          cmp -s /tmp/apk-v4-core.js ../NEW_DARK_RPG/art-atlas-v4-core.js || (echo "APK V4 CORE MISMATCH" && exit 1)
+          APK_BYTES=$(stat -c%s "$APK")
+          echo "APK_BYTES=$APK_BYTES"
+          test "$APK_BYTES" -ge 94371840 || (echo "APK IS BELOW 90 MiB; real media pack missing" && exit 1)
+          echo "APK CONTENT AUDIT: PASS"
+      - name: Package APK ZIP
+        working-directory: android
+        run: |
+          rm -rf release-package
+          mkdir -p release-package
+          cp app/build/outputs/apk/release/app-release.apk release-package/ChroniclesOfTheAbyss-v4.6.0.apk
+          sha256sum release-package/ChroniclesOfTheAbyss-v4.5.0.apk > release-package/SHA256SUMS.txt
+          cd release-package
+          zip -9 ../ChroniclesOfTheAbyss-v4.5.0-APK.zip *
+      - name: Package PROJECT ZIP
+        run: |
+          rm -rf /tmp/ChroniclesOfTheAbyss_PROJECT
+          rsync -a --exclude=".git" --exclude="android/.gradle" --exclude="android/app/build" --exclude="android/release-package" --exclude="android/*.zip" ./ /tmp/ChroniclesOfTheAbyss_PROJECT/
+          cd /tmp
+          zip -9 -r ChroniclesOfTheAbyss_PROJECT-v4.6.0.zip ChroniclesOfTheAbyss_PROJECT >/dev/null
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: ChroniclesOfTheAbyss-v4.6.0-apk
+          path: android/app/build/outputs/apk/release/app-release.apk
+      - name: Upload APK ZIP
+        uses: actions/upload-artifact@v4
+        with:
+          name: ChroniclesOfTheAbyss-v4.6.0-apk-zip
+          path: android/ChroniclesOfTheAbyss-v4.5.0-APK.zip
+      - name: Upload PROJECT ZIP
+        uses: actions/upload-artifact@v4
+        with:
+          name: ChroniclesOfTheAbyss_PROJECT-v4.6.0
+          path: /tmp/ChroniclesOfTheAbyss_PROJECT-v4.5.0.zip
+
+# PROGRESSION-V2-SINGLE-SOURCE-FINAL-BUILD
+
+          MEDIA_BYTES=$(find app/src/main/assets/generated -type f -printf '%s\n' | awk '{s+=$1} END{print s+0}')
+          test "$MEDIA_BYTES" -ge 94371840 || (echo "MEDIA PACK TOO SMALL: $MEDIA_BYTES bytes" && exit 1)
+          test "$(find app/src/main/assets/generated -type f | wc -l)" -ge 32 || (echo "MEDIA PACK FILE COUNT TOO LOW" && exit 1)
           unzip -p "$APK" assets/index.html > /tmp/apk-index.html
           unzip -p "$APK" assets/art-atlas-v4.js > /tmp/apk-v4.js
           unzip -p "$APK" assets/art-atlas-v4-core.js > /tmp/apk-v4-core.js
@@ -101,7 +156,7 @@ jobs:
         run: |
           rm -rf release-package
           mkdir -p release-package
-          cp app/build/outputs/apk/release/app-release.apk release-package/ChroniclesOfTheAbyss-v4.5.0.apk
+          cp app/build/outputs/apk/release/app-release.apk release-package/ChroniclesOfTheAbyss-v4.6.0.apk
           sha256sum release-package/ChroniclesOfTheAbyss-v4.5.0.apk > release-package/SHA256SUMS.txt
           cd release-package
           zip -9 ../ChroniclesOfTheAbyss-v4.5.0-APK.zip *
@@ -110,21 +165,21 @@ jobs:
           rm -rf /tmp/ChroniclesOfTheAbyss_PROJECT
           rsync -a --exclude=".git" --exclude="android/.gradle" --exclude="android/app/build" --exclude="android/release-package" --exclude="android/*.zip" ./ /tmp/ChroniclesOfTheAbyss_PROJECT/
           cd /tmp
-          zip -9 -r ChroniclesOfTheAbyss_PROJECT-v4.5.0.zip ChroniclesOfTheAbyss_PROJECT >/dev/null
+          zip -9 -r ChroniclesOfTheAbyss_PROJECT-v4.6.0.zip ChroniclesOfTheAbyss_PROJECT >/dev/null
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: ChroniclesOfTheAbyss-v4.5.0-apk
+          name: ChroniclesOfTheAbyss-v4.6.0-apk
           path: android/app/build/outputs/apk/release/app-release.apk
       - name: Upload APK ZIP
         uses: actions/upload-artifact@v4
         with:
-          name: ChroniclesOfTheAbyss-v4.5.0-apk-zip
+          name: ChroniclesOfTheAbyss-v4.6.0-apk-zip
           path: android/ChroniclesOfTheAbyss-v4.5.0-APK.zip
       - name: Upload PROJECT ZIP
         uses: actions/upload-artifact@v4
         with:
-          name: ChroniclesOfTheAbyss_PROJECT-v4.5.0
+          name: ChroniclesOfTheAbyss_PROJECT-v4.6.0
           path: /tmp/ChroniclesOfTheAbyss_PROJECT-v4.5.0.zip
 
 # PROGRESSION-V2-SINGLE-SOURCE-FINAL-BUILD
