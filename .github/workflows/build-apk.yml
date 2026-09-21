@@ -146,6 +146,23 @@ jobs:
           cd /tmp
           zip -9 -r ChroniclesOfTheAbyss_PROJECT-v4.6.0.zip ChroniclesOfTheAbyss_PROJECT >/dev/null
 
+      - name: Package FULL ZIP
+        run: |
+          rm -rf /tmp/ChroniclesOfTheAbyss_FULL
+          mkdir -p /tmp/ChroniclesOfTheAbyss_FULL/APK /tmp/ChroniclesOfTheAbyss_FULL/PROJECT
+          cp android/app/build/outputs/apk/release/app-release.apk /tmp/ChroniclesOfTheAbyss_FULL/APK/ChroniclesOfTheAbyss-v4.6.0.apk
+          cp android/ChroniclesOfTheAbyss-v4.6.0-APK.zip /tmp/ChroniclesOfTheAbyss_FULL/APK/ChroniclesOfTheAbyss-v4.6.0-APK.zip
+          cp /tmp/ChroniclesOfTheAbyss_PROJECT-v4.6.0.zip /tmp/ChroniclesOfTheAbyss_FULL/PROJECT/ChroniclesOfTheAbyss_PROJECT-v4.6.0.zip
+          printf '%s\n' 'ChroniclesOfTheAbyss v4.6.0 FULL PACKAGE' 'Contains standalone APK, APK ZIP, and PROJECT ZIP.' > /tmp/ChroniclesOfTheAbyss_FULL/README.txt
+          cd /tmp
+          zip -9 -r ChroniclesOfTheAbyss-v4.6.0-FULL.zip ChroniclesOfTheAbyss_FULL >/dev/null
+
+      - name: Upload FULL ZIP
+        uses: actions/upload-artifact@v5
+        with:
+          name: ChroniclesOfTheAbyss-v4.6.0-FULL
+          path: /tmp/ChroniclesOfTheAbyss-v4.6.0-FULL.zip
+
       - name: Upload APK
         uses: actions/upload-artifact@v5
         with:
