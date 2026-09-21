@@ -46,16 +46,18 @@ public class MainActivity extends Activity {
 
         private void scheduleFallback(final float x, final float y) {
             cancelFallback();
-            /* ANDROID-NATIVE-TOUCH-FALLBACK-V63 — WebView CSS scale is the source of truth. */
-            final float density = getResources().getDisplayMetrics().density;
-            final float webScale = getScale();
-            final float scale = webScale > 0.01f ? webScale : Math.max(1f, density);
-            final float cssX = x / scale;
-            final float cssY = y / scale;
+            /* ANDROID-NATIVE-TOUCH-FALLBACK-V64 — переводим физические координаты WebView в CSS viewport через innerWidth/innerHeight. */
+            final float viewW = Math.max(1f, getWidth());
+            final float viewH = Math.max(1f, getHeight());
+            final float tapX = x;
+            final float tapY = y;
             fallback = () -> {
                 fallback = null;
-                String js = "(function(){if(typeof window.__nativeTapFallbackAt==='function'){" +
-                        "window.__nativeTapFallbackAt(" + cssX + "," + cssY + ");}})()";
+                String js = "(function(){try{" +
+                        "var sx=window.innerWidth/" + viewW + ",sy=window.innerHeight/" + viewH + ";" +
+                        "if(typeof window.__nativeTapFallbackAt==='function'){" +
+                        "window.__nativeTapFallbackAt(" + tapX + "*sx," + tapY + "*sy);" +
+                        "}}catch(e){}})()";
                 evaluateJavascript(js, null);
             };
             handler.postDelayed(fallback, 180);
@@ -104,7 +106,7 @@ public class MainActivity extends Activity {
     private void installNativeTapBridge() {
         String js =
                 "(function(){" +
-                "if(window.__nativeTapBridgeV61)return;" +
+                "if(window.__nativeTapBridgeV62)return;" +
                 "window.__nativeTapBridgeV61=1;" +
                 "window.__nativeTapLastClick=0;" +
                 "document.addEventListener('click',function(e){" +
