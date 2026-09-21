@@ -606,8 +606,7 @@ window.abyssKeyCaches = abyssKeyCaches;
       abyssRoom=0;
       abyssBossDefeated=false;
       abyssRoomContent='Новая комната ещё не исследована.';
-      state.pending=null;
-      state.route=null;
+      clearDepthState(abyssFloor);
       saveState();
       save();
       update();
@@ -1088,6 +1087,12 @@ window.abyssKeyCaches = abyssKeyCaches;
   function saveState(){try{localStorage.setItem(DKEY,JSON.stringify(state))}catch(e){}}
   function depthKey(){return String(Math.max(1,Number(abyssFloor||1)))}
   function roomKey(depth,room){return depth+'_'+room}
+  function clearDepthState(depth){
+    const d=Math.max(1,Math.floor(finiteNumber(depth,abyssFloor||1)));
+    if(state&&state.rooms){Object.keys(state.rooms).forEach(k=>{if(String(k).split('_')[0]===String(d))delete state.rooms[k]})}
+    if(state&&state.revealedHidden){Object.keys(state.revealedHidden).forEach(k=>{if(String(k).split('_')[0]===String(d))delete state.revealedHidden[k]})}
+    if(state){state.pending=null;state.route=null}
+  }
   function depthRisk(d){d=Number(d);return d<=2?'safe':d<=5?'risk':'deadly'}
   function depthName(d){
     const n=Number(d), deaths=Number(state.deaths[n]||0);
@@ -1248,8 +1253,7 @@ window.abyssKeyCaches = abyssKeyCaches;
         abyssRoom=0;
         abyssBossDefeated=false;
         abyssRoomContent='Новая комната ещё не исследована.';
-        state.pending=null;
-        state.route=null;
+        clearDepthState(abyssFloor);
         saveState();
         save();
         update();
@@ -1280,7 +1284,7 @@ window.abyssKeyCaches = abyssKeyCaches;
     save();updateAbyss();renderDynamic();narrative(randomEntry(d),depthName(d));logEvent('ИССЛЕДОВАНИЕ','Обнаружена комната: '+type.name+'.');
   };
   const oldUpdate=updateAbyss;updateAbyss=function(){const r=oldUpdate.apply(this,arguments);renderDynamic();return r};
-  const oldDie=die;die=function(){const d=Number(abyssFloor||1);state.deaths[d]=Number(state.deaths[d]||0)+1;state.pending=null;saveState();const r=oldDie.apply(this,arguments);renderDynamic();return r};
+  const oldDie=die;die=function(){const d=Number(abyssFloor||1);state.deaths[d]=Number(state.deaths[d]||0)+1;clearDepthState(d);saveState();const r=oldDie.apply(this,arguments);renderDynamic();return r};
   /* ABYSS-FLOOR-PROGRESSION-FIX-V4 — единый переход комнаты после успешной победы.
      Любой бой, созданный системой Бездны, завершает ровно одну текущую комнату.
      Пятая комната не перескакивает этаж и не запускается повторно: после неё
