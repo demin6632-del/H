@@ -1914,6 +1914,7 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
 (function(){
   if(window.PROGRESSION_SYSTEMS_V2)return;
   window.PROGRESSION_SYSTEMS_V2='PROGRESSION-SYSTEMS-V2';
+  /* PROGRESSION-SYSTEMS-V2-RELIABILITY-V48 — безопасный мобильный ввод и понятные статусы. */
   const KEY='chronicles_abyss_progression_v2_enhanced';
   const def={arena:{wave:0,best:0,enemy:0,hp:0,active:false},raid:{boss:0,max:0,wins:0,active:false,phase:1},guild:{name:'',level:0,members:0,rep:0,quests:0,donations:0},fish:{casts:0,common:0,rare:0,legendary:0,last:''},alchemy:{herbs:0,essence:0,fish:0,crafted:0},prestige:0,ng:0,legacy:{atk:0,hp:0,energy:0}};
   function load(){try{var raw=JSON.parse(localStorage.getItem(KEY)||'{}');var base=JSON.parse(JSON.stringify(def));function merge(d,x){if(!x||typeof x!=='object')return d;Object.keys(d).forEach(function(k){if(x[k]!==undefined){if(d[k]&&typeof d[k]==='object'&&!Array.isArray(d[k]))d[k]=merge(d[k],x[k]);else d[k]=x[k]}});return d}return merge(base,raw)}catch(e){return JSON.parse(JSON.stringify(def))}}
@@ -1924,6 +1925,7 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
   function esc(s){return String(s||'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]))}
   function refresh(){try{if(typeof update==='function')update();if(typeof updateHud==='function')updateHud();if(typeof renderHero==='function')renderHero()}catch(e){}}
   function panel(title,body){return '<div class="pc"><h3>'+title+'</h3>'+body+'</div>'}
+  function safeOpen(tab){try{open(tab||'overview')}catch(e){try{localStorage.setItem('chronicles_progression_error',String(e&&e.stack||e))}catch(_){} }}
   function open(tab='overview'){
     S=load();
     let m=document.getElementById('ps44v2');if(!m){m=document.createElement('div');m.id='ps44v2';m.style.cssText='position:fixed;inset:0;z-index:11000;background:#000e;display:none;align-items:center;justify-content:center;padding:10px';m.innerHTML='<div style="width:min(100%,480px);max-height:94dvh;overflow:auto;border:2px solid #b21a1a;background:linear-gradient(#170707,#050505);padding:12px"><div style="display:flex;justify-content:space-between;align-items:center"><h2 id="ps44v2title">Расширенные системы</h2><button id="ps44v2close" style="width:auto;margin:0">✕</button></div><div id="ps44v2tabs" style="display:grid;grid-template-columns:repeat(4,1fr);gap:4px;margin:7px 0"></div><div id="ps44v2body"></div></div>';document.body.appendChild(m);document.getElementById('ps44v2close').onclick=()=>m.style.display='none'}
@@ -1968,7 +1970,7 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
     S=load();const b=document.getElementById('ps44v2body');if(!b)return;
     let html='';
     if(tab==='overview'){
-      html=panel('⚔️ Расширенные системы 4.4.6','<p style="color:#aaa;font-size:11px">Усиленные офлайн-режимы с прогрессией, масштабированием сложности и постоянными наградами.</p><div style="display:grid;grid-template-columns:1fr 1fr;gap:5px"><button onclick="ps44v2open(\'arena\')">Арена</button><button onclick="ps44v2open(\'raid\')">Рейд</button><button onclick="ps44v2open(\'guild\')">Гильдия</button><button onclick="ps44v2open(\'craft\')">Алхимия</button><button onclick="ps44v2open(\'fish\')">Рыбалка</button><button onclick="ps44v2open(\'meta\')">Престиж / NG+</button></div>')+
+      html=panel('⚔️ Расширенные системы 4.4.8','<p style="color:#aaa;font-size:11px">Усиленные офлайн-режимы с прогрессией, масштабированием сложности и постоянными наградами.</p><div style="display:grid;grid-template-columns:1fr 1fr;gap:5px"><button onclick="ps44v2open(\'arena\')">Арена</button><button onclick="ps44v2open(\'raid\')">Рейд</button><button onclick="ps44v2open(\'guild\')">Гильдия</button><button onclick="ps44v2open(\'craft\')">Алхимия</button><button onclick="ps44v2open(\'fish\')">Рыбалка</button><button onclick="ps44v2open(\'meta\')">Престиж / NG+</button></div>')+
       panel('📊 Постоянный прогресс','<div class="pr"><span>Престиж</span><b>'+S.prestige+'</b></div><div class="pr"><span>NG+</span><b>'+S.ng+'</b></div><div class="pr"><span>Наследие атаки</span><b>+'+S.legacy.atk+'</b></div><div class="pr"><span>Наследие HP</span><b>+'+S.legacy.hp+'</b></div>');
     }else if(tab==='arena'){
       if(!S.arena.active)html=panel('⚔️ Арена','<div class="pr"><span>Лучший результат</span><b>'+S.arena.best+'</b></div><button onclick="ps44v2arenaStart()">Начать волну</button>');
@@ -2022,7 +2024,7 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
     if(b){
       b.onclick=function(e){
         if(e){e.preventDefault();e.stopPropagation();}
-        if(typeof window.ps44v2open==='function') window.ps44v2open('overview');
+        if(typeof window.ps44v2open==='function') safeOpen('overview');
       };
       if(!b.__ps44TouchBound){
         b.__ps44TouchBound=true;
