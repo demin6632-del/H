@@ -2165,4 +2165,47 @@ window.abyssKeyCaches = abyssKeyCaches;
   }
  }catch(e){}
 })();
-</script>\n<!-- MEDIA-PACK-V46-RUNTIME -->\n<style id="media-pack-v46-style">\n#menu{background-image:linear-gradient(180deg,rgba(2,5,7,.30),rgba(8,3,7,.72)),url("assets/generated/abyss_gate.png")!important;background-size:cover!important;background-position:center!important}\n.scene.abyss{background-image:linear-gradient(rgba(20,0,0,.25),rgba(3,0,4,.45)),url("assets/generated/abyss_core.png")!important;background-size:cover!important;background-position:center!important}\n.scene.dungeon{background-image:linear-gradient(rgba(4,4,8,.30),rgba(0,0,0,.58)),url("assets/generated/bone_catacomb.png")!important;background-size:cover!important;background-position:center!important}\n.scene.battle{background-image:linear-gradient(rgba(35,0,0,.25),rgba(0,0,0,.48)),url("assets/generated/crimson_arena.png")!important;background-size:cover!important;background-position:center!important}\n.hero-figure{background-image:linear-gradient(rgba(4,0,2,.35),rgba(0,0,0,.70)),url("assets/generated/black_keep.png")!important;background-size:cover!important;background-position:center!important}\n</style>\n<script>\n(function(){\n if(window.__COA_MEDIA_V46__)return;\n window.__COA_MEDIA_V46__=true;\n window.COA_MEDIA_VERSION='4.6.0';\n var base='assets/generated/';\n var bg=null;\n var tracks={menu:'abyss_00.wav',battle:'battle_00.wav',boss:'boss_00.wav',dungeon:'dungeon_00.wav',victory:'victory_00.wav',death:'death_00.wav'};\n function play(name,loop){\n  try{\n   var src=base+(tracks[name]||tracks.menu);\n   if(bg&&bg.src.indexOf(src)!==-1){if(bg.paused)bg.play().catch(function(){});return;}\n   if(bg){bg.pause();bg=null;}\n   bg=new Audio(src); bg.loop=!!loop; bg.volume=name==='battle'||name==='boss'?.16:.11;\n   bg.play().catch(function(){});\n  }catch(e){}\n }\n window.COAPlayMedia=function(name){play(name,true);};\n function classify(t){\n  var s=((t&&t.textContent)||'').toLowerCase();\n  if(/бой|атак|сраж|удар/.test(s))return 'battle';\n  if(/босс|владык|архонт|разлом/.test(s))return 'boss';\n  if(/подзем|бездна|исслед|комнат/.test(s))return 'dungeon';\n  if(/побед|награ|получено/.test(s))return 'victory';\n  if(/смерт|погиб/.test(s))return 'death';\n  return 'menu';\n }\n document.addEventListener('pointerdown',function(e){\n  var b=e.target&&e.target.closest?e.target.closest('button,.start-hit,.continue-hit'):null;\n  if(!b)return;\n  play(classify(b),true);\n },{capture:true,passive:true});\n var pre=['abyss_gate.png','abyss_core.png','bone_catacomb.png','crimson_arena.png','black_keep.png'];\n pre.forEach(function(n){try{var im=new Image();im.src=base+n;}catch(e){}});\n})();\n</script>\n
+</script>\n<!-- MEDIA-PACK-V46-RUNTIME -->
+<style id="media-pack-v46-style">
+#menu{background-image:linear-gradient(180deg,rgba(2,5,7,.30),rgba(8,3,7,.72)),url("assets/generated/abyss_gate.png")!important;background-size:cover!important;background-position:center!important}
+.scene.abyss{background-image:linear-gradient(rgba(20,0,0,.25),rgba(3,0,4,.45)),url("assets/generated/abyss_core.png")!important;background-size:cover!important;background-position:center!important}
+.scene.dungeon{background-image:linear-gradient(rgba(4,4,8,.30),rgba(0,0,0,.58)),url("assets/generated/bone_catacomb.png")!important;background-size:cover!important;background-position:center!important}
+.scene.battle{background-image:linear-gradient(rgba(35,0,0,.25),rgba(0,0,0,.48)),url("assets/generated/crimson_arena.png")!important;background-size:cover!important;background-position:center!important}
+.hero-figure{background-image:linear-gradient(rgba(4,0,2,.35),rgba(0,0,0,.70)),url("assets/generated/black_keep.png")!important;background-size:cover!important;background-position:center!important}
+</style>
+<script>
+(function(){
+ if(window.__COA_MEDIA_V46__)return;
+ window.__COA_MEDIA_V46__=true;
+ window.COA_MEDIA_VERSION='4.6.0';
+ var base='assets/generated/';
+ var bg=null;
+ var tracks={menu:'abyss_00.wav',battle:'battle_00.wav',boss:'boss_00.wav',dungeon:'dungeon_00.wav',victory:'victory_00.wav',death:'death_00.wav'};
+ function play(name,loop){
+  try{
+   var src=base+(tracks[name]||tracks.menu);
+   if(bg&&bg.src.indexOf(src)!==-1){if(bg.paused)bg.play().catch(function(){});return;}
+   if(bg){bg.pause();bg=null;}
+   bg=new Audio(src); bg.loop=!!loop; bg.volume=name==='battle'||name==='boss'?.16:.11;
+   bg.play().catch(function(){});
+  }catch(e){}
+ }
+ window.COAPlayMedia=function(name){play(name,true);};
+ function classify(t){
+  var s=((t&&t.textContent)||'').toLowerCase();
+  if(/бой|атак|сраж|удар/.test(s))return 'battle';
+  if(/босс|владык|архонт|разлом/.test(s))return 'boss';
+  if(/подзем|бездна|исслед|комнат/.test(s))return 'dungeon';
+  if(/побед|награ|получено/.test(s))return 'victory';
+  if(/смерт|погиб/.test(s))return 'death';
+  return 'menu';
+ }
+ document.addEventListener('pointerdown',function(e){
+  var b=e.target&&e.target.closest?e.target.closest('button,.start-hit,.continue-hit'):null;
+  if(!b)return;
+  play(classify(b),true);
+ },{capture:true,passive:true});
+ var pre=['abyss_gate.png','abyss_core.png','bone_catacomb.png','crimson_arena.png','black_keep.png'];
+ pre.forEach(function(n){try{var im=new Image();im.src=base+n;}catch(e){}});
+})();
+</script>
