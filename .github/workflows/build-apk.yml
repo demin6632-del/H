@@ -22,7 +22,7 @@ jobs:
 
       - name: Generate real offline media pack
         run: |
-          python -m pip install --disable-pip-version-check --no-input pillow
+          python -m pip install --disable-pip-version-check --no-input pillow numpy
           python tools/generate_media_pack_v46.py
           rm -rf android/app/src/main/assets/generated
           mkdir -p android/app/src/main/assets/generated
