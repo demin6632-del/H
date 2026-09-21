@@ -42,11 +42,12 @@ jobs:
           ids=re.findall(r"\bid=[\"']([^\"']+)",s,re.I)
           dup=sorted({x for x in ids if ids.count(x)>1})
           if dup: raise SystemExit(f"Duplicate IDs: {dup}")
+          if "COA_VERSION='4.5.0'" not in s: raise SystemExit("Missing v4.5.0 runtime marker")
           required=[
             "PROGRESSION-SYSTEMS-V2",
             "ps44open","ps44v2open","ps44v2arenaStart","ps44v2raidStart",
             "ps44v2craft","ps44v2fish","ps44v2prestige","ps44v2ng","ps44v2guildCreate",
-            "START-CONTINUE-RECOVERY-V2","chronicles_abyss_progression_v2_enhanced","PROGRESSION-V1-MIGRATION-ONCE"
+            "START-CONTINUE-RECOVERY-V2","chronicles_abyss_progression_v2_enhanced","PROGRESSION-V1-MIGRATION-ONCE", "ABYSS-DEPTHS-V45"
           ]
           for marker in required:
             if marker not in s: raise SystemExit("Missing progression feature: "+marker)
@@ -59,8 +60,8 @@ jobs:
           for marker in ["ANDROID-NATIVE-TOUCH-FALLBACK-V64","__nativeTapBridgeV61","__nativeTapFallbackAt","enableImmersiveFullscreen"]:
             if marker not in a: raise SystemExit("Missing Android touch bridge marker: "+marker)
           gradle=(root/"android/app/build.gradle").read_text()
-          if "versionCode 53" not in gradle: raise SystemExit("Bad versionCode")
-          if "versionName '4.4.8'" not in gradle: raise SystemExit("Bad versionName")
+          if "versionCode 54" not in gradle: raise SystemExit("Bad versionCode")
+          if "versionName '4.5.0'" not in gradle: raise SystemExit("Bad versionName")
           print("SOURCE AUDIT: PASS")
           PY
       - name: Prepare permanent signing key
@@ -100,30 +101,30 @@ jobs:
         run: |
           rm -rf release-package
           mkdir -p release-package
-          cp app/build/outputs/apk/release/app-release.apk release-package/ChroniclesOfTheAbyss-v4.4.8.apk
-          sha256sum release-package/ChroniclesOfTheAbyss-v4.4.8.apk > release-package/SHA256SUMS.txt
+          cp app/build/outputs/apk/release/app-release.apk release-package/ChroniclesOfTheAbyss-v4.5.0.apk
+          sha256sum release-package/ChroniclesOfTheAbyss-v4.5.0.apk > release-package/SHA256SUMS.txt
           cd release-package
-          zip -9 ../ChroniclesOfTheAbyss-v4.4.8-APK.zip *
+          zip -9 ../ChroniclesOfTheAbyss-v4.5.0-APK.zip *
       - name: Package PROJECT ZIP
         run: |
           rm -rf /tmp/ChroniclesOfTheAbyss_PROJECT
           rsync -a --exclude=".git" --exclude="android/.gradle" --exclude="android/app/build" --exclude="android/release-package" --exclude="android/*.zip" ./ /tmp/ChroniclesOfTheAbyss_PROJECT/
           cd /tmp
-          zip -9 -r ChroniclesOfTheAbyss_PROJECT-v4.4.8.zip ChroniclesOfTheAbyss_PROJECT >/dev/null
+          zip -9 -r ChroniclesOfTheAbyss_PROJECT-v4.5.0.zip ChroniclesOfTheAbyss_PROJECT >/dev/null
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: ChroniclesOfTheAbyss-v4.4.8-apk
+          name: ChroniclesOfTheAbyss-v4.5.0-apk
           path: android/app/build/outputs/apk/release/app-release.apk
       - name: Upload APK ZIP
         uses: actions/upload-artifact@v4
         with:
-          name: ChroniclesOfTheAbyss-v4.4.8-apk-zip
-          path: android/ChroniclesOfTheAbyss-v4.4.8-APK.zip
+          name: ChroniclesOfTheAbyss-v4.5.0-apk-zip
+          path: android/ChroniclesOfTheAbyss-v4.5.0-APK.zip
       - name: Upload PROJECT ZIP
         uses: actions/upload-artifact@v4
         with:
-          name: ChroniclesOfTheAbyss_PROJECT-v4.4.8
-          path: /tmp/ChroniclesOfTheAbyss_PROJECT-v4.4.8.zip
+          name: ChroniclesOfTheAbyss_PROJECT-v4.5.0
+          path: /tmp/ChroniclesOfTheAbyss_PROJECT-v4.5.0.zip
 
 # PROGRESSION-V2-SINGLE-SOURCE-FINAL-BUILD
