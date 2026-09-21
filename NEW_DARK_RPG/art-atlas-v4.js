@@ -235,3 +235,70 @@
       }catch(e){console.warn('STACK-SELL-FIX-V1',e);}},100);
 
 
+
+
+/* V46-SYSTEMS-LAUNCHER-FIX
+   Гарантирует игроку видимый вход в реально реализованные расширенные системы.
+   Ничего не запускается автоматически и не меняет прогресс. */
+(function(){
+  if(window.__COA_V46_SYSTEMS_LAUNCHER__)return;
+  window.__COA_V46_SYSTEMS_LAUNCHER__=true;
+  function open(tab){
+    try{
+      if(typeof window.ps44v2open==='function'){window.ps44v2open(tab||'overview');return true;}
+    }catch(e){}
+    return false;
+  }
+  function make(){
+    try{
+      var host=document.getElementById('main');
+      if(!host)return false;
+      var old=document.getElementById('coaV46SystemsPanel');
+      if(old)return true;
+      var p=document.createElement('div');
+      p.id='coaV46SystemsPanel';
+      p.className='panel';
+      p.style.cssText='position:relative;z-index:20;border-color:#a21b1b;margin-top:10px;';
+      p.innerHTML='<div style="text-align:center;font-weight:bold;color:#e22;font-size:16px">✦ РАСШИРЕННЫЕ СИСТЕМЫ</div>'+
+        '<div style="color:#999;text-align:center;font-size:11px;margin:5px 0 8px">Арена · Рейд · Алхимия · Рыбалка · Гильдия · Престиж · NG+</div>'+
+        '<div style="display:grid;grid-template-columns:1fr 1fr;gap:5px">'+
+        '<button type="button" data-coa-sys="arena">⚔️ Арена</button>'+
+        '<button type="button" data-coa-sys="raid">👹 Рейд</button>'+
+        '<button type="button" data-coa-sys="craft">⚗️ Алхимия</button>'+
+        '<button type="button" data-coa-sys="fish">🎣 Рыбалка</button>'+
+        '<button type="button" data-coa-sys="guild">🏰 Гильдия</button>'+
+        '<button type="button" data-coa-sys="meta">👑 Престиж / NG+</button>'+
+        '</div>';
+      host.appendChild(p);
+      p.querySelectorAll('[data-coa-sys]').forEach(function(b){
+        b.addEventListener('click',function(e){
+          e.preventDefault();e.stopPropagation();
+          if(!open(b.getAttribute('data-coa-sys'))) setTimeout(function(){open(b.getAttribute('data-coa-sys'));},250);
+        },{capture:true});
+      });
+      return true;
+    }catch(e){return false}
+  }
+  function floating(){
+    try{
+      var game=document.getElementById('game');
+      if(!game)return;
+      var b=document.getElementById('coaV46FloatingSystems');
+      if(!b){
+        b=document.createElement('button');
+        b.id='coaV46FloatingSystems';
+        b.type='button';
+        b.textContent='✦ Системы';
+        b.style.cssText='position:fixed;right:8px;bottom:8px;z-index:10001;width:auto;min-width:104px;min-height:38px;margin:0;padding:7px 10px;border:1px solid #b21b1b;background:linear-gradient(#1b0808,#070707);box-shadow:0 0 12px rgba(220,0,0,.35);font-size:12px;touch-action:manipulation;';
+        document.body.appendChild(b);
+        b.addEventListener('click',function(e){e.preventDefault();e.stopPropagation();open('overview');},{capture:true});
+        b.addEventListener('touchend',function(e){e.preventDefault();e.stopPropagation();open('overview');},{capture:true,passive:false});
+      }
+      var menu=document.getElementById('menu');
+      b.style.display=(menu&&!menu.classList.contains('hidden'))?'none':'block';
+    }catch(e){}
+  }
+  function boot(){make();floating();setTimeout(function(){make();floating()},250);setTimeout(function(){make();floating()},750);setTimeout(function(){make();floating()},1500);setTimeout(function(){make();floating()},3000);}
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot);else boot();
+  new MutationObserver(function(){make();floating()}).observe(document.body,{childList:true,subtree:true});
+})();
