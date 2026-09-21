@@ -2227,33 +2227,46 @@ window.abyssKeyCaches = abyssKeyCaches;
  window.__COA_MEDIA_V46__=true;
  window.COA_MEDIA_VERSION='4.6.0';
  var base='assets/generated/';
- var bg=null;
- var tracks={menu:'abyss_00.wav',battle:'battle_00.wav',boss:'boss_00.wav',dungeon:'dungeon_00.wav',victory:'victory_00.wav',death:'death_00.wav'};
- function play(name,loop){
-  try{
-   var src=base+(tracks[name]||tracks.menu);
-   if(bg&&bg.src.indexOf(src)!==-1){if(bg.paused)bg.play().catch(function(){});return;}
-   if(bg){bg.pause();bg=null;}
-   bg=new Audio(src); bg.loop=!!loop; bg.volume=name==='battle'||name==='boss'?.16:.11;
-   bg.play().catch(function(){});
-  }catch(e){}
+ var scenes=['abyss_gate','blood_rift','ash_citadel','bone_catacomb','shadow_forest','void_bridge','fallen_temple','red_chasm','obsidian_hall','forgotten_throne','night_marsh','iron_ruins','cursed_library','black_keep','wraith_gallery','deep_lair','hell_stairs','starless_vault','crimson_arena','ancient_gate','abyss_core','archon_chamber','endless_depth','rift_lord'];
+ var tracks=['abyss_00.wav','abyss_01.wav','battle_00.wav','battle_01.wav','boss_00.wav','dungeon_00.wav','victory_00.wav','death_00.wav'];
+ var currentAudio=null;
+ function depth(){try{return Math.max(1,Number(window.abyssFloor||document.body.getAttribute('data-abyss-floor')||1)||1)}catch(e){return 1}}
+ function sceneName(){return scenes[(depth()-1)%scenes.length]}
+ function setSceneMedia(){
+   try{
+     var name=sceneName(), url='url("'+base+name+'.png")';
+     document.querySelectorAll('.scene:not(.battle)').forEach(function(el){
+       el.style.setProperty('background-image','linear-gradient(rgba(8,0,4,.22),rgba(0,0,0,.48)),'+url,'important');
+       el.style.backgroundSize='cover'; el.style.backgroundPosition='center';
+     });
+   }catch(e){}
  }
- window.COAPlayMedia=function(name){play(name,true);};
- function classify(t){
-  var s=((t&&t.textContent)||'').toLowerCase();
-  if(/бой|атак|сраж|удар/.test(s))return 'battle';
-  if(/босс|владык|архонт|разлом/.test(s))return 'boss';
-  if(/подзем|бездна|исслед|комнат/.test(s))return 'dungeon';
-  if(/побед|награ|получено/.test(s))return 'victory';
-  if(/смерт|погиб/.test(s))return 'death';
-  return 'menu';
+ function trackName(){
+   var d=depth(), hash=String(location.hash||'').toLowerCase();
+   if(/victory|reward|win/.test(hash))return tracks[6];
+   if(/death|dead|gameover/.test(hash))return tracks[7];
+   if(/boss|archon|rift.?lord/.test(hash))return tracks[4];
+   if(/battle|combat|fight/.test(hash))return tracks[2+(d%2)];
+   if(/dungeon|city|explore|abyss/.test(hash))return tracks[d%2];
+   return tracks[d%2];
  }
- document.addEventListener('pointerdown',function(e){
-  var b=e.target&&e.target.closest?e.target.closest('button,.start-hit,.continue-hit'):null;
-  if(!b)return;
-  play(classify(b),true);
- },{capture:true,passive:true});
- var pre=['abyss_gate.png','abyss_core.png','bone_catacomb.png','crimson_arena.png','black_keep.png'];
- pre.forEach(function(n){try{var im=new Image();im.src=base+n;}catch(e){}});
+ function playTrack(){
+   try{
+     var src=base+trackName();
+     if(currentAudio&&currentAudio.src.indexOf(src)!==-1){if(currentAudio.paused)currentAudio.play().catch(function(){});return;}
+     if(currentAudio){currentAudio.pause();currentAudio=null;}
+     currentAudio=new Audio(src); currentAudio.loop=true; currentAudio.volume=.12;
+     currentAudio.play().catch(function(){});
+   }catch(e){}
+ }
+ window.COAPlayMedia=function(){playTrack()};
+ window.COARefreshMediaV2=function(){setSceneMedia();playTrack()};
+ scenes.forEach(function(n){try{var im=new Image();im.src=base+n+'.png';}catch(e){}});
+ function refresh(){setSceneMedia();playTrack()}
+ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',refresh);else refresh();
+ document.addEventListener('hashchange',refresh);
+ document.addEventListener('click',function(){setSceneMedia();playTrack()},{passive:true});
+ document.addEventListener('touchend',function(){setSceneMedia();playTrack()},{passive:true});
+ setInterval(setSceneMedia,1200);
 })();
 </script>
