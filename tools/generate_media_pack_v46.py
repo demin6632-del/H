@@ -23,45 +23,98 @@ SCENES = [
 ]
 
 def art(name, idx):
-    W = H = 1600
+    # 2K source art: higher native detail instead of simply stretching the old 1600px assets.
+    W = H = 2048
     rng = np.random.default_rng(0xC0A54 + idx * 7919)
-    low = rng.integers(0, 256, (100,100), dtype=np.uint8)
-    noise = Image.fromarray(low, "L").resize((W,H), Image.Resampling.BICUBIC).filter(ImageFilter.GaussianBlur(2.5))
+    low = rng.integers(0, 256, (160,160), dtype=np.uint8)
+    noise = Image.fromarray(low, "L").resize((W,H), Image.Resampling.BICUBIC).filter(ImageFilter.GaussianBlur(2.2))
     a = np.asarray(noise, dtype=np.int16)
-    fine = rng.integers(-28, 29, (H,W), dtype=np.int16)
+    fine = rng.integers(-22, 23, (H,W), dtype=np.int16)
     a = np.clip(a + fine, 0, 255).astype(np.uint8)
+
     p = PALETTES[idx % len(PALETTES)]
     arr = np.empty((H,W,3), dtype=np.uint8)
-    for c in range(3):
-        arr[:,:,c] = np.clip(a * (0.30 + (c+1)*0.13) + p[c]*0.55, 0, 255)
+    for ch in range(3):
+        arr[:,:,ch] = np.clip(a * (0.28 + (ch+1)*0.135) + p[ch]*0.58, 0, 255)
     img = Image.fromarray(arr, "RGB")
     d = ImageDraw.Draw(img, "RGBA")
-    cx = 800 + int(180*math.sin(idx))
-    cy = 440 + int(90*math.cos(idx*0.7))
+
+    # Layered atmospheric depth.
+    horizon = 860 + int(110*math.sin(idx*.71))
+    for band in range(8):
+        y0 = horizon + band*145
+        alpha = max(12, 58-band*6)
+        d.rectangle((0,y0,W,min(H,y0+145)), fill=(2,3,8,alpha))
+
+    cx = 1024 + int(250*math.sin(idx))
+    cy = 510 + int(110*math.cos(idx*0.7))
+    for k in range(15):
+        r = 75 + k*92
+        d.ellipse((cx-r,cy-r,cx+r,cy+r), outline=(245,38,25,max(12,40-k)), width=6)
+
+    # Ruined architecture with stone segmentation and perspective.
+    for x in range(-140, W+220, 170):
+        h = 280 + int(680*abs(math.sin(idx*.63 + x*.0105)))
+        top = H-h
+        d.polygon([(x,H),(x+118,H),(x+88,top),(x+30,top-82)], fill=(2,2,6,215))
+        d.line((x+10,top+80,x+106,top+64), fill=(95,74,74,55), width=5)
+        for yy in range(top+130,H,115):
+            d.line((x+12,yy,x+108,yy-16), fill=(88,72,70,45), width=4)
+        if (x//170 + idx) % 3 == 0:
+            d.rectangle((x+40,top-105,x+72,top-42), fill=(235,34,22,125))
+            d.rectangle((x+36,top-112,x+76,top-104), fill=(255,95,45,70))
+
+    # Foreground floor / path gives the scenes stronger spatial depth.
+    vanx = 1024 + int(90*math.sin(idx*.8))
     for k in range(12):
-        r = 70 + k*82
-        d.ellipse((cx-r,cy-r,cx+r,cy+r), outline=(245,38,25,34), width=8)
-    # Architecture / ruins / towers
-    for x in range(-100, W+200, 150):
-        h = 220 + int(560*abs(math.sin(idx*.63 + x*.012)))
-        d.polygon([(x,H),(x+100,H),(x+70,H-h),(x+28,H-h-75)], fill=(3,3,7,205))
-        if (x//150 + idx) % 3 == 0:
-            d.rectangle((x+35,H-h-100,x+63,H-h-50), fill=(230,30,20,100))
-    # Rift / magical energy
+        yy = horizon + k*k*8 + 22*k
+        if yy >= H: break
+        spread = 120 + k*115
+        d.line((vanx-spread,yy,vanx+spread,yy), fill=(110,80,76,max(18,58-k*3)), width=4)
+    for k in range(-8,9):
+        bx = vanx + k*120
+        d.line((vanx,horizon,bx,H), fill=(72,58,64,38), width=5)
+
+    # Rift / magical energy with secondary filaments.
     pts=[]
-    for y in range(0,H,20):
-        xx = 800 + int(150*math.sin(y*.018+idx))
+    for y in range(0,H,16):
+        xx = 1024 + int(190*math.sin(y*.015+idx))
         pts.append((xx,y))
-    d.line(pts, fill=(245,35,22,150), width=18)
-    d.line([(x+25,y) for x,y in pts], fill=(255,90,25,70), width=7)
-    # Runes and embers
-    for q in range(90):
-        x=int(rng.integers(40,W-40)); y=int(rng.integers(40,H-40)); r=int(rng.integers(3,24))
-        alpha=int(rng.integers(18,90))
+    d.line(pts, fill=(245,35,22,170), width=22)
+    d.line([(x+32,y) for x,y in pts], fill=(255,100,35,82), width=9)
+    for off in (-52,-30,48,74):
+        d.line([(x+off,y) for x,y in pts[::2]], fill=(180,28,45,35), width=5)
+
+    # Fine runes, embers and dust.
+    for q in range(180):
+        x=int(rng.integers(35,W-35)); y=int(rng.integers(35,H-35))
+        r=int(rng.integers(2,18))
+        alpha=int(rng.integers(16,82))
         d.ellipse((x-r,y-r,x+r,y+r), fill=(250,48,25,alpha))
-    for q in range(18):
+    for q in range(34):
         x=int(rng.integers(100,W-100)); y=int(rng.integers(100,H-100))
-        d.regular_polygon((x,y,int(rng.integers(25,70))), 6, fill=(170,20,30,38), outline=(250,80,40,95), width=3)
+        radius=int(rng.integers(25,72))
+        d.regular_polygon((x,y,radius), 6, fill=(170,20,30,34), outline=(250,80,40,105), width=3)
+
+    # Small silhouettes add readable focal points without changing gameplay.
+    for q in range(2 + idx % 3):
+        sx = int(280 + rng.integers(0, W-560))
+        sy = int(horizon - rng.integers(20, 190))
+        sh = int(rng.integers(120, 260))
+        d.ellipse((sx-35,sy-sh,sx+35,sy-sh+70), fill=(1,2,5,220))
+        d.polygon([(sx-48,sy-sh+55),(sx+48,sy-sh+55),(sx+78,sy+sh),(sx-78,sy+sh)], fill=(1,2,5,215))
+
+    # Subtle vignette keeps the higher resolution from looking flat on mobile.
+    vignette = Image.new("L", (W,H), 0)
+    vd = ImageDraw.Draw(vignette)
+    for r in range(1024, 80, -64):
+        alpha = int(3 + (1024-r)/1024*22)
+        vd.ellipse((1024-r,1024-r,1024+r,1024+r), outline=alpha, width=64)
+    vignette = vignette.filter(ImageFilter.GaussianBlur(42))
+    shade = Image.new("RGBA", (W,H), (0,0,0,0))
+    shade.putalpha(vignette)
+    img = Image.alpha_composite(img.convert("RGBA"), shade).convert("RGB")
+
     img.save(WEB / f"{name}.png", "PNG", optimize=True)
     (ANDROID / f"{name}.png").write_bytes((WEB / f"{name}.png").read_bytes())
 
