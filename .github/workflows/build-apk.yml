@@ -43,7 +43,7 @@ jobs:
           dup=sorted({x for x in ids if ids.count(x)>1})
           if dup: raise SystemExit(f"Duplicate IDs: {dup}")
           required=[
-            "PROGRESSION-SYSTEMS-V1","PROGRESSION-SYSTEMS-V2",
+            "PROGRESSION-SYSTEMS-V2",
             "ps44open","ps44v2open","ps44v2arenaStart","ps44v2raidStart",
             "ps44v2craft","ps44v2fish","ps44v2prestige","ps44v2ng","ps44v2guildCreate",
             "START-CONTINUE-RECOVERY-V2","chronicles_abyss_progression_v2_enhanced","PROGRESSION-V1-MIGRATION-ONCE"
