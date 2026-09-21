@@ -43,8 +43,7 @@ jobs:
           dup=sorted({x for x in ids if ids.count(x)>1})
           if dup: raise SystemExit(f"Duplicate IDs: {dup}")
           required=[
-            "PROGRESSION-SYSTEMS-V1",
-            "PROGRESSION-SYSTEMS-V2",
+            "PROGRESSION-SYSTEMS-V1","PROGRESSION-SYSTEMS-V2",
             "ps44open","ps44v2open","ps44v2arenaStart","ps44v2raidStart",
             "ps44v2craft","ps44v2fish","ps44v2prestige","ps44v2ng","ps44v2guildCreate",
             "START-CONTINUE-RECOVERY-V2","chronicles_abyss_progression_v2_enhanced"
@@ -87,7 +86,7 @@ jobs:
           BUILD_TOOLS=$(find "$ANDROID_HOME/build-tools" -maxdepth 1 -mindepth 1 -type d | sort -V | tail -1)
           "$BUILD_TOOLS/apksigner" verify --verbose "$APK"
           BADGING=$("$BUILD_TOOLS/aapt" dump badging "$APK")
-          echo "$BADGING" | grep -F "package: name='com.chronicles.abyss' versionCode='50' versionName='4.4.6'"
+          echo "$BADGING" | grep -F "package: name='com.chronicles.abyss' versionCode='51' versionName='4.4.6'"
           unzip -l "$APK" | grep -E 'assets/(index.html|art-atlas-v4.js|art-atlas-v4-core.js)$'
           unzip -p "$APK" assets/index.html > /tmp/apk-index.html
           unzip -p "$APK" assets/art-atlas-v4.js > /tmp/apk-v4.js
