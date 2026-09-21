@@ -51,7 +51,7 @@ jobs:
           ids=re.findall(r"\bid=[\"']([^\"']+)",s,re.I)
           dup=sorted({x for x in ids if ids.count(x)>1})
           if dup: raise SystemExit(f"Duplicate IDs: {dup}")
-          if "COA_VERSION='4.6.0'" not in s: raise SystemExit("Missing v4.5.0 runtime marker")
+          if "COA_VERSION='4.6.0'" not in s: raise SystemExit("Missing v4.6.0 runtime marker")
           required=[
             "PROGRESSION-SYSTEMS-V2",
             "ps44open","ps44v2open","ps44v2arenaStart","ps44v2raidStart",
@@ -114,9 +114,9 @@ jobs:
           rm -rf release-package
           mkdir -p release-package
           cp app/build/outputs/apk/release/app-release.apk release-package/ChroniclesOfTheAbyss-v4.6.0.apk
-          sha256sum release-package/ChroniclesOfTheAbyss-v4.5.0.apk > release-package/SHA256SUMS.txt
+          sha256sum release-package/ChroniclesOfTheAbyss-v4.6.0.apk > release-package/SHA256SUMS.txt
           cd release-package
-          zip -9 ../ChroniclesOfTheAbyss-v4.5.0-APK.zip *
+          zip -9 ../ChroniclesOfTheAbyss-v4.6.0-APK.zip *
       - name: Package PROJECT ZIP
         run: |
           rm -rf /tmp/ChroniclesOfTheAbyss_PROJECT
@@ -132,12 +132,12 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: ChroniclesOfTheAbyss-v4.6.0-apk-zip
-          path: android/ChroniclesOfTheAbyss-v4.5.0-APK.zip
+          path: android/ChroniclesOfTheAbyss-v4.6.0-APK.zip
       - name: Upload PROJECT ZIP
         uses: actions/upload-artifact@v4
         with:
           name: ChroniclesOfTheAbyss_PROJECT-v4.6.0
-          path: /tmp/ChroniclesOfTheAbyss_PROJECT-v4.5.0.zip
+          path: /tmp/ChroniclesOfTheAbyss_PROJECT-v4.6.0.zip
 
 # PROGRESSION-V2-SINGLE-SOURCE-FINAL-BUILD
 
@@ -157,9 +157,9 @@ jobs:
           rm -rf release-package
           mkdir -p release-package
           cp app/build/outputs/apk/release/app-release.apk release-package/ChroniclesOfTheAbyss-v4.6.0.apk
-          sha256sum release-package/ChroniclesOfTheAbyss-v4.5.0.apk > release-package/SHA256SUMS.txt
+          sha256sum release-package/ChroniclesOfTheAbyss-v4.6.0.apk > release-package/SHA256SUMS.txt
           cd release-package
-          zip -9 ../ChroniclesOfTheAbyss-v4.5.0-APK.zip *
+          zip -9 ../ChroniclesOfTheAbyss-v4.6.0-APK.zip *
       - name: Package PROJECT ZIP
         run: |
           rm -rf /tmp/ChroniclesOfTheAbyss_PROJECT
@@ -175,11 +175,11 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: ChroniclesOfTheAbyss-v4.6.0-apk-zip
-          path: android/ChroniclesOfTheAbyss-v4.5.0-APK.zip
+          path: android/ChroniclesOfTheAbyss-v4.6.0-APK.zip
       - name: Upload PROJECT ZIP
         uses: actions/upload-artifact@v4
         with:
           name: ChroniclesOfTheAbyss_PROJECT-v4.6.0
-          path: /tmp/ChroniclesOfTheAbyss_PROJECT-v4.5.0.zip
+          path: /tmp/ChroniclesOfTheAbyss_PROJECT-v4.6.0.zip
 
 # PROGRESSION-V2-SINGLE-SOURCE-FINAL-BUILD
