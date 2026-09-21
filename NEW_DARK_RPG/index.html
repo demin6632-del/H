@@ -2143,3 +2143,26 @@ window.abyssKeyCaches = abyssKeyCaches;
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot);else boot();
 })();
 </script>
+<!-- ABYSS-DEPTHS-V45-RUNTIME -->
+<script>
+(function(){
+ if(window.__ABYSS_DEPTHS_V45__)return;
+ window.__ABYSS_DEPTHS_V45__=true;
+ window.COA_VERSION='4.5.0';
+ window.COA_BUILD='54';
+ window.COA_ABYSS_CONTENT='101-150';
+ try{
+  var key='chronicles_abyss_v45_migrated';
+  if(!localStorage.getItem(key)){
+   var raw=localStorage.getItem('new_dark_rpg_save_v1');
+   if(raw){
+    var data=JSON.parse(raw);
+    data.version=Math.max(4,Number(data.version)||0);
+    localStorage.setItem('new_dark_rpg_save_v1',JSON.stringify(data));
+    localStorage.setItem('new_dark_rpg_save_v1_backup',JSON.stringify(data));
+   }
+   localStorage.setItem(key,'1');
+  }
+ }catch(e){}
+})();
+</script>
