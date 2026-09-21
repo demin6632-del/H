@@ -55,6 +55,15 @@ jobs:
           dup=sorted({x for x in ids if ids.count(x)>1})
           if dup: raise SystemExit(f"Duplicate IDs: {dup}")
           if "COA_VERSION='4.6.0'" not in s: raise SystemExit("Missing v4.6.0 runtime marker")
+          required_media = [
+            "abyss_gate","blood_rift","ash_citadel","bone_catacomb","shadow_forest","void_bridge",
+            "fallen_temple","red_chasm","obsidian_hall","forgotten_throne","night_marsh","iron_ruins",
+            "cursed_library","black_keep","wraith_gallery","deep_lair","hell_stairs","starless_vault",
+            "crimson_arena","ancient_gate","abyss_core","archon_chamber","endless_depth","rift_lord",
+            "abyss_00.wav","abyss_01.wav","battle_00.wav","battle_01.wav","boss_00.wav","dungeon_00.wav","victory_00.wav","death_00.wav"
+          ]
+          for asset in required_media:
+            if asset not in s: raise SystemExit("Media asset is not bound to gameplay: "+asset)
           for marker in [
             "PROGRESSION-SYSTEMS-V2","ps44open","ps44v2open","ps44v2arenaStart","ps44v2raidStart",
             "ps44v2craft","ps44v2fish","ps44v2prestige","ps44v2ng","ps44v2guildCreate",
