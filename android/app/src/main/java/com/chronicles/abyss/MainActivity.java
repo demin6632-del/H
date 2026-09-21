@@ -4,6 +4,7 @@ import android.app.Activity;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
+import android.os.Build;
 import android.graphics.Color;
 import android.view.MotionEvent;
 import android.view.ViewConfiguration;
@@ -19,6 +20,33 @@ public class MainActivity extends Activity {
     private boolean webViewReady = false;
     private TouchWebView web;
     private FrameLayout root;
+    private void enableImmersiveFullscreen() {
+        getWindow().setStatusBarColor(Color.TRANSPARENT);
+        getWindow().setNavigationBarColor(Color.TRANSPARENT);
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            getWindow().setDecorFitsSystemWindows(false);
+            android.view.WindowInsetsController c = getWindow().getInsetsController();
+            if (c != null) {
+                c.hide(android.view.WindowInsets.Type.statusBars() | android.view.WindowInsets.Type.navigationBars());
+                c.setSystemBarsBehavior(android.view.WindowInsetsController.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE);
+            }
+        } else {
+            getWindow().getDecorView().setSystemUiVisibility(
+                    android.view.View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY |
+                    android.view.View.SYSTEM_UI_FLAG_FULLSCREEN |
+                    android.view.View.SYSTEM_UI_FLAG_HIDE_NAVIGATION |
+                    android.view.View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN |
+                    android.view.View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION |
+                    android.view.View.SYSTEM_UI_FLAG_LAYOUT_STABLE);
+        }
+    }
+
+    @Override
+    public void onWindowFocusChanged(boolean hasFocus) {
+        super.onWindowFocusChanged(hasFocus);
+        if (hasFocus) enableImmersiveFullscreen();
+    }
+
 
     /* ANDROID-NATIVE-TOUCH-FALLBACK-V62 — резервный DOM tap подключён к реальному JS bridge. */
     private static final class TouchWebView extends WebView {
@@ -173,7 +201,8 @@ public class MainActivity extends Activity {
                 ViewGroup.LayoutParams.MATCH_PARENT,
                 ViewGroup.LayoutParams.MATCH_PARENT));
 
-        web.loadUrl("file:///android_asset/index.html");
+        enableImmersiveFullscreen();
+                web.loadUrl("file:///android_asset/index.html");
         setContentView(root);
         web.requestFocus();
     }
