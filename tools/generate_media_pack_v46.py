@@ -26,11 +26,14 @@ def glow(d,cx,cy,r,col,a=80):
         rr=r*(1+k*.11); aa=int(a*(1-k/16)**2)
         d.ellipse((cx-rr,cy-rr,cx+rr,cy+rr),fill=(*col,aa))
 def art(name,idx):
-    W=H=1536; rng=np.random.default_rng(91001+idx*7919); top,mid,accent=PALETTES[idx%len(PALETTES)]
+    W=H=2048; rng=np.random.default_rng(91001+idx*7919); top,mid,accent=PALETTES[idx%len(PALETTES)]
     yy=np.linspace(0,1,H)[:,None]; base=np.empty((H,W,3),dtype=np.uint8)
     for ch in range(3): base[:,:,ch]=np.clip(top[ch]*(1-yy)+mid[ch]*yy,0,255)
+    # Fine stone/smoke texture is real scene detail, not padding.
+    fine=rng.integers(-24,25,(H,W,1),dtype=np.int16)
+    base=np.clip(base.astype(np.int16)+fine,0,255).astype(np.uint8)
     img=Image.fromarray(base,"RGB").convert("RGBA"); d=ImageDraw.Draw(img,"RGBA")
-    horizon=850+int(55*math.sin(idx)); cx=1040+int(180*math.sin(idx*.61)); cy=330+int(100*math.cos(idx*.37)); rr=125+(idx%4)*24
+    horizon=1080+int(70*math.sin(idx)); cx=1360+int(240*math.sin(idx*.61)); cy=440+int(130*math.cos(idx*.37)); rr=165+(idx%4)*30
     glow(d,cx,cy,rr,accent,105); d.ellipse((cx-rr,cy-rr,cx+rr,cy+rr),fill=(1,2,5,255),outline=(*accent,230),width=10); d.ellipse((cx-rr+20,cy-rr+20,cx+rr-20,cy+rr-20),outline=(245,45,35,150),width=5)
     for n in range(14):
         x=n*125-int(rng.integers(0,70)); w=int(rng.integers(90,180)); h=int(rng.integers(180,650)); y=horizon-h
