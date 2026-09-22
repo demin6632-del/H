@@ -113,6 +113,37 @@
       }
     }catch(e){}};
     patch();setTimeout(patch,250);
+    setTimeout(function(){
+      try{
+        if(typeof updateBattle!=='function'||updateBattle.__newVisualPack)return;
+        const oldBattle=updateBattle;
+        const fresh=function(){
+          const r=oldBattle.apply(this,arguments);
+          setTimeout(function(){
+            try{
+              const b=document.getElementById('enemyArt'); if(!b)return;
+              let k='shadow';
+              if(typeof enemy!=='undefined'&&enemy){
+                if(enemy.isBoss)k='boss';
+                else if(enemy.isElite)k='elite';
+                else k=({'Теневой зверь':'shadow','Заражённый охотник':'hunter','Мутант пустоши':'mutant','Пожиратель костей':'bones'})[enemy.name]||'shadow';
+              }
+              b.innerHTML='';
+              b.style.background='transparent';
+              const img=document.createElement('img');
+              img.className='coa-new-creature';
+              img.src='assets/generated/'+k+'.png';
+              img.alt=k;
+              img.style.cssText='display:block;width:100%;height:100%;object-fit:contain;filter:drop-shadow(0 8px 14px rgba(220,0,0,.55));mix-blend-mode:screen;';
+              b.appendChild(img);
+            }catch(e){}
+          },0);
+          return r;
+        };
+        fresh.__newVisualPack=true;
+        window.updateBattle=fresh;
+      }catch(e){}
+    },700);
   };
   document.head.appendChild(core);
 })();
