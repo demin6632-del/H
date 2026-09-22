@@ -357,66 +357,7 @@ function hasSave(){return !!(localStorage.getItem(saveKey)||localStorage.getItem
 function continueGame(){try{if(!loadGame())return showClasses();if(typeof loadState==='function')loadState();if(typeof normalizeAbyssProgress==='function')normalizeAbyssProgress();if(typeof saveState==='function')saveState();gameMusicAllowed=true;update();updateAbyss();renderTavern();renderJournal();try{resumeAudio();resumeMusic()}catch(e){try{localStorage.setItem('chronicles_last_start_error',String(e&&e.stack||e))}catch(_){} }screenHistory=['menu','main'];history.replaceState({screen:'main'},'','#main');setScreen('main',false);logEvent('СОХРАНЕНИЕ','Продолжена сохранённая игра.')}catch(e){try{localStorage.setItem('chronicles_last_start_error',String(e&&e.stack||e))}catch(_){} return showClasses()}}
 function setScreen(screen,push=true){if(el('menu'))el('menu').classList.toggle('hidden',screen!=='menu');screens.forEach(s=>{if(el(s))el(s).classList.toggle('hidden',s!==screen)});if(push){if(screenHistory[screenHistory.length-1]!==screen)screenHistory.push(screen);history.pushState({screen:screen},'','#'+screen);if(hero.class)save()}updateHud()}function showClasses(){try{resumeAudio();sfx('start')}catch(e){try{localStorage.setItem('chronicles_last_start_error',String(e&&e.stack||e))}catch(_){} }setScreen('classes')}function start(className){gameMusicAllowed=true;/* НОВАЯ ИГРА: перед стартом удаляем только сохранение предыдущей игры и связанные с ним игровые данные. Настройки приложения не затрагиваются. */try{[saveKey,saveKey+'_backup','abyss_gold','abyss_gear','abyss_key_caches','chronicles_abyss_infinite_best_v1'].forEach(k=>localStorage.removeItem(k))}catch(e){}resetAbyss();let st=classStats[className];hero={name:'Странник',class:className,hp:st.hp,maxHp:st.maxHp,energy:st.energy,maxEnergy:st.maxEnergy,attack:st.attack,def:st.def,level:1,xp:0,items:[],weapon:'Нет',armor:'Нет',gold:100,allies:[],crit:0,skillLevel:1,skillPoints:0};allies=[];journalEntries=[];logEvent('ИГРА','Начат новый забег: '+className+'.');save();update();if(el('out'))el('out').innerHTML='Выбран класс: '+className;try{resumeAudio();resumeMusic()}catch(e){}screenHistory=['menu','classes'];setScreen('main')}
 function showAbyss(){sfx('open');loadGame();updateAbyss();setScreen('abyss')}
-function explore(){
-  sfx('open');
-  /*
-   * Непрерывное исследование:
-   * - одна кнопка проводит героя через пустые комнаты автоматически;
-   * - исследование останавливается только перед событием или существом;
-   * - переход на следующий этаж/глубину не останавливает исследование;
-   * - бой и модальное событие возвращают управление игроку;
-   * - все существующие награды, комнаты, сохранения и механику боя не меняем.
-   */
-  let safety=0;
-  while(safety++<1000){
-    if(abyssRoom>=ROOMS_PER_FLOOR){
-      abyssFloor++;
-      abyssRoom=0;
-      abyssRoomContent='Новая комната ещё не исследована.';
-      normalizeAbyssProgress();
-      save();
-      updateAbyss();
-      logEvent('ЭТАЖ',abyssFloor<=MAX_FLOOR?'Открыт этаж '+abyssFloor+'.':'Открыта новая глубина Бездны: '+abyssFloor+'.');
-      continue;
-    }
-
-    const names=['Теневой зверь','Заражённый охотник','Мутант пустоши','Пожиратель костей'];
-    const roomNumber=abyssRoom+1;
-    const boss=(abyssFloor===7||(abyssFloor>=8&&abyssFloor%5===0))&&roomNumber===ROOMS_PER_FLOOR;
-    const elite=!boss&&roomNumber===ROOMS_PER_FLOOR;
-
-    if(!boss&&!elite&&Math.random()<0.18){
-      const events=[
-        {name:'Кровавый алтарь',prompt:'Перед тобой кровавый алтарь. Коснуться его и принять восстановление?',apply:()=>{const heal=Math.max(1,Math.round(hero.maxHp*.25));hero.hp=Math.min(hero.maxHp,hero.hp+heal);return'Восстановлено '+heal+' HP.'}},
-        {name:'Забытый сундук',prompt:'В пыли лежит забытый сундук. Открыть его?',apply:()=>{const gold=30+abyssFloor*5;hero.gold+=gold;return'Найдено '+gold+' золота.'}},
-        {name:'Источник Бездны',prompt:'Ты обнаружил источник Бездны. Воспользоваться им и восстановить энергию?',apply:()=>{const energy=Math.max(1,Math.round(hero.maxEnergy*.35));hero.energy=Math.min(hero.maxEnergy,hero.energy+energy);return'Восстановлено '+energy+' энергии.'}},
-        {name:'Тёмная рыбалка',prompt:'В разрушенной пещере ты замечаешь тёмное озеро. Попробовать закинуть удочку?',apply:()=>{const roll=Math.random();if(roll<.50){const gold=15+abyssFloor*4;hero.gold+=gold;return'Поймана обычная рыба. Внутри неё найдено '+gold+' золота.'}if(roll<.70){const gold=35+abyssFloor*6;hero.gold+=gold;return'Поймана редкая рыба. За неё получено '+gold+' золота.'}if(roll<.80){const loot=generateLoot();if(hero.items.length<MAX_INVENTORY){hero.items.push(loot);return'В воде обнаружен редкий предмет: '+loot.name+'.'}return'На крючке оказался редкий предмет, но инвентарь переполнен.'}if(roll<.92){const heal=Math.max(1,Math.round(hero.maxHp*.18));hero.hp=Math.min(hero.maxHp,hero.hp+heal);return'Поймана лечебная рыба. Восстановлено '+heal+' HP.'}if(roll<.98){const damage=Math.max(1,Math.round(hero.maxHp*(.08+abyssFloor*.004)));hero.hp=Math.max(1,hero.hp-damage);return'Из воды вырвалась хищная тварь и нанесла '+damage+' урона.'}const relic=generateLoot();if(hero.items.length<MAX_INVENTORY){hero.items.push(relic);return'Из воды поднят редкий артефакт: '+relic.name+'.'}return'Из воды поднялся артефакт, но инвентарь переполнен.'}}];
-      const event=events[Math.floor(Math.random()*events.length)];
-      pendingAbyssEvent=event;
-      showAbyssEventChoice(event);
-      return;
-    }
-
-    if(!boss&&!elite&&Math.random()<0.40){
-      completeAbyssRoom('Пустой проход — врагов и событий не обнаружено.');
-      save();
-      logEvent('БЕЗ БОЯ','Путь в Бездне продолжается без столкновения.');
-      update();
-      continue;
-    }
-
-    const depthProfile=abyssFloor>=101?{band:'Глубины 101–150',names:['Кровопийца Разлома','Пепельный страж','Безликий охотник','Пожиратель света'],boss:'Архонт Разлома'}:abyssFloor>=76?{band:'Глубины 76–100',names:['Костяной колосс','Теневой жнец','Порождение Бездны','Червь Разлома'],boss:'Владыка Разлома'}:null;
-    const scaledBase=depthProfile?Math.round(40+abyssFloor*8+(abyssFloor-100)*4):40+abyssFloor*7;
-    const hp=scaledBase*(elite?1.45:boss?2.5:1);
-    const bossName=depthProfile&&boss?depthProfile.boss:'Владыка Бездны';
-    enemy={name:boss?bossName:(depthProfile?depthProfile.names[Math.floor(Math.random()*depthProfile.names.length)]:names[Math.floor(Math.random()*names.length)]),hp:Math.round(hp),max:Math.round(hp),attack:boss?24+Math.floor(abyssFloor/8):elite?16+abyssFloor:8+abyssFloor*2,def:boss?8+Math.floor(abyssFloor/20):elite?4:Math.floor(abyssFloor/2),xp:boss?150:elite?90:50+abyssFloor*5,gold:boss?150:elite?70:20+abyssFloor*5,isElite:elite,isBoss:boss,phase:1,icon:boss?'👑':elite?'👿':'👹'};
-    abyssRoomContent=(boss?'Босс: ':elite?'Элитный враг: ':'Враг: ')+enemy.name;
-    logEvent(boss?'БОСС':elite?'ЭЛИТА':'БОЙ',(boss?'Появился '+enemy.name+'.':elite?'Появился элитный враг: ':'Враг: ')+enemy.name);
-    updateBattle();
-    setScreen('battle');
-    return;
-  }
-}
+function explore(){let safety=0;while(safety++<1000){sfx('open');if(abyssRoom>=ROOMS_PER_FLOOR){abyssFloor++;abyssRoom=0;abyssRoomContent='Новая комната ещё не исследована.';save();updateAbyss();logEvent('ЭТАЖ',abyssFloor<=MAX_FLOOR?'Открыт этаж '+abyssFloor+'.':'Открыта новая глубина Бездны: '+abyssFloor+'.');if(el('out'))el('out').innerHTML='<span class="green">'+(abyssFloor<=MAX_FLOOR?'Этаж '+abyssFloor+' открыт.':'Глубина '+abyssFloor+' открыта.')+'</span>';continue}const names=['Теневой зверь','Заражённый охотник','Мутант пустоши','Пожиратель костей'];const roomNumber=abyssRoom+1;const boss=(abyssFloor===7||(abyssFloor>=8&&abyssFloor%5===0))&&roomNumber===ROOMS_PER_FLOOR;const elite=!boss&&roomNumber===ROOMS_PER_FLOOR;if(!boss&&!elite&&Math.random()<0.18){const events=[{name:'Кровавый алтарь',prompt:'Перед тобой кровавый алтарь. Коснуться его и принять восстановление?',apply:()=>{const heal=Math.max(1,Math.round(hero.maxHp*.25));hero.hp=Math.min(hero.maxHp,hero.hp+heal);return'Восстановлено '+heal+' HP.'}},{name:'Забытый сундук',prompt:'В пыли лежит забытый сундук. Открыть его?',apply:()=>{const gold=30+abyssFloor*5;hero.gold+=gold;return'Найдено '+gold+' золота.'}},{name:'Источник Бездны',prompt:'Ты обнаружил источник Бездны. Воспользоваться им и восстановить энергию?',apply:()=>{const energy=Math.max(1,Math.round(hero.maxEnergy*.35));hero.energy=Math.min(hero.maxEnergy,hero.energy+energy);return'Восстановлено '+energy+' энергии.'}},{name:'Тёмная рыбалка',prompt:'В разрушенной пещере ты замечаешь тёмное озеро. Попробовать закинуть удочку?',apply:()=>{const roll=Math.random();if(roll<.50){const gold=15+abyssFloor*4;hero.gold+=gold;return'Поймана обычная рыба. Внутри неё найдено '+gold+' золота.'}if(roll<.70){const gold=35+abyssFloor*6;hero.gold+=gold;return'Поймана редкая рыба. За неё получено '+gold+' золота.'}if(roll<.80){const loot=generateLoot();if(hero.items.length<MAX_INVENTORY){hero.items.push(loot);return'В воде обнаружен редкий предмет: '+loot.name+'.'}return'На крючке оказался редкий предмет, но инвентарь переполнен.'}if(roll<.92){const heal=Math.max(1,Math.round(hero.maxHp*.18));hero.hp=Math.min(hero.maxHp,hero.hp+heal);return'Поймана лечебная рыба. Восстановлено '+heal+' HP.'}if(roll<.98){const damage=Math.max(1,Math.round(hero.maxHp*(.08+abyssFloor*.004)));hero.hp=Math.max(1,hero.hp-damage);return'Из воды вырвалась хищная тварь и нанесла '+damage+' урона.'}const relic=generateLoot();if(hero.items.length<MAX_INVENTORY){hero.items.push(relic);return'Из воды поднят редкий артефакт: '+relic.name+'.'}return'Из воды поднялся артефакт, но инвентарь переполнен.'}}];const event=events[Math.floor(Math.random()*events.length)];pendingAbyssEvent=event;showAbyssEventChoice(event);return}if(!boss&&!elite&&Math.random()<0.40){completeAbyssRoom('Пустой проход — врагов и событий не обнаружено.');save();logEvent('БЕЗ БОЯ','Путь в Бездне продолжается без столкновения.');update();continue}const depthProfile=abyssFloor>=101?{band:'Глубины 101–150',names:['Кровопийца Разлома','Пепельный страж','Безликий охотник','Пожиратель света'],boss:'Архонт Разлома'}:abyssFloor>=76?{band:'Глубины 76–100',names:['Костяной колосс','Теневой жнец','Порождение Бездны','Червь Разлома'],boss:'Владыка Разлома'}:null;const scaledBase=depthProfile?Math.round(40+abyssFloor*8+(abyssFloor-100)*4):40+abyssFloor*7;const hp=scaledBase*(elite?1.45:boss?2.5:1);const bossName=depthProfile&&boss?depthProfile.boss:'Владыка Бездны';enemy={name:boss?bossName:(depthProfile?depthProfile.names[Math.floor(Math.random()*depthProfile.names.length)]:names[Math.floor(Math.random()*names.length)]),hp:Math.round(hp),max:Math.round(hp),attack:boss?24+Math.floor(abyssFloor/8):elite?16+abyssFloor:8+abyssFloor*2,def:boss?8+Math.floor(abyssFloor/20):elite?4:Math.floor(abyssFloor/2),xp:boss?150:elite?90:50+abyssFloor*5,gold:boss?150:elite?70:20+abyssFloor*5,isElite:elite,isBoss:boss,phase:1,icon:boss?'👑':elite?'👿':'👹'};abyssRoomContent=(boss?'Босс: ':elite?'Элитный враг: ':'Враг: ')+enemy.name;logEvent(boss?'БОСС':elite?'ЭЛИТА':'БОЙ',(boss?'Появился '+enemy.name+'.':elite?'Появился элитный враг: ':'Враг: ')+enemy.name);updateBattle();setScreen('battle');return}}
 function showAbyssEventChoice(event){const modal=el('choiceModal');if(!modal)return;el('choiceTitle').textContent=event.name;el('choiceText').textContent=event.prompt;el('choiceAcceptBtn').textContent=event.name==='Забытый сундук'?'Открыть сундук':event.name==='Тёмная рыбалка'?'🎣 Рыбачить':'Взаимодействовать';modal.classList.remove('hidden');sfx('open')}function resolveAbyssEvent(accept){const event=pendingAbyssEvent;if(!event)return;pendingAbyssEvent=null;el('choiceModal').classList.add('hidden');if(!accept){completeAbyssRoom('Событие: '+event.name+' — Ты решил пройти мимо.');save();logEvent('СОБЫТИЕ',event.name+': игрок прошёл мимо.');update();screenHistory=['menu','main','abyss'];history.replaceState({screen:'abyss'},'','#abyss');setScreen('abyss',false);updateAbyss();if(el('out'))el('out').innerHTML='<span class="muted">'+event.name+': ты прошёл мимо.</span>';return}const result=event.apply();completeAbyssRoom('Событие: '+event.name+' — '+result);save();logEvent('СОБЫТИЕ',event.name+': '+result);update();screenHistory=['menu','main','abyss'];history.replaceState({screen:'abyss'},'','#abyss');setScreen('abyss',false);updateAbyss();if(el('out'))el('out').innerHTML='<span class="green">'+event.name+': '+result+'</span>'}function showInventory(){renderInventory();setScreen('inventory')}function showEquipment(){renderEquipment();setScreen('equipment')}function showBlacksmith(){renderBlacksmith();setScreen('blacksmith')}function showHero(){renderHero();setScreen('hero')}function showShop(){shopTab('weapon');setScreen('shop')}
 const BLACKSMITH_MAX=5;
 function blacksmithUpgradeCost(level){const n=Math.max(0,Number(level||0));return [50,100,175,275,400][n]||400}
