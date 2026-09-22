@@ -15,6 +15,12 @@ for _dir in (WEB,ANDROID):
         if _p.is_file(): _p.unlink()
 
 PALETTES=[((5,7,12),(25,8,13),(94,18,23)),((4,7,10),(17,10,18),(122,21,27)),((6,6,8),(30,12,10),(150,27,24)),((3,8,12),(11,16,23),(116,29,38))]
+SCENES=[
+    "abyss_gate","blood_rift","ash_citadel","bone_catacomb","shadow_forest","void_bridge",
+    "fallen_temple","red_chasm","obsidian_hall","forgotten_throne","night_marsh","iron_ruins",
+    "cursed_library","black_keep","wraith_gallery","deep_lair","hell_stairs","starless_vault",
+    "crimson_arena","ancient_gate","abyss_core","archon_chamber","endless_depth","rift_lord"
+]
 def glow(d,cx,cy,r,col,a=80):
     for k in range(14,0,-1):
         rr=r*(1+k*.11); aa=int(a*(1-k/16)**2)
