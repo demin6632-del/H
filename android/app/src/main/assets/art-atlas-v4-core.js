@@ -17,7 +17,7 @@ function generatedCreature(key){return CREATURE.includes(key)?key:'shadow';}
 function renderV4Tile(el,key,w,h){
  if(!el)return false;
  const name=generatedScene(key);
- el.style.setProperty('background-image','linear-gradient(rgba(5,0,4,.18),rgba(0,0,0,.42)),url("assets/generated/'+name+'.png")','important');
+ el.style.setProperty('background-image','linear-gradient(rgba(5,0,4,.18),rgba(0,0,0,.42)),url("generated/'+name+'.png")','important');
  el.style.setProperty('background-size','cover','important');
  el.style.setProperty('background-position','center center','important');
  el.style.setProperty('background-repeat','no-repeat','important');
@@ -62,7 +62,7 @@ function installBattleV4(){
    else if(enemy.isElite)k='elite';
    else k=({'Теневой зверь':'shadow','Заражённый охотник':'hunter','Мутант пустоши':'mutant','Пожиратель костей':'bones'})[enemy.name]||'shadow';
   }
-  b.innerHTML='<img src="assets/generated/'+generatedCreature(k)+'.png" alt="" style="display:block;width:min(86vw,360px);height:min(86vw,300px);object-fit:cover;object-position:center;margin:auto;border:1px solid rgba(45,125,170,.65);box-shadow:0 0 22px rgba(0,70,110,.28)">';
+  b.innerHTML='<img src="generated/'+generatedCreature(k)+'.png" alt="" style="display:block;width:min(86vw,360px);height:min(86vw,300px);object-fit:cover;object-position:center;margin:auto;border:1px solid rgba(45,125,170,.65);box-shadow:0 0 22px rgba(0,70,110,.28)">';
  }
  wrapped.__artV4=true;wrapped.__battleArtRuntimeFix=true;window.updateBattle=wrapped;return true;
 }
