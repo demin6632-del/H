@@ -241,6 +241,42 @@
   .hero-ref .hero-equip-card small{font-size:8px!important}
 }
 </style>
+<style id="EQUIPMENT-SCREEN-MOBILE-FIX-V2">
+/* Исправление именно экрана «Снаряжение»: сетка не должна расширять панель за ширину телефона. */
+#equipment,
+#equipment .panel{min-width:0!important;max-width:100%!important;overflow-x:hidden!important}
+#equipment .equipment{
+  width:100%!important;
+  max-width:100%!important;
+  min-width:0!important;
+  grid-template-columns:minmax(0,1fr) minmax(0,1.25fr) minmax(0,1fr)!important;
+  gap:5px!important;
+  overflow:hidden!important;
+}
+#equipment .equip-col{min-width:0!important;width:100%!important}
+#equipment .equip-slot{
+  width:100%!important;
+  min-width:0!important;
+  max-width:100%!important;
+  overflow:hidden!important;
+}
+#equipment .hero-silhouette{
+  width:100%!important;
+  min-width:0!important;
+  max-width:100%!important;
+  overflow:hidden!important;
+}
+#equipment #equipStats{
+  min-width:0!important;
+  max-width:100%!important;
+  overflow:hidden!important;
+  overflow-wrap:anywhere!important;
+}
+@media(max-width:390px){
+  #equipment .equipment{grid-template-columns:minmax(0,1fr) minmax(0,1.05fr) minmax(0,1fr)!important;gap:4px!important}
+  #equipment .hero-silhouette{font-size:82px!important;height:180px!important}
+}
+</style>
 </head>
 <body><div id="game">
 <div id="menu"><div class="title-wrap"><div class="title-main">ХРОНИКИ<span>БЕЗДНЫ</span></div><div class="subtitle">ТЕКСТОВАЯ ROGUELIKE-RPG</div></div><button class="start-hit" onclick="showClasses()">Начать игру</button><button id="continueHit" class="continue-hit" onclick="continueGame()">Продолжить</button><div class="loading"><span></span></div><div class="loading-text">Загрузка...</div></div>
