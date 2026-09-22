@@ -223,6 +223,24 @@
 #blacksmithBatchModal .modal-box{max-width:380px}
 </style>
 <style id="ps44-fallback-open-style-v1">#ps44open.ps44-fallback-open{display:block;width:100%;min-height:44px;margin:6px 0;padding:8px;border:1px solid #8f1818;border-radius:5px;background:linear-gradient(#180808,#070707);color:#eee;font:14px Georgia,"Times New Roman",serif}#ps44open.ps44-fallback-open span{color:#e22;margin-right:6px}</style>
+<style id="EQUIPMENT-MOBILE-FIX-V1">
+/* Исправление: экран экипировки не должен расширять страницу за пределы телефона. */
+.hero-ref{width:100%!important;max-width:480px!important;margin-left:auto!important;margin-right:auto!important;overflow:hidden!important}
+.hero-ref .hero-stage{grid-template-columns:minmax(0,1fr) minmax(112px,.9fr) minmax(0,1fr)!important;gap:6px!important;width:100%!important;max-width:100%!important}
+.hero-ref .hero-equip-side{min-width:0!important;width:100%!important}
+.hero-ref .hero-equip-card{min-width:0!important;width:100%!important;grid-template-columns:46px minmax(0,1fr)!important;column-gap:5px!important;overflow:hidden!important}
+.hero-ref .hero-equip-card b,.hero-ref .hero-equip-card small{min-width:0!important;max-width:100%!important;overflow:hidden!important;text-overflow:ellipsis!important}
+.hero-ref .gear-icon{width:44px!important;max-width:44px!important}
+.hero-ref .hero-figure{min-width:0!important;width:100%!important;overflow:hidden!important}
+@media(max-width:480px){
+  .hero-ref{padding-left:6px!important;padding-right:6px!important}
+  .hero-ref .hero-stage{grid-template-columns:minmax(0,1fr) 112px minmax(0,1fr)!important;gap:4px!important}
+  .hero-ref .hero-equip-card{height:92px!important;padding:5px!important;grid-template-columns:34px minmax(0,1fr)!important;column-gap:4px!important}
+  .hero-ref .gear-icon{width:32px!important;height:68px!important;font-size:22px!important}
+  .hero-ref .hero-equip-card b{font-size:10px!important}
+  .hero-ref .hero-equip-card small{font-size:8px!important}
+}
+</style>
 </head>
 <body><div id="game">
 <div id="menu"><div class="title-wrap"><div class="title-main">ХРОНИКИ<span>БЕЗДНЫ</span></div><div class="subtitle">ТЕКСТОВАЯ ROGUELIKE-RPG</div></div><button class="start-hit" onclick="showClasses()">Начать игру</button><button id="continueHit" class="continue-hit" onclick="continueGame()">Продолжить</button><div class="loading"><span></span></div><div class="loading-text">Загрузка...</div></div>
