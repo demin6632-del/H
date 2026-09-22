@@ -27,7 +27,7 @@ jobs:
           rm -rf android/app/src/main/assets/generated
           mkdir -p android/app/src/main/assets/generated
           cp -a NEW_DARK_RPG/generated/. android/app/src/main/assets/generated/
-          du -sh NEW_DARK_RPG/assets/generated
+          du -sh NEW_DARK_RPG/generated
 
       - name: Full source audit
         run: |
