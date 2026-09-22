@@ -26,7 +26,7 @@ jobs:
           python tools/generate_media_pack_v46.py
           rm -rf android/app/src/main/assets/generated
           mkdir -p android/app/src/main/assets/generated
-          cp -a NEW_DARK_RPG/assets/generated/. android/app/src/main/assets/generated/
+          cp -a NEW_DARK_RPG/generated/. android/app/src/main/assets/generated/
           du -sh NEW_DARK_RPG/assets/generated
 
       - name: Full source audit
