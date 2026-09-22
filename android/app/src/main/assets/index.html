@@ -1262,44 +1262,59 @@ window.abyssKeyCaches = abyssKeyCaches;
   const oldSelect=selectAbyssDepth;selectAbyssDepth=function(){transition(()=>oldSelect.apply(this,arguments));};
   const oldExplore=explore;explore=function(){
     const d=Number(abyssFloor||1);
-    /* Переход между глубинами полностью контролируется новой системой Бездны.
-       Старый explore здесь больше не меняет этаж, чтобы глубины 1–∞ не
-       смешивались с прежней системой комнат. */
-    if(abyssRoom>=ROOMS_PER_FLOOR){
-      transition(()=>{
-        abyssFloor=Math.max(1,d+1);
-        abyssRoom=0;
-        abyssBossDefeated=false;
-        abyssRoomContent='Новая комната ещё не исследована.';
-        clearDepthState(abyssFloor);
+    /* ИССЛЕДОВАНИЕ-V2: одна кнопка проходит пустые комнаты автоматически
+       и останавливается только на первом реальном событии/существе. */
+    let safety=0;
+    while(safety++<ROOMS_PER_FLOOR+2){
+      if(abyssRoom>=ROOMS_PER_FLOOR){
+        transition(()=>{
+          abyssFloor=Math.max(1,d+1);
+          abyssRoom=0;
+          abyssBossDefeated=false;
+          abyssRoomContent='Новая комната ещё не исследована.';
+          clearDepthState(abyssFloor);
+          saveState();
+          save();
+          update();
+          updateAbyss();
+          renderDynamic();
+          logEvent('ЭТАЖ',abyssFloor<=MAX_FLOOR?'Открыт этаж '+abyssFloor+'.':'Открыта новая глубина Бездны: '+abyssFloor+'.');
+          if(el('out'))el('out').innerHTML='<span class="green">'+(abyssFloor<=MAX_FLOOR?'Этаж '+abyssFloor+' открыт.':'Глубина '+abyssFloor+' открыта.')+'</span>';
+        });
+        return;
+      }
+      const roomNo=Number(abyssRoom)+1;
+      const room=getRoom(d,roomNo);
+      if(state.pending&&state.pending.depth===d&&state.pending.room===roomNo){renderDynamic();return;}
+      const bossOrElite=roomNo===ROOMS_PER_FLOOR&&(d===7||(d>=8&&d%5===0));
+      if(bossOrElite){
+        room.type='ambush';
+        room.visited=false;
+        state.pending={depth:d,room:roomNo};
+        saveState();
+        transition(()=>oldExplore.apply(this,arguments));
+        return;
+      }
+      /* Сохраняем существующие типы динамических комнат и их обработчики.
+         Пустая комната не создаёт pending и сразу считается пройденной,
+         после чего исследование продолжается в следующей комнате. */
+      if(Math.random()<0.40){
+        room.visited=true;
+        room.type=null;
+        state.pending=null;
+        abyssRoom=Math.min(ROOMS_PER_FLOOR,roomNo);
+        abyssRoomContent='Пустой проход — ничего необычного не обнаружено.';
         saveState();
         save();
         update();
         updateAbyss();
-        renderDynamic();
-        logEvent('ЭТАЖ',abyssFloor<=MAX_FLOOR?'Открыт этаж '+abyssFloor+'.':'Открыта новая глубина Бездны: '+abyssFloor+'.');
-        if(el('out'))el('out').innerHTML='<span class="green">'+(abyssFloor<=MAX_FLOOR?'Этаж '+abyssFloor+' открыт.':'Глубина '+abyssFloor+' открыта.')+'</span>';
-      });
+        continue;
+      }
+      const id=chooseRoomType(),type=typeOf(id);
+      abyssRoomContent=type.name+': '+type.desc;
+      save();updateAbyss();renderDynamic();narrative(randomEntry(d),depthName(d));logEvent('ИССЛЕДОВАНИЕ','Обнаружена комната: '+type.name+'.');
       return;
     }
-    const room=getRoom(d,Number(abyssRoom)+1);
-    if(state.pending&&state.pending.depth===d&&state.pending.room===Number(abyssRoom)+1){renderDynamic();return;}
-    const roomNo=Number(abyssRoom)+1;
-    const bossOrElite=roomNo===ROOMS_PER_FLOOR&&(d===7||(d>=8&&d%5===0));
-    if(bossOrElite){
-      /* Последняя комната глубины тоже проходит через единую систему состояния.
-         Старый боевой движок используется только для самого боя, но комната
-         заранее получает точные depth/room, чтобы после победы не потерять прогресс. */
-      room.type='ambush';
-      room.visited=false;
-      state.pending={depth:d,room:roomNo};
-      saveState();
-      transition(()=>oldExplore.apply(this,arguments));
-      return;
-    }
-    const id=chooseRoomType(),type=typeOf(id);
-    abyssRoomContent=type.name+': '+type.desc;
-    save();updateAbyss();renderDynamic();narrative(randomEntry(d),depthName(d));logEvent('ИССЛЕДОВАНИЕ','Обнаружена комната: '+type.name+'.');
   };
   const oldUpdate=updateAbyss;updateAbyss=function(){const r=oldUpdate.apply(this,arguments);renderDynamic();return r};
   const oldDie=die;die=function(){const d=Number(abyssFloor||1);state.deaths[d]=Number(state.deaths[d]||0)+1;clearDepthState(d);saveState();const r=oldDie.apply(this,arguments);renderDynamic();return r};
