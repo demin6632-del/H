@@ -132,7 +132,7 @@
               b.style.background='transparent';
               const img=document.createElement('img');
               img.className='coa-new-creature';
-              img.src='assets/generated/'+k+'.png';
+              img.src='generated/'+k+'.png';
               img.alt=k;
               img.style.cssText='display:block;width:100%;height:100%;object-fit:contain;filter:drop-shadow(0 8px 14px rgba(220,0,0,.55));mix-blend-mode:screen;';
               b.appendChild(img);
