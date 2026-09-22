@@ -15,6 +15,7 @@ for _dir in (WEB,ANDROID):
         if _p.is_file(): _p.unlink()
 
 PALETTES=[((5,7,12),(25,8,13),(94,18,23)),((4,7,10),(17,10,18),(122,21,27)),((6,6,8),(30,12,10),(150,27,24)),((3,8,12),(11,16,23),(116,29,38))]
+CREATURES=["hero","shadow","hunter","mutant","bones","elite","boss"]
 SCENES=[
     "abyss_gate","blood_rift","ash_citadel","bone_catacomb","shadow_forest","void_bridge",
     "fallen_temple","red_chasm","obsidian_hall","forgotten_throne","night_marsh","iron_ruins",
@@ -70,6 +71,34 @@ def art(name,idx):
     v=v.filter(ImageFilter.GaussianBlur(50)); shade=Image.new("RGBA",(W,H),(0,0,0,0)); shade.putalpha(v); img=Image.alpha_composite(img,shade).convert("RGB")
     img.save(WEB/f"{name}.png","PNG",optimize=True); (ANDROID/f"{name}.png").write_bytes((WEB/f"{name}.png").read_bytes())
 
+def creature_art(name,idx):
+    W=H=2048; rng=np.random.default_rng(44001+idx*31337)
+    img=Image.new("RGBA",(W,H),(3,3,6,255)); d=ImageDraw.Draw(img,"RGBA")
+    glow(d,1024,620,360,(130,15,25),110)
+    if name=="hero":
+        d.ellipse((900,300,1148,550),fill=(12,14,19,255),outline=(150,155,165,230),width=18)
+        d.polygon([(830,650),(1024,545),(1218,650),(1320,1450),(728,1450)],fill=(8,10,15,255),outline=(135,140,150,220))
+        d.polygon([(910,650),(1024,560),(1138,650),(1100,1220),(948,1220)],fill=(30,7,12,255),outline=(190,38,35,220),width=12)
+        d.polygon([(850,710),(710,980),(760,1500),(930,1420),(940,800)],fill=(12,14,19,255),outline=(115,120,132,210))
+        d.polygon([(1198,710),(1338,980),(1288,1500),(1118,1420),(1108,800)],fill=(12,14,19,255),outline=(115,120,132,210))
+        d.line((960,690,960,1290),fill=(190,38,35,210),width=16)
+        d.line((1088,690,1088,1290),fill=(190,38,35,130),width=9)
+    else:
+        cx,cy=1024,820; accent=(210,35,30) if idx>=5 else (150,28,34); scale=1+(idx-1)*.045
+        hr=int(170*scale); horn=int(230*scale)
+        d.ellipse((cx-hr,cy-hr,cx+hr,cy+hr),fill=(4,5,8,255),outline=(125,132,145,230),width=18)
+        d.polygon([(cx-hr+20,cy-hr+40),(cx-horn,cy-horn),(cx-80,cy-70)],fill=(7,8,12,255),outline=(*accent,200))
+        d.polygon([(cx+hr-20,cy-hr+40),(cx+horn,cy-horn),(cx+80,cy-70)],fill=(7,8,12,255),outline=(*accent,200))
+        d.polygon([(cx-310,cy+80),(cx-500,cy+520),(cx-350,cy+900),(cx,cy+680),(cx+350,cy+900),(cx+500,cy+520),(cx+310,cy+80)],fill=(5,6,10,255),outline=(110,116,128,220))
+        d.polygon([(cx-85,cy+80),(cx,cy+135),(cx+85,cy+80),(cx+120,cy+440),(cx,cy+620),(cx-120,cy+440)],fill=(35,7,12,255),outline=(*accent,220),width=10)
+        d.ellipse((cx-95,cy-5,cx-30,cy+60),fill=(*accent,220)); d.ellipse((cx+30,cy-5,cx+95,cy+60),fill=(*accent,220))
+    for _ in range(120):
+        x=int(rng.integers(250,1800)); y=int(rng.integers(150,1900)); r=int(rng.choice([2,3,5,8]))
+        d.ellipse((x-r,y-r,x+r,y+r),fill=(230,40,30,int(rng.integers(15,70))))
+    img=img.convert("RGB"); img.save(WEB/f"{name}.png","PNG",optimize=True)
+    (ANDROID/f"{name}.png").write_bytes((WEB/f"{name}.png").read_bytes())
+
+
 def tone(seconds, kind, idx):
     rate=44100
     frames=int(rate*seconds)
@@ -104,6 +133,8 @@ def tone(seconds, kind, idx):
 # 24 distinct in-game illustrations, not placeholder padding.
 for i,name in enumerate(SCENES):
     art(name, i)
+for i,name in enumerate(CREATURES):
+    creature_art(name, i)
 
 tracks=[("abyss",0,30),("abyss",1,30),("battle",0,30),("battle",1,30),
         ("boss",0,30),("dungeon",0,30),("victory",0,18),("death",0,18)]
