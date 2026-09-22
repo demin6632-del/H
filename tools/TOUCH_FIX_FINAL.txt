@@ -1,1 +1,0 @@
-Final Android touch-fix build trigger V46. Activity dispatchTouchEvent now handles class-card hit testing before WebView. No game logic.

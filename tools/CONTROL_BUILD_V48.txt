@@ -1,2 +1,0 @@
-CONTROL BUILD — source → repaired source → APK → embedded HTML → native class handler verification.
-No game logic change.
