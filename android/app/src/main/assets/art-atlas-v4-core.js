@@ -27,6 +27,15 @@ function renderV4Tile(el,key,w,h){
 }
 window.renderV4Tile=renderV4Tile;
 
+function installSceneArtFix(){
+ const id='art-v5-scene-clean';
+ if(document.getElementById(id))return;
+ const style=document.createElement('style');
+ style.id=id;
+ style.textContent='.scene.art-v5-scene:before,.scene.art-v5-scene:after{display:none!important}';
+ document.head.appendChild(style);
+}
+
 function setScene(id,key){
  const s=document.querySelector('#'+id+' .scene');
  if(!s)return;
@@ -78,6 +87,6 @@ function installScreenV4(){
  function wrapped(){old.apply(this,arguments);setTimeout(updateScenesV4,0);}
  wrapped.__artV4=true;window.setScreen=wrapped;return true;
 }
-function bootV4(){installBattleV4();installAbyssV4();installScreenV4();updateScenesV4();}
+function bootV4(){installSceneArtFix();installBattleV4();installAbyssV4();installScreenV4();updateScenesV4();}
 bootV4();document.addEventListener('DOMContentLoaded',bootV4);setTimeout(bootV4,250);
 })();
