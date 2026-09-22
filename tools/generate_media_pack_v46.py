@@ -6,7 +6,7 @@ import numpy as np
 import math, wave, struct, hashlib
 
 ROOT = Path(__file__).resolve().parents[1]
-WEB = ROOT / "NEW_DARK_RPG" / "assets" / "generated"
+WEB = ROOT / "NEW_DARK_RPG" / "generated"
 ANDROID = ROOT / "android" / "app" / "src" / "main" / "assets" / "generated"
 WEB.mkdir(parents=True, exist_ok=True)
 ANDROID.mkdir(parents=True, exist_ok=True)
