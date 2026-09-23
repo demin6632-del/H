@@ -2500,6 +2500,7 @@ window.abyssKeyCaches = abyssKeyCaches;
  }
  function complete(text){
    E.done=Math.min(SEGMENTS,E.done+1);
+   try{document.dispatchEvent(new CustomEvent('abyss-segment-complete',{detail:{depth:E.depth,done:E.done}}))}catch(e){}
    log(text);
    if(E.done>=SEGMENTS){E.active=false;E.pending=null;save();render();showNextDepth();return}
    E.pending=null;
