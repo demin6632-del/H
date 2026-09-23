@@ -2291,7 +2291,7 @@ window.abyssKeyCaches = abyssKeyCaches;
 (function(){
  if(window.__ABYSS_DEPTHS_V45__)return;
  window.__ABYSS_DEPTHS_V45__=true;
- window.COA_VERSION='4.6.0';
+ window.COA_VERSION='5.0.0';
  window.COA_BUILD='55';
  window.COA_ABYSS_CONTENT='101-150';
  try{
@@ -2369,7 +2369,7 @@ window.abyssKeyCaches = abyssKeyCaches;
 (function(){
  if(window.__COA_MEDIA_V46__)return;
  window.__COA_MEDIA_V46__=true;
- window.COA_MEDIA_VERSION='4.6.0';
+ window.COA_MEDIA_VERSION='5.0.0';
  var base='generated/';
  var scenes=['abyss_gate','blood_rift','ash_citadel','bone_catacomb','shadow_forest','void_bridge','fallen_temple','red_chasm','obsidian_hall','forgotten_throne','night_marsh','iron_ruins','cursed_library','black_keep','wraith_gallery','deep_lair','hell_stairs','starless_vault','crimson_arena','ancient_gate','abyss_core','archon_chamber','endless_depth','rift_lord'];
  var tracks=['abyss_00.wav','abyss_01.wav','battle_00.wav','battle_01.wav','boss_00.wav','dungeon_00.wav','victory_00.wav','death_00.wav'];
@@ -2705,3 +2705,6 @@ window.abyssKeyCaches = abyssKeyCaches;
   root.addEventListener('touchcancel',function(){tracking=false;moved=false;ignoreUntil=Date.now()+120},{capture:true,passive:true});
 })();
 </script>
+
+<!-- V5-INTEGRATION-BRIDGE -->
+<script type="module" src="./v5/ui/bridge.js"></script>

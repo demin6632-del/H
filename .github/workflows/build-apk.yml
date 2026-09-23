@@ -29,8 +29,12 @@ jobs:
           cp -a NEW_DARK_RPG/generated/. android/app/src/main/assets/generated/
           du -sh NEW_DARK_RPG/generated
 
-      - name: Sync Android WebView HTML
-        run: cp NEW_DARK_RPG/index.html android/app/src/main/assets/index.html
+      - name: Sync Android WebView HTML and V5 runtime
+        run: |
+          cp NEW_DARK_RPG/index.html android/app/src/main/assets/index.html
+          rm -rf android/app/src/main/assets/v5
+          mkdir -p android/app/src/main/assets/v5
+          cp -a NEW_DARK_RPG/v5/. android/app/src/main/assets/v5/
 
       - name: Full source audit
         run: |
@@ -43,6 +47,7 @@ jobs:
           v4=root/"NEW_DARK_RPG/art-atlas-v4.js"
           av4=root/"android/app/src/main/assets/art-atlas-v4.js"
           core=root/"NEW_DARK_RPG/art-atlas-v4-core.js"
+          v5=root/"NEW_DARK_RPG/v5"
           acore=root/"android/app/src/main/assets/art-atlas-v4-core.js"
           activity=root/"android/app/src/main/java/com/chronicles/abyss/MainActivity.java"
           if web.read_bytes()!=android.read_bytes(): raise SystemExit("Web/Android HTML mismatch")
@@ -54,10 +59,14 @@ jobs:
           subprocess.run(["node","--check","/tmp/game.js"],check=True)
           subprocess.run(["node","--check",str(v4)],check=True)
           subprocess.run(["node","--check",str(core)],check=True)
+          v5files=list(v5.rglob("*.js"))
+          for p in v5files: subprocess.run(["node","--check",str(p)],check=True)
+          if not v5files: raise SystemExit("V5 runtime files missing")
+          print(f"V5 JS AUDIT: PASS; files={len(v5files)}")
           ids=re.findall(r"\bid=[\"']([^\"']+)",s,re.I)
           dup=sorted({x for x in ids if ids.count(x)>1})
           if dup: raise SystemExit(f"Duplicate IDs: {dup}")
-          if "COA_VERSION='4.6.0'" not in s: raise SystemExit("Missing v4.6.0 runtime marker")
+          if "COA_VERSION='5.0.0'" not in s: raise SystemExit("Missing v5.0.0 runtime marker")
           required_media = [
             "abyss_gate","blood_rift","ash_citadel","bone_catacomb","shadow_forest","void_bridge",
             "fallen_temple","red_chasm","obsidian_hall","forgotten_throne","night_marsh","iron_ruins",
@@ -83,8 +92,8 @@ jobs:
           for marker in ["ANDROID-NATIVE-TOUCH-FALLBACK-V64","__nativeTapBridgeV61","__nativeTapFallbackAt","enableImmersiveFullscreen"]:
             if marker not in a: raise SystemExit("Missing Android touch bridge marker: "+marker)
           gradle=(root/"android/app/build.gradle").read_text()
-          if "versionCode 55" not in gradle: raise SystemExit("Bad versionCode")
-          if "versionName '4.6.0'" not in gradle: raise SystemExit("Bad versionName")
+          if "versionCode 56" not in gradle: raise SystemExit("Bad versionCode")
+          if "versionName '5.0.0'" not in gradle: raise SystemExit("Bad versionName")
           media=root/"android/app/src/main/assets/generated"
           files=list(media.glob("*"))
           total=sum(p.stat().st_size for p in files if p.is_file())
@@ -118,7 +127,7 @@ jobs:
           BUILD_TOOLS=$(find "$ANDROID_HOME/build-tools" -maxdepth 1 -mindepth 1 -type d | sort -V | tail -1)
           "$BUILD_TOOLS/apksigner" verify --verbose "$APK"
           BADGING=$("$BUILD_TOOLS/aapt" dump badging "$APK")
-          echo "$BADGING" | grep -F "package: name='com.chronicles.abyss' versionCode='55' versionName='4.6.0'"
+          echo "$BADGING" | grep -F "package: name='com.chronicles.abyss' versionCode='55' versionName='5.0.0'"
           unzip -l "$APK" | grep -E 'assets/(index.html|art-atlas-v4.js|art-atlas-v4-core.js)$'
           unzip -l "$APK" | grep 'assets/generated/'
           unzip -p "$APK" assets/index.html > /tmp/apk-index.html
@@ -137,52 +146,52 @@ jobs:
         run: |
           rm -rf release-package
           mkdir -p release-package
-          cp app/build/outputs/apk/release/app-release.apk release-package/ChroniclesOfTheAbyss-v4.6.0.apk
-          sha256sum release-package/ChroniclesOfTheAbyss-v4.6.0.apk > release-package/SHA256SUMS.txt
+          cp app/build/outputs/apk/release/app-release.apk release-package/ChroniclesOfTheAbyss-v5.0.0.apk
+          sha256sum release-package/ChroniclesOfTheAbyss-v5.0.0.apk > release-package/SHA256SUMS.txt
           cd release-package
-          zip -9 ../ChroniclesOfTheAbyss-v4.6.0-APK.zip *
+          zip -9 ../ChroniclesOfTheAbyss-v5.0.0-APK.zip *
 
       - name: Package PROJECT ZIP
         run: |
           rm -rf /tmp/ChroniclesOfTheAbyss_PROJECT
           rsync -a --exclude=".git" --exclude="android/.gradle" --exclude="android/app/build" --exclude="android/release-package" --exclude="android/*.zip" ./ /tmp/ChroniclesOfTheAbyss_PROJECT/
           cd /tmp
-          zip -9 -r ChroniclesOfTheAbyss_PROJECT-v4.6.0.zip ChroniclesOfTheAbyss_PROJECT >/dev/null
+          zip -9 -r ChroniclesOfTheAbyss_PROJECT-v5.0.0.zip ChroniclesOfTheAbyss_PROJECT >/dev/null
 
       - name: Package FULL ZIP
         run: |
           rm -rf /tmp/ChroniclesOfTheAbyss_FULL
           mkdir -p /tmp/ChroniclesOfTheAbyss_FULL/APK /tmp/ChroniclesOfTheAbyss_FULL/PROJECT
-          cp android/app/build/outputs/apk/release/app-release.apk /tmp/ChroniclesOfTheAbyss_FULL/APK/ChroniclesOfTheAbyss-v4.6.0.apk
-          cp android/ChroniclesOfTheAbyss-v4.6.0-APK.zip /tmp/ChroniclesOfTheAbyss_FULL/APK/ChroniclesOfTheAbyss-v4.6.0-APK.zip
-          cp /tmp/ChroniclesOfTheAbyss_PROJECT-v4.6.0.zip /tmp/ChroniclesOfTheAbyss_FULL/PROJECT/ChroniclesOfTheAbyss_PROJECT-v4.6.0.zip
-          printf '%s\n' 'ChroniclesOfTheAbyss v4.6.0 FULL PACKAGE' 'Contains standalone APK, APK ZIP, and PROJECT ZIP.' > /tmp/ChroniclesOfTheAbyss_FULL/README.txt
+          cp android/app/build/outputs/apk/release/app-release.apk /tmp/ChroniclesOfTheAbyss_FULL/APK/ChroniclesOfTheAbyss-v5.0.0.apk
+          cp android/ChroniclesOfTheAbyss-v5.0.0-APK.zip /tmp/ChroniclesOfTheAbyss_FULL/APK/ChroniclesOfTheAbyss-v5.0.0-APK.zip
+          cp /tmp/ChroniclesOfTheAbyss_PROJECT-v5.0.0.zip /tmp/ChroniclesOfTheAbyss_FULL/PROJECT/ChroniclesOfTheAbyss_PROJECT-v5.0.0.zip
+          printf '%s\n' 'ChroniclesOfTheAbyss v5.0.0 FULL PACKAGE' 'Contains standalone APK, APK ZIP, and PROJECT ZIP.' > /tmp/ChroniclesOfTheAbyss_FULL/README.txt
           cd /tmp
-          zip -9 -r ChroniclesOfTheAbyss-v4.6.0-FULL.zip ChroniclesOfTheAbyss_FULL >/dev/null
+          zip -9 -r ChroniclesOfTheAbyss-v5.0.0-FULL.zip ChroniclesOfTheAbyss_FULL >/dev/null
 
       - name: Upload FULL ZIP
         uses: actions/upload-artifact@v5
         with:
-          name: ChroniclesOfTheAbyss-v4.6.0-FULL
-          path: /tmp/ChroniclesOfTheAbyss-v4.6.0-FULL.zip
+          name: ChroniclesOfTheAbyss-v5.0.0-FULL
+          path: /tmp/ChroniclesOfTheAbyss-v5.0.0-FULL.zip
 
       - name: Upload APK
         uses: actions/upload-artifact@v5
         with:
-          name: ChroniclesOfTheAbyss-v4.6.0-apk
+          name: ChroniclesOfTheAbyss-v5.0.0-apk
           path: android/app/build/outputs/apk/release/app-release.apk
 
       - name: Upload APK ZIP
         uses: actions/upload-artifact@v5
         with:
-          name: ChroniclesOfTheAbyss-v4.6.0-apk-zip
-          path: android/ChroniclesOfTheAbyss-v4.6.0-APK.zip
+          name: ChroniclesOfTheAbyss-v5.0.0-apk-zip
+          path: android/ChroniclesOfTheAbyss-v5.0.0-APK.zip
 
       - name: Upload PROJECT ZIP
         uses: actions/upload-artifact@v5
         with:
-          name: ChroniclesOfTheAbyss_PROJECT-v4.6.0
-          path: /tmp/ChroniclesOfTheAbyss_PROJECT-v4.6.0.zip
+          name: ChroniclesOfTheAbyss_PROJECT-v5.0.0
+          path: /tmp/ChroniclesOfTheAbyss_PROJECT-v5.0.0.zip
 
 # PROGRESSION-V2-SINGLE-SOURCE-FINAL-BUILD
 # INSTALL-FIX-REBUILD-2026-09-22
