@@ -120,6 +120,8 @@ bootV4();document.addEventListener('DOMContentLoaded',bootV4);setTimeout(bootV4,
  function depth(){
   return Math.max(1,Math.min(7,Number(window.abyssFloor||1)||1));
  }
+ function syncDepthColor(){ window.depthColor=color(depth()); }
+ syncDepthColor();
  function chooseContract(){
   const pool=CONTRACTS.slice().sort(()=>Math.random()-.5);
   return pool.slice(0,3);
@@ -185,6 +187,9 @@ bootV4();document.addEventListener('DOMContentLoaded',bootV4);setTimeout(bootV4,
   const s=read();
   if(!s||!s.contract||s.completed)return;
   const c=s.contract;
+  if(c.id==='survivor'){
+   try{const e=JSON.parse(localStorage.getItem('chronicles_abyss_expedition_v2')||'null');s.progress=Math.min(c.goal,Number(e&&e.done||0));if(s.progress>=c.goal){s.completed=true;write(s);reward(c.reward);setTimeout(panel,0);return}}catch(e){}
+  }
   let add=0;
   if(c.id==='scout'&&type==='inspect')add=1;
   if(c.id==='hunter'&&type==='battle')add=1;
@@ -227,6 +232,7 @@ bootV4();document.addEventListener('DOMContentLoaded',bootV4);setTimeout(bootV4,
  let lastDepth=depth();
  setInterval(function(){
   const d=depth();
+  syncDepthColor();
   if(d!==lastDepth){lastDepth=d;resetForNewDepth();}
   const host=document.getElementById('abyss');
   if(host&&!host.classList.contains('hidden'))panel();
