@@ -2402,3 +2402,56 @@ window.abyssKeyCaches = abyssKeyCaches;
  const oldContinue=continueGame;window.continueGame=function(){const r=oldContinue.apply(this,arguments);setTimeout(()=>{loadE();if(E.active||E.pending)renderE()},100);return r};loadE();if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>{loadE();if(location.hash==='#abyss')setTimeout(renderE,50)});else if(location.hash==='#abyss')setTimeout(renderE,50);
 })();
 </script>
+
+
+<!-- ANTI-AUTOPRESS-V1: защита от двойных, серийных и слишком быстрых нажатий. -->
+<script id="ANTI-AUTOPRESS-V1">
+(function(){
+  if(window.__COA_ANTI_AUTOPRESS_V1__)return;
+  window.__COA_ANTI_AUTOPRESS_V1__=true;
+  var lastByButton=new WeakMap(), burstStart=0, burstCount=0, blockedUntil=0;
+  var SINGLE_GAP=420, GLOBAL_GAP=110, BURST_WINDOW=1800, BURST_LIMIT=7, BURST_BLOCK=1800, lastAny=0;
+
+  document.addEventListener('click',function(e){
+    var b=e.target&&e.target.closest?e.target.closest('button'):null;
+    if(!b || b.disabled || b.getAttribute('data-no-antipress')==='true')return;
+    var now=Date.now(), last=lastByButton.get(b)||0;
+
+    if(now<blockedUntil || now-last<SINGLE_GAP || now-lastAny<GLOBAL_GAP){
+      e.preventDefault();
+      e.stopImmediatePropagation();
+      return;
+    }
+
+    if(!burstStart || now-burstStart>BURST_WINDOW){
+      burstStart=now;
+      burstCount=0;
+    }
+    burstCount++;
+    if(burstCount>BURST_LIMIT){
+      blockedUntil=now+BURST_BLOCK;
+      burstStart=now;
+      burstCount=0;
+      e.preventDefault();
+      e.stopImmediatePropagation();
+      return;
+    }
+
+    lastByButton.set(b,now);
+    lastAny=now;
+  },true);
+
+  document.addEventListener('keydown',function(e){
+    if(e.key!=='Enter' && e.key!==' ')return;
+    var b=e.target&&e.target.closest?e.target.closest('button'):null;
+    if(!b || b.disabled || b.getAttribute('data-no-antipress')==='true')return;
+    var now=Date.now(), last=lastByButton.get(b)||0;
+    if(now<blockedUntil || now-last<SINGLE_GAP){
+      e.preventDefault();
+      e.stopImmediatePropagation();
+      return;
+    }
+    lastByButton.set(b,now);
+  },true);
+})();
+</script>
