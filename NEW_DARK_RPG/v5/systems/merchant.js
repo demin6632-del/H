@@ -18,7 +18,7 @@ export function merchantPrice(item, reputation = 0, modifier = 1) {
 export function buy(state, itemId, quantity = 1, modifier = 1) {
   const def = SHOP_ITEMS[itemId];
   if (!def || quantity < 1) return {ok:false,reason:"invalid_item"};
-  const price = merchantPrice(def, state.economy.merchantReputation || 0, modifier);
+  const price = merchantPrice(def, state.economy.reputation || 0, modifier);
   const total = price * Math.floor(quantity);
   if ((state.economy.gold || 0) < total) return {ok:false,reason:"not_enough_gold"};
   const item = createItem({...def, quantity});
@@ -30,7 +30,7 @@ export function buy(state, itemId, quantity = 1, modifier = 1) {
 
 export function sellPrice(item, state) {
   const base = SHOP_ITEMS[item.id]?.basePrice || 10;
-  const reputation = state.economy.merchantReputation || 0;
+  const reputation = state.economy.reputation || 0;
   return Math.max(1, Math.round(base * 0.5 * (1 + Math.max(-0.2,Math.min(0.2,reputation*0.01)))));
 }
 
