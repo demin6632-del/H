@@ -1,5 +1,6 @@
 // Chronicles of the Abyss V5 — equipment stats, affixes and forge
 import { RARITIES, createItem } from "./items.js";
+import { addGold, spendGold } from "./economy.js";
 
 export const SLOTS = Object.freeze(["weapon","armor","helmet","gloves","boots","amulet","ring"]);
 
@@ -73,8 +74,7 @@ export function upgradeEquipment(state, instanceId, cost) {
   const item = state.inventory.find(x => x.instanceId === instanceId);
   if (!item || !item.affixes) throw new Error("Equipment not found");
   if (item.upgrade >= 10) throw new Error("Maximum upgrade reached");
-  if ((state.economy.gold || 0) < cost) throw new Error("Not enough gold");
-  state.economy.gold -= cost;
+  if (!spendGold(state,cost)) throw new Error("Not enough gold");
   item.upgrade += 1;
   for (const stat of Object.keys(item.stats)) {
     if (stat === "maxHp" || stat === "power" || stat === "defense" || stat === "speed" || stat === "maxMp" || stat === "resistance") {
