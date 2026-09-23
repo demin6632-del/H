@@ -2533,6 +2533,16 @@ window.abyssKeyCaches = abyssKeyCaches;
  }
  const oldDie=window.die;
  window.die=function(){E.active=false;E.pending=null;save();return oldDie.apply(this,arguments)};
+ const originalTurn=window.turn;
+ window.turn=function(){
+   const wasEnemy=!!enemy;
+   const beforeHp=enemy&&enemy.hp;
+   const out=originalTurn.apply(this,arguments);
+   try{
+     if(wasEnemy&&beforeHp>0&&(!enemy||enemy.hp<=0))setTimeout(()=>nextAfterBattle(true),50);
+   }catch(e){}
+   return out;
+ };
  window.showAbyss=show;window.startAbyssExpedition=show;window.abyssExpeditionBattleFinished=nextAfterBattle;
  load();
 })();
