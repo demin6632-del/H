@@ -6,7 +6,7 @@ export const ROOM_TYPES = Object.freeze({
 });
 
 export function createRoom(depth, room, random = Math.random) {
-  if (room === 5) return { type:depth === 7 ? ROOM_TYPES.boss : ROOM_TYPES.elite, title:depth === 7 ? "Владыка глубины" : "Элитное логово", enemy:depth === 7 ? createBoss(depth) : createEnemy(depth, random, true) };
+  if (room === 5) return { type:depth === 7 ? ROOM_TYPES.boss : ROOM_TYPES.elite, title:depth === 7 ? "Владыка глубины" : "Элитное логово", enemy:depth === 7 ? createBoss(depth) : createEnemy(depth, random, true), actions:["fight"] };
   const roll = random();
   if (roll < 0.18) return { type:ROOM_TYPES.trap, title:"Опасный механизм", actions:["inspect","disarm","rush"] };
   if (roll < 0.36) return { type:ROOM_TYPES.treasure, title:"Запечатанный тайник", actions:["inspect","open","leave"] };
