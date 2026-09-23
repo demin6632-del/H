@@ -2470,7 +2470,15 @@ window.abyssKeyCaches = abyssKeyCaches;
    else{E.active=false;save()}
  }
  const oldDie=window.die;
- window.die=function(){E.active=false;E.pending=null;save();return oldDie.apply(this,arguments)};
+ window.die=function(){
+   E.active=false;E.pending=null;E.done=0;E.morale=100;E.risk=0;E.awareness=50;E.tempo=50;
+   abyssFloor=E.depth;abyssRoom=0;abyssRoomContent='Новая комната ещё не исследована.';
+   save();
+   const result=oldDie.apply(this,arguments);
+   save();
+   render();
+   return result;
+ };
  window.showAbyss=show;window.startAbyssExpedition=show;window.abyssExpeditionBattleFinished=nextAfterBattle;
  load();
 })();
