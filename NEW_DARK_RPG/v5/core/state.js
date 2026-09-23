@@ -1,3 +1,5 @@
+import { clone } from "./clone.js";
+
 // Chronicles of the Abyss V5 — canonical state foundation
 // This module is intentionally isolated from the current release until Phase A integration passes.
 
