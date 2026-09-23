@@ -9,6 +9,7 @@ import { rollLoot } from "./loot.js";
 import { saveRun, loadRun } from "./run-persistence.js";
 import { newGame, finishDeath } from "./run-lifecycle.js";
 import { createReturnRewards } from "../systems/city-loop.js";
+import { checkAchievements } from "../systems/endgame.js";
 
 export function createGame() {
   return { state:createInitialState(), combat:null };
@@ -18,6 +19,7 @@ export function startRun(game) {
   beginRun(game.state);
   beginRoom(game.state);
   saveRun(game);
+  checkAchievements(game.state);
   return game;
 }
 
