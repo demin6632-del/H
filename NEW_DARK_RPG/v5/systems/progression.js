@@ -36,6 +36,7 @@ export function applyXp(state, amount) {
 export function selectClass(state, classId) {
   if (!CLASSES[classId]) throw new Error("Unknown class");
   state.character.classId = classId;
-  state.character.stats = { ...CLASSES[classId].base };
+  state.character.baseStats = { ...CLASSES[classId].base, maxHp: CLASSES[classId].base.hp, maxMp: 30 };
+  state.character.stats = { ...state.character.baseStats };
   return state;
 }
