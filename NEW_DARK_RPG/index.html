@@ -2500,11 +2500,11 @@ window.abyssKeyCaches = abyssKeyCaches;
  }
  function complete(text){
    E.done=Math.min(SEGMENTS,E.done+1);
-   try{document.dispatchEvent(new CustomEvent('abyss-segment-complete',{detail:{depth:E.depth,done:E.done}}))}catch(e){}
    log(text);
-   if(E.done>=SEGMENTS){E.active=false;E.pending=null;save();render();showNextDepth();return}
+   if(E.done>=SEGMENTS){E.active=false;E.pending=null;save();try{document.dispatchEvent(new CustomEvent('abyss-segment-complete',{detail:{depth:E.depth,done:E.done}}))}catch(e){}render();showNextDepth();return}
    E.pending=null;
    save();
+   try{document.dispatchEvent(new CustomEvent('abyss-segment-complete',{detail:{depth:E.depth,done:E.done}}))}catch(e){}
    render();
  }
  function showNextDepth(){
