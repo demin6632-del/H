@@ -482,10 +482,10 @@ function defend(){if(!enemy||!beginBattleAction())return;guard=true;el('battleLo
 function skill(){if(!enemy||hero.hp<=0)return;const sk=skillStats[hero.class]||{cost:10,damage:25};if(hero.energy<sk.cost){el('battleLog').innerHTML='<span class="red">Недостаточно энергии.</span>';return}if(!beginBattleAction())return;sfx('skill');hero.energy-=sk.cost;let skillLevel=Math.max(1,Math.min(5,Number(hero.skillLevel||1)));let dmg=Number(sk.damage||25)+(skillLevel-1)*4;if(hero.class==='Разбойник'&&Math.random()<.35)dmg*=2;if(hero.class==='Охотник')dmg+=Math.floor(hero.attack*.25);dmg=playerDamage(dmg);enemy.hp-=dmg;el('battleLog').innerHTML=((classStats[hero.class]||{}).skill||'Навык')+' нанёс <span class="red">'+dmg+'</span> урона.';logEvent('БОЙ',((classStats[hero.class]||{}).skill||'Навык')+': '+dmg+' урона.');turn()}
 function turn(){if(!enemy)return;if(enemy.hp<=0){const defeatedEnemy=enemy;enemy=null;sfx('victory');const xp=defeatedEnemy.xp||50,gold=defeatedEnemy.gold||0;hero.xp+=xp;hero.gold+=gold;levelUp();const loot=generateLoot();const lootAdded=addItemToInventory(loot);const expeditionHandled=typeof window.abyssExpeditionBattleFinished==='function'&&window.abyssExpeditionBattleFinished(true);if(!expeditionHandled)completeAbyssRoom(abyssRoomContent+' · Побеждён');if(defeatedEnemy.isBoss)abyssBossDefeated=true;logEvent(defeatedEnemy.isBoss?'БОСС':defeatedEnemy.isElite?'ЭЛИТА':'НАГРАДА','Победа. +'+xp+' XP, +'+gold+' золота.'+(lootAdded?' Предмет: '+loot.name+'.':' Инвентарь заполнен — предмет не получен.'));save();update();if(abyssRoom>=ROOMS_PER_FLOOR){el('battleLog').innerHTML='<span class="gold">🏆 Победа!</span> '+(defeatedEnemy.isBoss?'Владыка Бездны повержен.':('Комната '+ROOMS_PER_FLOOR+'/'+ROOMS_PER_FLOOR+' пройдена.'));}else{el('battleLog').innerHTML='<span class="green">🏆 Победа!</span> Комната '+abyssRoom+'/'+ROOMS_PER_FLOOR+' пройдена.';}screenHistory=['menu','main','abyss'];history.replaceState({screen:'abyss'},'','#abyss');setScreen('abyss',false);updateAbyss();return}enemyTurn()}
 function generateLoot(){const loot=[{name:'Зелье здоровья',type:'consumable',effect:'hp',icon:'🧪'},{name:'Зелье маны',type:'consumable',effect:'mp',icon:'🔵'},{name:'Железный меч',type:'weapon',icon:'🗡️',attack:2},{name:'Кожаная броня',type:'armor',icon:'🛡️',def:2}];return JSON.parse(JSON.stringify(loot[Math.floor(Math.random()*loot.length)]))}
-function enemyTurn(){if(!enemy||hero.hp<=0)return;if(enemy.isBoss&&enemy.phase===1&&enemy.hp<=enemy.max*.5){enemy.phase=2;enemy.attack+=6;enemy.def+=2;logEvent('БОСС','Владыка Бездны переходит во вторую фазу.');if(el('battleLog'))el('battleLog').innerHTML='<span class="red">⚠️ Владыка Бездны входит в Фазу II!</span>'}sfx('hit');let incoming=Math.max(1,(enemy.attack||10)-Math.floor(hero.def*.35));if(enemy.isBoss&&enemy.phase===2&&Math.random()<.25){incoming=Math.round(incoming*1.5);logEvent('БОСС','Особая атака: Удар Бездны.');}hero.hp-=guard?Math.ceil(incoming*.5):incoming;guard=false;if(hero.hp<=0){hero.hp=0;update();die();return}save();update();updateBattle()}
+function enemyTurn(){if(!enemy||hero.hp<=0)return;if(enemy.isBoss&&enemy.phase===1&&enemy.hp<=enemy.max*.5){enemy.phase=2;enemy.attack+=6;enemy.def+=2;logEvent('БОСС','Владыка Бездны переходит во вторую фазу.');if(el('battleLog'))el('battleLog').innerHTML='<span class="red">⚠️ Владыка Бездны входит в Фазу II!</span>'}sfx('hit');let incoming=Math.max(1,(enemy.attack||10)-Math.floor(hero.def*.35));if(enemy.isBoss&&enemy.phase===2&&Math.random()<.25){incoming=Math.round(incoming*1.5);logEvent('БОСС','Особая атака: Удар Бездны.');}hero.hp-=guard?Math.ceil(incoming*.5):incoming;guard=false;if(hero.hp<=0){hero.hp=0;update();die();return}save();if(typeof window.persistAbyssExpeditionCombatState==='function')window.persistAbyssExpeditionCombatState();update();updateBattle()}
 function die(){sfx('error');logEvent('СМЕРТЬ','Герой пал на глубине '+abyssFloor+', комнате '+Math.min(ROOMS_PER_FLOOR,abyssRoom+1)+'. Глубина сохранена.');abyssRoom=0;abyssRoomContent='Новая комната ещё не исследована.';abyssBossDefeated=false;hero.hp=hero.maxHp;hero.energy=hero.maxEnergy;save();screenHistory=['menu','main','death'];history.replaceState({screen:'death'},'','#death');setScreen('death',false)}
 function returnFromDeath(){screenHistory=['menu','main'];history.replaceState({screen:'main'},'','#main');setScreen('main',false);update();if(el('out'))el('out').innerHTML='<span class="green">Ты вернулся в город. Текущая глубина сохранена. Следующий забег продолжится с этой глубины.</span>'}
-function escapeBattle(){if(!enemy)return;enemy=null;guard=false;logEvent('БОЙ','Герой отступил. Бой прерван.');save();screenHistory=['menu','main','abyss'];history.replaceState({screen:'abyss'},'','#abyss');setScreen('abyss',false);updateAbyss()}
+function escapeBattle(){if(!enemy)return;enemy=null;guard=false;if(typeof window.clearAbyssExpeditionCombatState==='function')window.clearAbyssExpeditionCombatState();logEvent('БОЙ','Герой отступил. Бой прерван.');save();screenHistory=['menu','main','abyss'];history.replaceState({screen:'abyss'},'','#abyss');setScreen('abyss',false);updateAbyss()}
 function inventoryType(name){const n=String(name).toLowerCase();if(n.includes('брон')||n.includes('щит'))return'armor';if(n.includes('зель')||n.includes('эликс')||n.includes('мана')||n.includes('здоров'))return'consumable';if(n.includes('ключ'))return'other';return'weapon'}
 function itemInfo(raw){if(raw&&typeof raw==='object'&&raw.type)return raw;const name=String(raw&&typeof raw==='object'&&raw.name!==undefined?raw.name:raw);if(name==='Случайный предмет')return{name,type:'random',icon:'🎁'};if(name==='Зелье здоровья')return{name,type:'consumable',effect:'hp',icon:'🧪'};if(name==='Зелье маны')return{name,type:'consumable',effect:'mp',icon:'🔵'};if(name==='Железный меч')return{name,type:'weapon',icon:'🗡️',attack:2};if(name==='Кожаная броня')return{name,type:'armor',icon:'🛡️',def:2};if(name==='Стальной шлем')return{name,type:'armor',slot:'head',icon:'🪖',def:2};if(name==='Серебряное кольцо')return{name,type:'armor',slot:'ring',icon:'💍',crit:.03};if(name==='Плащ странника')return{name,type:'armor',slot:'cloak',icon:'🧥',def:1};if(name==='Сапоги пустоши')return{name,type:'armor',slot:'boots',icon:'👢',def:1};if(name==='Амулет Бездны')return{name,type:'armor',slot:'amulet',icon:'🔮',maxEnergy:8};if(name==='Щит пепла')return{name,type:'armor',slot:'shield',icon:'🛡️',def:3};return{name,type:inventoryType(name),icon:inventoryType(name)==='armor'?'🛡️':inventoryType(name)==='consumable'?'🧪':inventoryType(name)==='other'?'🔑':'🗝️'}}
 let inventoryCategory='all';
@@ -2444,10 +2444,32 @@ window.abyssKeyCaches = abyssKeyCaches;
    if(E.depth>=MAX){E.done=SEGMENTS;E.active=false;E.pending=null;abyssFloor=E.depth;abyssRoom=SEGMENTS;abyssRoomContent='';save();log('🏆 Достигнута максимальная глубина. Экспедиция завершена.');render();return}
    E.depth++;E.done=0;E.morale=clamp(E.morale+5,0,100);E.risk=clamp(E.risk-10,0,100);E.awareness=clamp(E.awareness+3,0,100);E.tempo=50;E.pending=null;E.active=true;abyssFloor=E.depth;abyssRoom=0;abyssRoomContent='';save();log('⬇️ Игрок выбрал переход на глубину '+E.depth+'.');render();
  }
+ function persistCombatState(){
+   if(!E.pending||!E.pending.combat)return;
+   E.pending.combatState=enemy?JSON.parse(JSON.stringify(enemy)):null;
+   E.pending.guard=!!guard;
+   save();
+ }
+ function restoreCombatState(){
+   load();
+   if(!E.pending||!E.pending.combat||!E.pending.combatState)return false;
+   enemy=JSON.parse(JSON.stringify(E.pending.combatState));
+   guard=!!E.pending.guard;
+   setScreen('battle');
+   updateBattle();
+   return true;
+ }
+ function clearCombatState(){
+   if(!E.pending)return;
+   E.pending.combat=false;
+   delete E.pending.combatState;
+   delete E.pending.guard;
+   save();
+ }
  function combat(){
    const d=E.depth,hp=Math.round((42+d*9)*(E.done===4?1.35:1)),names=['Теневой зверь','Заражённый охотник','Пожиратель костей','Мутант Бездны'];
    enemy={name:names[Math.floor(Math.random()*names.length)],hp,max:hp,attack:8+d*2,def:Math.floor(d/2),xp:45+d*8,gold:15+d*6,isElite:E.done===4,isBoss:false,phase:1,icon:'👹'};
-   E.pending.combat=true;save();log('⚔️ Игрок решил вступить в бой.');setScreen('battle');updateBattle();
+   E.pending.combat=true;persistCombatState();log('⚔️ Игрок решил вступить в бой.');setScreen('battle');updateBattle();
  }
  let expeditionActionLock=false;
  function act(a){
@@ -2473,7 +2495,10 @@ window.abyssKeyCaches = abyssKeyCaches;
    if(a==='search'){E.awareness=clamp(E.awareness+12,0,100);const g=10+E.depth*3;addReward(g);complete('🔎 Руины изучены: найдено '+g+' золота.');return}
  }
  function show(){
-   load();E.depth=clamp(E.depth,1,MAX);setScreen('abyss');
+   load();E.depth=clamp(E.depth,1,MAX);
+   /* Незавершённый бой восстанавливается из сохранённого состояния экспедиции. */
+   if(E.pending&&E.pending.combat&&E.pending.combatState){restoreCombatState();return}
+   setScreen('abyss');
    /* Завершённая глубина не должна снова запускать исследование на 5/5. */
    if(E.done>=SEGMENTS){E.active=false;E.pending=null;abyssFloor=E.depth;abyssRoom=SEGMENTS;save();render();showNextDepth();return}
    E.active=true;abyssFloor=E.depth;abyssRoom=E.done;save();render();
@@ -2503,7 +2528,7 @@ window.abyssKeyCaches = abyssKeyCaches;
    render();
    return result;
  };
- window.showAbyss=show;window.startAbyssExpedition=show;window.abyssExpeditionBattleFinished=nextAfterBattle;window.selectAbyssExpeditionDepth=selectDepthFromLegacy;
+ window.showAbyss=show;window.startAbyssExpedition=show;window.abyssExpeditionBattleFinished=nextAfterBattle;window.selectAbyssExpeditionDepth=selectDepthFromLegacy;window.persistAbyssExpeditionCombatState=persistCombatState;window.clearAbyssExpeditionCombatState=clearCombatState;
  load();
 })();
 </script>
