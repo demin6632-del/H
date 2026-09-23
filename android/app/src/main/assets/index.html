@@ -2532,7 +2532,7 @@ window.abyssKeyCaches = abyssKeyCaches;
    if(a==='search'){E.awareness=clamp(E.awareness+12,0,100);const g=10+E.depth*3;addReward(g);complete('🔎 Руины изучены: найдено '+g+' золота.');return}
  }
  function show(){
-   load();E.active=true;E.depth=clamp(abyssFloor||E.depth,1,MAX);abyssFloor=E.depth;save();setScreen('abyss');render();
+   load();E.active=true;abyssFloor=E.depth;abyssRoom=E.done;save();setScreen('abyss');render();
  }
  function nextAfterBattle(won){
    if(!E.pending)return;
@@ -2540,7 +2540,15 @@ window.abyssKeyCaches = abyssKeyCaches;
    else{E.active=false;save()}
  }
  const oldDie=window.die;
- window.die=function(){E.active=false;E.pending=null;save();return oldDie.apply(this,arguments)};
+ window.die=function(){
+   const deathDepth=E.depth;
+   const deathRoom=Math.min(SEGMENTS,Math.max(0,E.done));
+   E.active=false;E.pending=null;E.done=0;E.morale=100;E.risk=0;E.awareness=50;E.tempo=50;
+   abyssFloor=deathDepth;abyssRoom=deathRoom;save();
+   const result=oldDie.apply(this,arguments);
+   abyssFloor=deathDepth;abyssRoom=0;abyssRoomContent='Новая комната ещё не исследована.';save();render();
+   return result;
+ };
  const originalTurn=window.turn;
  window.turn=function(){
    const wasEnemy=!!enemy;
