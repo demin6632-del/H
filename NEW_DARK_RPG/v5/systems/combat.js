@@ -8,8 +8,8 @@ export const COMBAT_PHASES = Object.freeze({ idle:"idle", player:"player", enemy
 function actorFromStats(source, fallback) {
   const s = source?.stats || {};
   return {
-    hp: clampInteger(s.hp, 1, 999999, fallback.hp),
-    maxHp: clampInteger(s.hp, 1, 999999, fallback.hp),
+    hp: clampInteger(s.hp ?? s.maxHp, 1, 999999, fallback.hp),
+    maxHp: clampInteger(s.maxHp ?? s.hp, 1, 999999, fallback.hp),
     power: clampInteger(s.power, 1, 99999, fallback.power),
     defense: clampInteger(s.defense, 0, 99999, fallback.defense),
     speed: clampInteger(s.speed, 1, 99999, fallback.speed)
@@ -19,7 +19,10 @@ function actorFromStats(source, fallback) {
 export function createCombatState(character, enemy) {
   const player = actorFromStats(character, { hp:100, power:10, defense:5, speed:10 });
   const foe = actorFromStats({stats: enemy}, { hp:50, power:8, defense:2, speed:8 });
-  return { phase:COMBAT_PHASES.player, turn:1, player, enemy:foe, enemyId:enemy.id || "unknown", log:[] };
+  player.mp = player.maxMp = clampInteger(character?.stats?.maxMp, 0, 99999, 30);
+  player.statuses = {};
+  foe.statuses = {};
+  return { phase:COMBAT_PHASES.player, turn:1, player, enemy:foe, enemyId:enemy.id || "unknown", skills:skillsForClass(character?.classId), log:[] };
 }
 
 export function attack(combat, source = "player") {
