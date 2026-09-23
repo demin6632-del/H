@@ -2349,68 +2349,125 @@ window.abyssKeyCaches = abyssKeyCaches;
 .abyss-state{display:grid;grid-template-columns:1fr 1fr 1fr;gap:5px}.abyss-state .info-card{text-align:center;padding:7px 4px;font:11px monospace}.abyss-state b{display:block;color:#eee;font-size:13px;margin-top:2px}
 .abyss-event{border:1px solid #6a1717;background:linear-gradient(#120707,#060606);padding:11px;margin-top:7px;line-height:1.5}.abyss-event .event-type{text-align:center;color:#d9a52b;font:11px monospace;letter-spacing:1px;margin-bottom:5px}.abyss-feed{max-height:190px;overflow:auto}.abyss-feed div{padding:5px 0;border-bottom:1px solid #241010;font:11px monospace}.abyss-feed div:last-child{border-bottom:0}
 </style>
-<script id="ABYSS-EXPEDITION-FINAL-V1">
+<script id="ABYSS-EXPEDITION-FINAL-V2">
 (function(){
- if(window.__ABYSS_EXPEDITION_FINAL_V1__)return; window.__ABYSS_EXPEDITION_FINAL_V1__=true;
- const KEY='chronicles_abyss_expedition_v1'; const SEGMENTS=5;
- let E={active:false,depth:1,done:0,morale:100,risk:0,clues:0,hidden:false,pending:null,feed:[]};
- const escE=s=>String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
- function loadE(){try{const x=JSON.parse(localStorage.getItem(KEY)||'null');if(x&&typeof x==='object')E=Object.assign(E,x);E.depth=Math.max(1,Number(E.depth||abyssFloor||1));E.done=Math.max(0,Math.min(SEGMENTS,Number(E.done||0)));E.feed=Array.isArray(E.feed)?E.feed:[]}catch(e){}}
- function saveE(){try{localStorage.setItem(KEY,JSON.stringify(E))}catch(e){}}
- function addFeed(t){E.feed.unshift(t);E.feed=E.feed.slice(0,18);saveE();renderE()}
+ if(window.__ABYSS_EXPEDITION_FINAL_V2__)return;
+ window.__ABYSS_EXPEDITION_FINAL_V2__=true;
+ const KEY='chronicles_abyss_expedition_v2',SEGMENTS=5,MAX=7;
+ const base={active:false,depth:1,done:0,morale:100,risk:0,awareness:50,tempo:50,pending:null,feed:[]};
+ let E=Object.assign({},base);
+ const esc=s=>String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+ function clamp(n,a,b){return Math.max(a,Math.min(b,Number(n)||0))}
+ function load(){try{const x=JSON.parse(localStorage.getItem(KEY)||'null');if(x&&typeof x==='object')E=Object.assign({},base,x)}catch(e){}E.depth=clamp(E.depth||abyssFloor||1,1,MAX);E.done=clamp(E.done,0,SEGMENTS);E.morale=clamp(E.morale,0,100);E.risk=clamp(E.risk,0,100);E.awareness=clamp(E.awareness,0,100);E.tempo=clamp(E.tempo,0,100);E.feed=Array.isArray(E.feed)?E.feed.slice(0,40):[]}
+ function save(){try{localStorage.setItem(KEY,JSON.stringify(E))}catch(e){}}
+ function log(t){E.feed.unshift(t);E.feed=E.feed.slice(0,40);save();if(typeof logEvent==='function')logEvent('ЭКСПЕДИЦИЯ',t)}
  function host(){return el('abyss')}
- function renderE(){const h=host();if(!h)return;h.classList.add('expedition-mode');
-   const d=Math.max(1,Number(abyssFloor||E.depth||1));E.depth=d;
-   const pct=Math.min(100,E.done/SEGMENTS*100);
-   const cond=E.morale>=70?'Стабильное':E.morale>=40?'Напряжённое':'Критическое';
-   const risk=E.risk<25?'Низкий':E.risk<60?'Средний':'Высокий';
-   const scene=h.querySelector('.scene.abyss'); if(scene){scene.style.backgroundImage='linear-gradient(rgba(8,0,4,.20),rgba(0,0,0,.52)),url("assets/generated/'+(['abyss_core','blood_rift','bone_catacomb','shadow_forest','void_bridge','red_chasm','obsidian_hall'][Math.min(6,d-1)])+'.png")';scene.style.backgroundSize='cover';scene.style.backgroundPosition='center'}
-   const floor=el('abyssFloor'); if(floor)floor.textContent='Глубина '+d;
-   const oldInfo=el('abyssRoomInfo');if(oldInfo)oldInfo.style.display='none';
-   const oldSel=el('depthSelectPanel');if(oldSel)oldSel.style.display='none';
-   const oldBtn=el('exploreBtn');if(oldBtn)oldBtn.style.display='none';
-   const keyBtn=el('abyssKeyBtn');if(keyBtn)keyBtn.style.display='none';
-   let box=el('abyssExpeditionUI');if(!box){box=document.createElement('div');box.id='abyssExpeditionUI';const p=h.querySelector('.panel');if(p)p.appendChild(box)}
-   const nextText=E.pending?'Ожидается решение игрока':E.done>=SEGMENTS?'Этаж полностью исследован':'Экспедиция исследует этаж автоматически…';
-   box.innerHTML='<div class="abyss-expedition-head"><div><b>🌑 ЭКСПЕДИЦИЯ</b><div class="muted" style="font:11px monospace;margin-top:3px">'+escE(nextText)+'</div></div><b style="color:#d9a52b">'+d+'</b></div><div class="abyss-expedition-progress"><i style="width:'+pct+'%"></i></div><div class="info-row"><span>Исследовано</span><b>'+E.done+'/'+SEGMENTS+' участка</b></div><div class="abyss-state"><div class="info-card">❤️ Состояние<b>'+cond+'</b></div><div class="info-card">⚠️ Риск<b>'+risk+'</b></div><div class="info-card">👣 Подсказки<b>'+E.clues+'</b></div></div><div class="abyss-event"><div class="event-type">'+(E.pending?'ВАЖНОЕ СОБЫТИЕ':'ТЕКУЩАЯ ЭКСПЕДИЦИЯ')+'</div><div id="abyssExpeditionStatus" style="text-align:center;color:#bbb">'+(E.pending?escE(E.pending.title):'Персонаж самостоятельно исследует глубину. Игрок вмешивается только при важных событиях.')+'</div></div><div class="panel" style="margin:7px 0 0;padding:7px"><div style="text-align:center;color:#b22;font:11px monospace;letter-spacing:1px;margin-bottom:4px">📖 ЖУРНАЛ ЭКСПЕДИЦИИ</div><div class="abyss-feed">'+(E.feed.length?E.feed.map(x=>'<div>'+escE(x)+'</div>').join(''):'<span class="muted">Исследование ещё не началось.</span>')+'</div></div>';
- }
- function ensureModal(){let m=el('abyssExpeditionChoice');if(!m){m=document.createElement('div');m.id='abyssExpeditionChoice';m.className='modal hidden';document.body.appendChild(m)}return m}
- function choice(title,text,options){const m=ensureModal();m.innerHTML='<div class="modal-box" style="max-width:390px"><h2>'+escE(title)+'</h2><p style="text-align:center;color:#aaa;line-height:1.55">'+escE(text)+'</p>'+options.map((o,i)=>'<button data-i="'+i+'">'+escE(o.label)+'</button>').join('')+'</div>';m.classList.remove('hidden');m.querySelectorAll('button').forEach(b=>b.onclick=()=>{m.classList.add('hidden');resolve(Number(b.dataset.i))})}
- function finishSegment(text){E.done=Math.min(SEGMENTS,E.done+1);E.pending=null;E.morale=Math.max(0,Math.min(100,E.morale));saveE();addFeed(text);if(E.done>=SEGMENTS)finishFloor();else{renderE();setTimeout(step,900)}}
- function finishFloor(){E.active=false;saveE();addFeed('🏁 Этаж полностью исследован. Экспедиция достигла конца глубины '+E.depth+'.');if(el('abyssExpeditionStatus'))el('abyssExpeditionStatus').innerHTML='<span class="gold">🏁 ЭТАЖ ПОЛНОСТЬЮ ИССЛЕДОВАН</span>';
-   setTimeout(()=>{abyssFloor=Math.max(1,Number(E.depth)+1);abyssRoom=0;abyssRoomContent='';abyssBossDefeated=false;E={active:true,depth:abyssFloor,done:0,morale:100,risk:0,clues:0,hidden:false,pending:null,feed:[]};saveE();save();logEvent('ЭТАЖ','Экспедиция перешла на глубину '+abyssFloor+'.');renderE();setTimeout(step,900)},2200);
- }
- function rareEvent(){const q=Math.random()+(E.clues*.015);if(q<.035){E.hidden=true;return true}return false}
- function resolve(i){const p=E.pending;if(!p)return;
-   if(p.kind==='creature'){return}
-   if(p.kind==='trap'){if(i===0){const dmg=8+Math.floor(Math.random()*12);hero.hp=Math.max(1,hero.hp-dmg);E.morale-=12;E.risk=Math.min(100,E.risk+12);finishSegment('⚠️ Ловушка сработала. Экспедиция потеряла '+dmg+' HP.')}else{E.risk=Math.min(100,E.risk+5);finishSegment('🕯️ Ловушка замечена по следам. Экспедиция обошла опасное место.')}}
-   else if(p.kind==='treasure'){if(i===0){const g=35+E.depth*6;hero.gold+=g;E.risk=Math.min(100,E.risk+18);finishSegment('📦 Найден тайник. Получено '+g+' золота, но следы указывают на приближение опасности.')}else{E.morale+=4;finishSegment('📦 Тайник оставлен. Экспедиция продолжила путь без риска.')}}
-   else if(p.kind==='crossroads'){if(i===0){E.clues++;E.morale+=5;finishSegment('🛤️ Выбран путь по старым следам. Найдена полезная подсказка.')}else{E.risk=Math.min(100,E.risk+10);finishSegment('🛤️ Выбран короткий путь. Он быстрее, но опаснее.')}}
-   else if(p.kind==='dialogue'){if(i===0){E.morale+=8;E.clues++;finishSegment('💬 Диалог завершён. Получена подсказка о глубине.')}else{E.risk=Math.min(100,E.risk+4);finishSegment('💬 Незнакомец исчез. Экспедиция продолжила путь.')}}
-   else if(p.kind==='find'){const g=20+E.depth*4;hero.gold+=g;finishSegment('📦 Находка обнаружена: '+g+' золота. Следы уводят дальше в глубину.')}
-   save();
- }
+ function condition(){return E.morale>=70?'Стабильное':E.morale>=40?'Напряжённое':'Критическое'}
+ function risk(){return E.risk<25?'Низкий':E.risk<60?'Средний':'Высокий'}
  function makeEvent(){
-   if(rareEvent())return {kind:'dialogue',title:'⭐ РЕДКОЕ СОБЫТИЕ',text:'В тумане появляется молчаливый проводник. Он знает путь, которого нет на картах.',opts:[{label:'Выслушать проводника'},{label:'Не вмешиваться'}]};
-   const r=Math.random();
-   if(r<.18)return {kind:'creature',title:'⚔️ СУЩЕСТВО',text:'Из темноты доносятся шаги. Существо преграждает путь.',opts:[]};
-   if(r<.33)return {kind:'dialogue',title:'💬 ДИАЛОГ',text:'Экспедиция встречает выжившего. Он предлагает информацию о глубине.',opts:[{label:'Поговорить'},{label:'Пройти мимо'}]};
-   if(r<.48)return {kind:'find',title:'📦 НАХОДКА',text:'Следы ведут к спрятанному тайнику.',opts:[{label:'Забрать находку'}]};
-   if(r<.63)return {kind:'trap',title:'⚠️ ЛОВУШКА',text:'Следы и царапины указывают на скрытую опасность.',opts:[{label:'Пройти осторожно'},{label:'Обойти ловушку'}]};
-   if(r<.78)return {kind:'treasure',title:'📦 ТАЙНИК',text:'Экспедиция обнаружила запечатанный тайник. Внутри может быть добыча.',opts:[{label:'Открыть'},{label:'Оставить'}]};
-   if(r<.91)return {kind:'crossroads',title:'🛤️ РАЗВИЛКА',text:'Исследовательский след разделяется на два направления.',opts:[{label:'Идти по старым следам'},{label:'Выбрать короткий путь'}]};
-   return null;
+   const d=E.depth,r=Math.random();
+   if(E.risk>=70&&r<.28)return{kind:'ambush',title:'⚔️ ЗАСАДА',text:'Из темноты внезапно атакует существо.'};
+   if(E.awareness>=70&&r<.30)return{kind:'find',title:'🔎 СКРЫТАЯ НАХОДКА',text:'Внимательность позволила заметить тайник до того, как пройти мимо.'};
+   if(r<.20)return{kind:'creature',title:'⚔️ СУЩЕСТВО',text:'Путь преграждает неизвестное существо.'};
+   if(r<.36)return{kind:'trap',title:'⚠️ ЛОВУШКА',text:'Следы на земле указывают на скрытую ловушку.'};
+   if(r<.52)return{kind:'treasure',title:'📦 ТАЙНИК',text:'Обнаружен старый запечатанный тайник.'};
+   if(r<.68)return{kind:'crossroads',title:'🛤️ РАЗВИЛКА',text:'След разделяется на безопасный обходной путь и короткий опасный путь.'};
+   if(r<.82)return{kind:'dialogue',title:'💬 ВСТРЕЧА',text:'В темноте появляется незнакомец, знающий часть пути.'};
+   return{kind:'ruins',title:'🏚️ РАЗВАЛИНЫ',text:'Исследователь обнаруживает старые руины. Можно изучить их или двигаться дальше.'};
  }
- function ambient(){const a=['🌫️ Воздух становится тяжелее. Где-то далеко капает вода.','👣 Обнаружены свежие следы, но источник неизвестен.','🕯️ На стене ещё тлеет древний огонь.','🌑 Тишина становится почти абсолютной.','🩸 На камне замечены старые следы крови.','🪶 Ветер приносит обрывок чужой карты.'];const t=a[Math.floor(Math.random()*a.length)];if(Math.random()<.45)E.clues++;if(Math.random()<.25)E.risk=Math.min(100,E.risk+4);finishSegment(t)}
- function step(){if(!E.active||E.pending)return;if(E.done>=SEGMENTS){finishFloor();return}renderE();setTimeout(()=>{if(!E.active||E.pending)return;const ev=makeEvent();if(!ev)return ambient();E.pending=ev;saveE();renderE();if(ev.kind==='creature'){const names=['Теневой зверь','Заражённый охотник','Мутант пустоши','Пожиратель костей'];const hp=Math.round((40+E.depth*7)*(E.done===4?1.45:1));enemy={name:names[Math.floor(Math.random()*names.length)],hp,max:hp,attack:8+E.depth*2,def:Math.floor(E.depth/2),xp:50+E.depth*5,gold:20+E.depth*5,isElite:E.done===4,isBoss:false,phase:1,icon:'👹'};logEvent('ЭКСПЕДИЦИЯ','Существо обнаружено во время автоматического исследования.');screenHistory=['menu','main','abyss','battle'];history.replaceState({screen:'battle'},'','#battle');setScreen('battle',false);updateBattle();return}choice(ev.title,ev.text,ev.opts)},700)}
- function startExpedition(){loadE();if(E.depth!==Math.max(1,Number(abyssFloor||1))){E.depth=Math.max(1,Number(abyssFloor||1));E.done=0;E.pending=null}E.active=true;saveE();renderE();if(!E.pending)setTimeout(step,650)}
- function show(){loadGame();loadE();if(!E.depth)E.depth=Math.max(1,Number(abyssFloor||1));gameMusicAllowed=true;setScreen('abyss');renderE();if(!E.active&&!E.pending)startExpedition();else if(E.pending){renderE()}}
- window.showAbyss=show;window.startAbyssExpedition=startExpedition;
- const oldTurn=turn;window.turn=function(){const before=enemy;const r=oldTurn.apply(this,arguments);try{if(E.active&&before&&before.isBoss===false&&before!==enemy&&E.pending&&E.pending.kind==='creature'){const won=!enemy; if(won){finishSegment('⚔️ Существо побеждено. Экспедиция продолжает автоматическое исследование.')} }}catch(e){}return r};
- const oldDie=die;window.die=function(){E.active=false;E.pending=null;saveE();return oldDie.apply(this,arguments)};
- const oldStart=start;window.start=function(c){try{localStorage.removeItem(KEY)}catch(e){}return oldStart.apply(this,arguments)};
- const oldContinue=continueGame;window.continueGame=function(){const r=oldContinue.apply(this,arguments);setTimeout(()=>{loadE();if(E.active||E.pending)renderE()},100);return r};
- loadE();
- if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>{loadE();if(location.hash==='#abyss')setTimeout(renderE,50)});else if(location.hash==='#abyss')setTimeout(renderE,50);
+ function sceneImage(){
+   const h=host(),s=h&&h.querySelector('.scene.abyss');if(!s)return;
+   const imgs=['abyss_core','blood_rift','bone_catacomb','shadow_forest','void_bridge','red_chasm','obsidian_hall'];
+   s.style.backgroundImage='linear-gradient(rgba(8,0,4,.20),rgba(0,0,0,.52)),url("assets/generated/'+imgs[Math.min(6,E.depth-1)]+'.png")';
+   s.style.backgroundSize='cover';s.style.backgroundPosition='center';
+ }
+ function render(){
+   const h=host();if(!h)return;
+   sceneImage();
+   let box=el('abyssExpeditionUI');
+   if(!box){box=document.createElement('div');box.id='abyssExpeditionUI';const p=h.querySelector('.panel');if(p)p.appendChild(box)}
+   const p=E.pending;
+   let actions='';
+   if(p){
+     const common=[
+       ['inspect','🔎 Осмотреть'],
+       ['cautious','🛡️ Осторожно'],
+       ['fast','🏃 Быстро пройти']
+     ];
+     let specific=[];
+     if(p.kind==='creature'||p.kind==='ambush')specific=[['fight','⚔️ Вступить в бой'],['escape','↩️ Отступить']];
+     else if(p.kind==='trap')specific=[['disarm','🛠️ Обезвредить'],['avoid','↩️ Обойти']];
+     else if(p.kind==='treasure'||p.kind==='find')specific=[['take','📦 Забрать'],['leave','🚶 Оставить']];
+     else if(p.kind==='crossroads')specific=[['safeRoute','🛡️ Безопасный путь'],['shortRoute','🏃 Короткий путь']];
+     else if(p.kind==='dialogue')specific=[['talk','💬 Поговорить'],['pass','🚶 Пройти мимо']];
+     else specific=[['search','🔎 Изучить'],['pass','🚶 Пройти дальше']];
+     actions=common.map(x=>'<button class="abyss-action" data-action="'+x[0]+'">'+x[1]+'</button>').join('')+specific.map(x=>'<button class="abyss-action" data-action="'+x[0]+'">'+x[1]+'</button>').join('');
+   }else actions='<button class="abyss-action" data-action="start">🔎 Начать исследование участка</button>';
+   const feed=E.feed.length?E.feed.map(x=>'<div>'+esc(x)+'</div>').join(''):'<div class="muted">Журнал пока пуст.</div>';
+   box.innerHTML='<div class="abyss-expedition-head"><div><b>🌑 УПРАВЛЕНИЕ ЭКСПЕДИЦИЕЙ</b><div class="muted" style="font-size:11px;margin-top:3px">Глубина '+E.depth+' · Участок '+E.done+'/'+SEGMENTS+'</div></div><b style="color:#d9a52b">'+E.depth+'/7</b></div>'+
+   '<div class="abyss-expedition-progress"><i style="width:'+(E.done/SEGMENTS*100)+'%"></i></div>'+
+   '<div class="abyss-state"><div class="info-card">❤️ Мораль<b>'+condition()+'</b></div><div class="info-card">⚠️ Риск<b>'+risk()+'</b></div><div class="info-card">🔎 Внимательность<b>'+Math.round(E.awareness)+'</b></div></div>'+
+   '<div class="abyss-event"><div class="event-type">'+(p?esc(p.title):'ГОТОВ К ИССЛЕДОВАНИЮ')+'</div><div style="text-align:center;color:#bbb;line-height:1.5">'+(p?esc(p.text):'Игрок полностью управляет следующим действием.')+'</div></div>'+
+   '<div style="display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-top:8px">'+actions+'</div>'+
+   '<div class="panel" style="margin:8px 0 0;padding:7px"><div style="text-align:center;color:#d9a52b;font:11px monospace;letter-spacing:1px">📖 ЖУРНАЛ</div><div class="abyss-feed">'+feed+'</div></div>';
+   box.querySelectorAll('.abyss-action').forEach(b=>b.onclick=()=>act(b.dataset.action));
+   if(el('abyssRoomInfo'))el('abyssRoomInfo').style.display='none';
+   if(el('depthSelectPanel'))el('depthSelectPanel').style.display='none';
+   if(el('exploreBtn'))el('exploreBtn').style.display='none';
+ }
+ function addReward(gold){
+   hero.gold=Math.max(0,Number(hero.gold||0)+gold);
+   try{localStorage.setItem('abyss_gold',String(hero.gold))}catch(e){}
+ }
+ function complete(text){
+   E.done=Math.min(SEGMENTS,E.done+1);E.pending=null;save();log(text);
+   if(E.done>=SEGMENTS){E.active=false;render();showNextDepth();return}
+   render();
+ }
+ function showNextDepth(){
+   const box=el('abyssExpeditionUI');if(!box)return;
+   const btn=document.createElement('button');btn.className='abyss-action';btn.textContent='⬇️ Перейти на следующую глубину';btn.style.gridColumn='1 / -1';
+   btn.onclick=()=>nextDepth();box.querySelector('div[style*="grid-template-columns"]')?.appendChild(btn);
+ }
+ function nextDepth(){
+   if(E.depth>=MAX){log('🏆 Достигнута максимальная глубина.');render();return}
+   E.depth++;E.done=0;E.morale=clamp(E.morale+5,0,100);E.risk=clamp(E.risk-10,0,100);E.awareness=clamp(E.awareness+3,0,100);E.tempo=50;E.pending=null;abyssFloor=E.depth;abyssRoom=0;abyssRoomContent='';save();if(typeof save==='function')save();log('⬇️ Игрок выбрал переход на глубину '+E.depth+'.');render();
+ }
+ function combat(){
+   const d=E.depth,hp=Math.round((42+d*9)*(E.done===4?1.35:1)),names=['Теневой зверь','Заражённый охотник','Пожиратель костей','Мутант Бездны'];
+   enemy={name:names[Math.floor(Math.random()*names.length)],hp,max:hp,attack:8+d*2,def:Math.floor(d/2),xp:45+d*8,gold:15+d*6,isElite:E.done===4,isBoss:false,phase:1,icon:'👹'};
+   E.pending.combat=true;save();log('⚔️ Игрок решил вступить в бой.');setScreen('battle');updateBattle();
+ }
+ function act(a){
+   const p=E.pending;
+   if(a==='start'){E.pending=makeEvent();save();render();return}
+   if(!p)return;
+   if(a==='fight'){combat();return}
+   if(a==='escape'){E.risk=clamp(E.risk+8,0,100);E.tempo=clamp(E.tempo+5,0,100);complete('↩️ Игрок отступил от опасности. Риск увеличился.');return}
+   if(a==='inspect'){E.awareness=clamp(E.awareness+10,0,100);E.tempo=clamp(E.tempo-8,0,100);E.risk=clamp(E.risk-4,0,100);if(p.kind==='trap'&&E.awareness>=60)p.kind='safeTrap';log('🔎 Игрок осмотрел участок: внимательность повышена.');render();return}
+   if(a==='cautious'){E.risk=clamp(E.risk-10,0,100);E.tempo=clamp(E.tempo-10,0,100);E.morale=clamp(E.morale+2,0,100);complete('🛡️ Игрок выбрал осторожное исследование. Риск снижен.');return}
+   if(a==='fast'){E.risk=clamp(E.risk+12,0,100);E.tempo=clamp(E.tempo+12,0,100);E.awareness=clamp(E.awareness-7,0,100);complete('🏃 Игрок ускорил продвижение. Риск вырос, внимательность снизилась.');return}
+   if(a==='disarm'){if(E.awareness>=55){E.risk=clamp(E.risk-12,0,100);complete('🛠️ Ловушка обезврежена благодаря внимательности.')}else{hero.hp=Math.max(1,hero.hp-(6+E.depth*2));E.morale=clamp(E.morale-8,0,100);complete('⚠️ Ловушка сработала при попытке обезвреживания.')}return}
+   if(a==='avoid'){E.risk=clamp(E.risk-4,0,100);complete('↩️ Ловушка обойдена.');return}
+   if(a==='take'){const g=25+E.depth*7;addReward(g);E.risk=clamp(E.risk+10,0,100);E.morale=clamp(E.morale+4,0,100);complete('📦 Игрок забрал находку: +'+g+' золота.');return}
+   if(a==='leave'){E.risk=clamp(E.risk-5,0,100);complete('🚶 Игрок оставил находку и продолжил путь.');return}
+   if(a==='safeRoute'){E.risk=clamp(E.risk-12,0,100);E.tempo=clamp(E.tempo-8,0,100);E.awareness=clamp(E.awareness+5,0,100);complete('🛤️ Выбран безопасный маршрут.');return}
+   if(a==='shortRoute'){E.risk=clamp(E.risk+15,0,100);E.tempo=clamp(E.tempo+12,0,100);complete('🏃 Выбран короткий и опасный маршрут.');return}
+   if(a==='talk'){E.awareness=clamp(E.awareness+8,0,100);E.morale=clamp(E.morale+6,0,100);complete('💬 Игрок поговорил с незнакомцем и получил сведения.');return}
+   if(a==='pass'){E.risk=clamp(E.risk+3,0,100);complete('🚶 Игрок отказался от разговора.');return}
+   if(a==='search'){E.awareness=clamp(E.awareness+12,0,100);const g=10+E.depth*3;addReward(g);complete('🔎 Руины изучены: найдено '+g+' золота.');return}
+ }
+ function show(){
+   load();E.active=true;E.depth=clamp(abyssFloor||E.depth,1,MAX);abyssFloor=E.depth;save();setScreen('abyss');render();
+ }
+ function nextAfterBattle(won){
+   if(!E.pending)return;
+   if(won){E.morale=clamp(E.morale+5,0,100);E.risk=clamp(E.risk-5,0,100);complete('⚔️ Существо побеждено. Решение игрока изменило состояние экспедиции.')}
+   else{E.active=false;save()}
+ }
+ const oldDie=window.die;
+ window.die=function(){E.active=false;E.pending=null;save();return oldDie.apply(this,arguments)};
+ window.showAbyss=show;window.startAbyssExpedition=show;window.abyssExpeditionBattleFinished=nextAfterBattle;
+ load();
 })();
 </script>
