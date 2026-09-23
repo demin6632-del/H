@@ -2513,7 +2513,9 @@ window.abyssKeyCaches = abyssKeyCaches;
    if(!E.pending||!E.pending.combat)return false;
    E.pending.combat=false;
    if(won){E.morale=clamp(E.morale+5,0,100);E.risk=clamp(E.risk-5,0,100);complete('⚔️ Существо побеждено. Решение игрока изменило состояние экспедиции.');return true}
-   E.active=false;save();return true;
+   E.active=false;
+   if(E.pending){delete E.pending.combatState;delete E.pending.guard;E.pending.combat=false}
+   save();return true;
  }
  const oldDie=window.die;
  window.die=function(){
