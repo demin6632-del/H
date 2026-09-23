@@ -37,7 +37,7 @@ function chooseClassIfNeeded() {
   for (const [id,name,desc] of classes) {
     const b=document.createElement("button");
     b.textContent=name+" — "+desc;
-    b.onclick=()=>{selectClass(game.state,id);saveActiveRun(game);mount.innerHTML="";ui=createV5UI(game,mount);};
+    b.onclick=()=>{selectClass(game.state,id);game.state.abyss.active=true;saveActiveRun(game);mount.innerHTML="";ui=createV5UI(game,mount);};
     panel.appendChild(b);
   }
   mount.appendChild(panel);
@@ -49,6 +49,7 @@ function showV5() {
     game=createGame();
   }
   const mount=root();
+  game.state.abyss.active = true;
   if (!game.state.character.classId) {
     chooseClassIfNeeded();
     return;
