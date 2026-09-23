@@ -2432,6 +2432,19 @@ window.abyssKeyCaches = abyssKeyCaches;
  function risk(){return E.risk<25?'Низкий':E.risk<60?'Средний':'Высокий'}
  function makeEvent(){
    const d=E.depth,r=Math.random();
+   let route='neutral';
+   try{
+     const rs=JSON.parse(localStorage.getItem('chronicles_abyss_route_v1')||'null');
+     if(rs&&rs.depth===d&&rs.applied)route=rs.route||'neutral';
+   }catch(e){}
+   if(route==='danger'){
+     if(E.risk>=60&&r<.38)return{kind:'ambush',title:'⚔️ ЗАСАДА',text:'Опасный маршрут привёл прямо в зону охоты. Существо нападает из темноты.'};
+     if(r<.52)return{kind:'treasure',title:'📦 ТАЙНИК',text:'Опасный маршрут вывел к старому запечатанному тайнику.'};
+   }
+   if(route==='careful'){
+     if(E.awareness>=55&&r<.34)return{kind:'find',title:'🔎 СКРЫТАЯ НАХОДКА',text:'Осторожный путь и внимательность позволили заметить тайник заранее.'};
+     if(r<.20)return{kind:'dialogue',title:'💬 ВСТРЕЧА',text:'Осторожный путь вывел к незнакомцу, который предлагает подсказку.'};
+   }
    if(E.risk>=70&&r<.28)return{kind:'ambush',title:'⚔️ ЗАСАДА',text:'Из темноты внезапно атакует существо.'};
    if(E.awareness>=70&&r<.30)return{kind:'find',title:'🔎 СКРЫТАЯ НАХОДКА',text:'Внимательность позволила заметить тайник до того, как пройти мимо.'};
    if(r<.20)return{kind:'creature',title:'⚔️ СУЩЕСТВО',text:'Путь преграждает неизвестное существо.'};
