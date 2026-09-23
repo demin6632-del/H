@@ -8,6 +8,7 @@ import { addItem } from "./items.js";
 import { rollLoot } from "./loot.js";
 import { saveRun, loadRun } from "./run-persistence.js";
 import { newGame, finishDeath } from "./run-lifecycle.js";
+import { createReturnRewards } from "../systems/city-loop.js";
 
 export function createGame() {
   return { state:createInitialState(), combat:null };
@@ -63,7 +64,7 @@ export function killPlayer(game) {
 
 export function grantCombatLoot(game, depth) {
   const drops = rollLoot(depth);
-  drops.forEach(item => addItem(game.state, item));
+  createReturnRewards(game.state,{items:drops,gold:10+depth*5,xp:15+depth*5});
   return drops;
 }
 
