@@ -2424,7 +2424,7 @@ window.abyssKeyCaches = abyssKeyCaches;
    box.querySelectorAll('.abyss-action').forEach(b=>b.onclick=()=>act(b.dataset.action));
    if(el('abyssRoomInfo'))el('abyssRoomInfo').style.display='none';
    if(el('depthSelectPanel'))el('depthSelectPanel').style.display='none';
-   if(el('exploreBtn'))el('exploreBtn').style.display='none';
+   if(el('exploreBtn'))el('exploreBtn').style.display='none';if(el('abyssDynamicPanel'))el('abyssDynamicPanel').style.display='none';
  }
  function addReward(gold){
    hero.gold=Math.max(0,Number(hero.gold||0)+gold);
