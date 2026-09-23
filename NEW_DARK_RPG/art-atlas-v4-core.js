@@ -238,3 +238,26 @@ bootV4();document.addEventListener('DOMContentLoaded',bootV4);setTimeout(bootV4,
   if(host&&!host.classList.contains('hidden'))panel();
  },900);
 })();
+
+
+/* === ABYSS-ROUTE-CHOICE-V1 === */
+(function(){
+ if(window.__COA_ROUTE_CHOICE_V1__)return; window.__COA_ROUTE_CHOICE_V1__=true;
+ const KEY='chronicles_abyss_route_v1';
+ function read(){try{return JSON.parse(localStorage.getItem(KEY)||'null')}catch(e){return null}}
+ function write(x){try{localStorage.setItem(KEY,JSON.stringify(x))}catch(e){}}
+ function depth(){return Math.max(1,Math.min(7,Number(window.abyssFloor||1)||1))}
+ function state(){let s=read();if(!s||s.depth!==depth()){s={depth:depth(),route:null,history:[]};write(s)}return s}
+ function render(){
+  const root=document.getElementById('abyssExpeditionUI'); if(!root||document.getElementById('abyssRouteUI'))return;
+  const s=state(); if(s.route)return;
+  const p=document.createElement('div');p.id='abyssRouteUI';p.className='panel';p.style.cssText='margin:8px 0;padding:9px;border-color:#342c20';
+  p.innerHTML='<div style="text-align:center;font-weight:bold">🧭 Выбор пути</div><div class="muted" style="text-align:center;font-size:11px;margin:5px 0 8px">Перед исследованием выбери направление. Оно меняет характер следующего события.</div><div style="display:grid;grid-template-columns:1fr 1fr;gap:6px"><button data-route="careful">🕯 Осторожный путь<br><small>меньше риска</small></button><button data-route="danger">🩸 Опасный путь<br><small>выше шанс награды</small></button></div>';
+  root.parentNode.insertBefore(p,root);
+  p.querySelectorAll('[data-route]').forEach(b=>b.onclick=function(){const x=state();x.route=this.dataset.route;x.history.push({depth:depth(),route:x.route});write(x);p.remove();if(typeof window.showAbyss==='function')window.showAbyss()});
+ }
+ window.__coaAbyssRoute=state;
+ const old=window.showAbyss;
+ if(typeof old==='function'&&!old.__routeWrapped){const w=function(){const r=old.apply(this,arguments);setTimeout(render,80);return r};w.__routeWrapped=true;window.showAbyss=w;window.startAbyssExpedition=w}
+ let last=depth();setInterval(()=>{const d=depth();if(d!==last){last=d;try{localStorage.removeItem(KEY)}catch(e){}}const h=document.getElementById('abyss');if(h&&!h.classList.contains('hidden'))render()},1000);
+})();
