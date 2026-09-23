@@ -1,7 +1,7 @@
 // Chronicles of the Abyss V5 — DOM adapter
 import { openRoom, resolveRoomAction, finishCurrentCombat } from "../systems/abyss-events.js";
 import { createCombatState, playerAttack, playerSkill, playerDefend } from "../systems/combat.js";
-import { saveActiveRun } from "../core/game.js";
+import { saveActiveRun, descend, killPlayer } from "../core/game.js";
 
 export function createV5UI(game, root) {
   if (!root) throw new Error("V5 UI root is required");
@@ -43,12 +43,12 @@ export function createV5UI(game, root) {
         });
       }
       if (["victory","defeat"].includes(c.phase)) addButton(panel,c.phase==="victory"?"🏆 Забрать результат":"💀 Завершить",()=>{
-        finishCurrentCombat(game); persist(); render();
+        if(c.phase==="defeat") killPlayer(game); else finishCurrentCombat(game); persist(); render();
       });
     } else if (s.abyss.pending?.transition) {
       addButton(panel,s.abyss.depth<7?"⬇️ Перейти на следующую глубину":"🏆 Завершить забег",()=>{
-        if(s.abyss.depth<7){ s.abyss.depth+=1; s.abyss.room=0; s.abyss.pending=null; s.meta.bestDepth=Math.max(s.meta.bestDepth,s.abyss.depth); persist(); }
-        else { s.abyss.active=false; persist(); }
+        if(s.abyss.depth<7){ descend(game); s.meta.bestDepth=Math.max(s.meta.bestDepth,s.abyss.depth); persist(); }
+        else { s.abyss.active=false; s.abyss.pending=null; persist(); }
         render();
       });
     } else if (s.abyss.pending?.event) {
