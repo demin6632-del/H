@@ -39,6 +39,7 @@ export function createInitialState() {
     },
     endgame: {
       arena: { bestWave: 0 },
+      contracts: {},
       achievements: {},
       collections: {}
     }
