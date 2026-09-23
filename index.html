@@ -2447,7 +2447,11 @@ window.abyssKeyCaches = abyssKeyCaches;
    enemy={name:names[Math.floor(Math.random()*names.length)],hp,max:hp,attack:8+d*2,def:Math.floor(d/2),xp:45+d*8,gold:15+d*6,isElite:E.done===4,isBoss:false,phase:1,icon:'👹'};
    E.pending.combat=true;save();log('⚔️ Игрок решил вступить в бой.');setScreen('battle');updateBattle();
  }
+ let expeditionActionLock=false;
  function act(a){
+   if(expeditionActionLock)return;
+   expeditionActionLock=true;
+   setTimeout(()=>{expeditionActionLock=false},300);
    const p=E.pending;
    if(a==='start'){E.pending=makeEvent();save();render();return}
    if(!p)return;
