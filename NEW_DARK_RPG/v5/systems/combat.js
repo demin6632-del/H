@@ -1,5 +1,7 @@
 // Chronicles of the Abyss V5 — deterministic combat core
 import { clampInteger } from "../core/state.js";
+import { skillsForClass, useSkill } from "./skills.js";
+import { tickStatuses, modifyDamage } from "./status.js";
 
 export const COMBAT_PHASES = Object.freeze({ idle:"idle", player:"player", enemy:"enemy", victory:"victory", defeat:"defeat" });
 
@@ -24,7 +26,7 @@ export function attack(combat, source = "player") {
   if (![COMBAT_PHASES.player, COMBAT_PHASES.enemy].includes(combat.phase)) return { damage:0, ended:true };
   const a = source === "player" ? combat.player : combat.enemy;
   const d = source === "player" ? combat.enemy : combat.player;
-  const damage = Math.max(1, a.power - Math.floor(d.defense / 2));
+  const damage = modifyDamage(d, Math.max(1, a.power - Math.floor(d.defense / 2)));
   d.hp = Math.max(0, d.hp - damage);
   combat.log.push((source === "player" ? "Игрок" : "Враг") + " наносит " + damage + " урона.");
   if (d.hp <= 0) {
@@ -39,5 +41,7 @@ export function attack(combat, source = "player") {
 export function playerTurn(combat) {
   const result = attack(combat, "player");
   if (!result.ended && combat.phase === COMBAT_PHASES.enemy) attack(combat, "enemy");
+  tickStatuses(combat.player);
+  tickStatuses(combat.enemy);
   return combat;
 }
