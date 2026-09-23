@@ -193,6 +193,7 @@ bootV4();document.addEventListener('DOMContentLoaded',bootV4);setTimeout(bootV4,
   let add=0;
   if(c.id==='scout'&&type==='inspect')add=1;
   if(c.id==='hunter'&&type==='battle')add=1;
+  if(c.id==='survivor'&&type==='segment')add=1;
   if(c.id==='relic'&&(type==='take'||type==='search'))add=1;
   if(add){
    s.progress=Math.min(c.goal,s.progress+add);
