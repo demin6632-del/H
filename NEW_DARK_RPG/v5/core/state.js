@@ -55,7 +55,7 @@ export function clampInteger(value, min, max, fallback) {
 export function normalizeState(input) {
   const base = createInitialState();
   const src = input && typeof input === "object" ? input : {};
-  const out = structuredClone(base);
+  const out = clone(base);
 
   out.version = SAVE_VERSION;
   out.meta.deaths = clampInteger(src.meta?.deaths, 0, 999999, 0);
@@ -65,26 +65,26 @@ export function normalizeState(input) {
   out.character.level = clampInteger(src.character?.level, 1, 999, 1);
   out.character.xp = clampInteger(src.character?.xp, 0, 2147483647, 0);
   out.character.classId = typeof src.character?.classId === "string" ? src.character.classId : null;
-  out.character.stats = src.character?.stats && typeof src.character.stats === "object" ? structuredClone(src.character.stats) : {};
+  out.character.stats = src.character?.stats && typeof src.character.stats === "object" ? clone(src.character.stats) : {};
   out.character.skills = Array.isArray(src.character?.skills) ? [...src.character.skills] : [];
-  out.character.equipment = src.character?.equipment && typeof src.character.equipment === "object" ? structuredClone(src.character.equipment) : {};
+  out.character.equipment = src.character?.equipment && typeof src.character.equipment === "object" ? clone(src.character.equipment) : {};
 
-  out.inventory = Array.isArray(src.inventory) ? structuredClone(src.inventory) : [];
+  out.inventory = Array.isArray(src.inventory) ? clone(src.inventory) : [];
 
   out.abyss.active = !!src.abyss?.active;
   out.abyss.depth = clampInteger(src.abyss?.depth, 1, MAX_DEPTH, 1);
   out.abyss.room = clampInteger(src.abyss?.room, 0, ROOMS_PER_DEPTH, 0);
-  out.abyss.pending = src.abyss?.pending && typeof src.abyss.pending === "object" ? structuredClone(src.abyss.pending) : null;
+  out.abyss.pending = src.abyss?.pending && typeof src.abyss.pending === "object" ? clone(src.abyss.pending) : null;
   out.abyss.morale = clampInteger(src.abyss?.morale, 0, 100, 100);
   out.abyss.risk = clampInteger(src.abyss?.risk, 0, 100, 0);
   out.abyss.awareness = clampInteger(src.abyss?.awareness, 0, 100, 50);
   out.abyss.tempo = clampInteger(src.abyss?.tempo, 0, 100, 50);
-  out.abyss.returnRewards = src.abyss?.returnRewards && typeof src.abyss.returnRewards === "object" ? structuredClone(src.abyss.returnRewards) : null;
+  out.abyss.returnRewards = src.abyss?.returnRewards && typeof src.abyss.returnRewards === "object" ? clone(src.abyss.returnRewards) : null;
 
   out.economy.reputation = clampInteger(src.economy?.reputation, 0, 9999999, 0);
-  out.economy.merchants = src.economy?.merchants && typeof src.economy.merchants === "object" ? structuredClone(src.economy.merchants) : {};
+  out.economy.merchants = src.economy?.merchants && typeof src.economy.merchants === "object" ? clone(src.economy.merchants) : {};
 
-  out.endgame = src.endgame && typeof src.endgame === "object" ? structuredClone(src.endgame) : base.endgame;
+  out.endgame = src.endgame && typeof src.endgame === "object" ? clone(src.endgame) : base.endgame;
   return out;
 }
 
