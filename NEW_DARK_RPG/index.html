@@ -1886,7 +1886,15 @@ window.abyssKeyCaches = abyssKeyCaches;
     const lvl=bsLevel(item);if(lvl>=BLACKSMITH_MAX){sfx('error');return}
     const cost=blacksmithUpgradeCost(lvl);if(getGold()<cost){sfx('error');if(el('out'))el('out').innerHTML='<span class="red">Недостаточно золота для улучшения.</span>';return}
     hero.gold-=cost;item.upgradeLevel=lvl+1;
-    if(bsEquipped(item))bsApplyUpgrade(item,1);
+    if(bsEquipped(item)){
+      const xi=itemInfo(item)||{};
+      if(xi.type==='weapon')hero.attack=Math.max(0,hero.attack+1);
+      if(xi.type==='armor'||['head','ring','boots','cloak','amulet','shield'].includes(xi.slot)){
+        if(xi.def)hero.def=Math.max(0,hero.def+1);
+        if(xi.crit)hero.crit=Math.max(0,hero.crit+0.01);
+        if(xi.maxEnergy)hero.maxEnergy=Math.max(1,hero.maxEnergy+1);
+      }
+    }
     save();update();renderBlacksmith();renderInventory();renderEquipment();sfx('buy');
     logEvent('КУЗНЕЦ','Улучшено: '+x.name+' до +'+(lvl+1)+' за '+cost+' золота.');
     if(el('out'))el('out').innerHTML='<span class="green">'+x.name+' улучшен до +'+(lvl+1)+'.</span>';
