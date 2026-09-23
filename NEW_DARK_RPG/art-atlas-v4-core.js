@@ -221,6 +221,7 @@ bootV4();document.addEventListener('DOMContentLoaded',bootV4);setTimeout(bootV4,
   window.showAbyss=wrapped;
   window.startAbyssExpedition=wrapped;
  }
+ document.addEventListener('abyss-segment-complete',function(){bump('segment')});
  document.addEventListener('click',function(e){
   const b=e.target&&e.target.closest?e.target.closest('[data-action]'):null;
   if(!b)return;
