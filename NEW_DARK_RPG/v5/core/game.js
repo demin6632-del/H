@@ -6,6 +6,8 @@ import { applyXp } from "./progression.js";
 import { addGold } from "./economy.js";
 import { addItem } from "./items.js";
 import { rollLoot } from "./loot.js";
+import { saveRun, loadRun } from "./run-persistence.js";
+import { newGame, finishDeath } from "./run-lifecycle.js";
 
 export function createGame() {
   return { state:createInitialState(), combat:null };
@@ -14,7 +16,25 @@ export function createGame() {
 export function startRun(game) {
   beginRun(game.state);
   beginRoom(game.state);
+  saveRun(game);
   return game;
+}
+
+export function saveActiveRun(game) {
+  saveRun(game);
+  return game;
+}
+
+export function continueRun(game) {
+  const snapshot=loadRun();
+  if (!snapshot) return {ok:false,reason:"no_active_run"};
+  game.state=snapshot.state;
+  game.combat=snapshot.combat;
+  return {ok:true,game,savedAt:snapshot.savedAt};
+}
+
+export function resetGame(game) {
+  return newGame(game);
 }
 
 export function choose(game, choice) {
@@ -37,7 +57,7 @@ export function descend(game) {
 
 export function killPlayer(game) {
   die(game.state);
-  game.combat = null;
+  finishDeath(game);
   return game.state;
 }
 
