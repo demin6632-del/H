@@ -228,7 +228,7 @@ bootV4();document.addEventListener('DOMContentLoaded',bootV4);setTimeout(bootV4,
   if(!b)return;
   const a=b.getAttribute('data-action');
   if(a==='inspect')bump('inspect');
-  else if(a==='fight'){};
+  else if(a==='fight'){}
   else if(a==='take'||a==='search')bump(a);
   else if(a==='start')setTimeout(panel,120);
  },true);
