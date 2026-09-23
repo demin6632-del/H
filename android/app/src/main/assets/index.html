@@ -1307,7 +1307,48 @@ window.abyssKeyCaches = abyssKeyCaches;
     const type=pool[Math.floor(Math.random()*pool.length)];room.type=type.id;room.visited=false;state.pending={depth:d,room:r};saveState();return type.id;
   }
   function renderMap(){
-    let o=ensureOverlay();el('abyssOverlayTitle').textContent='🗺️ Журнал исследователя';el('abyssOverlayText').textContent='Посещённые комнаты открывают карту. Золотая пунктирная линия — найденный скрытый проход.';const d=Number(abyssFloor||1),rooms=[];for(let r=1;r<=ROOMS_PER_FLOOR;r++)rooms.push(getRoom(d,r));let svg='<div class="abyss-map-wrap"><svg viewBox="0 0 360 200" aria-label="Карта Бездны">';for(let r=1;r<ROOMS_PER_FLOOR;r++){const x1=55+(r-1)*65,x2=55+r*65;const rr=rooms[r-1];const cls=rr.hiddenRevealed?'abyss-hidden-edge':'';svg+='<line x1="'+x1+'" y1="100" x2="'+x2+'" y2="100" stroke="#4d1919" stroke-width="4" class="'+cls+'"/>'}for(let r=1;r<=ROOMS_PER_FLOOR;r++){const x=55+(r-1)*65,rr=rooms[r-1],type=rr.type?typeOf(rr.type):null;const fill=rr.visited?'#9b1d1d':'#171717';const label=rr.visited?(type?type.icon:'✓'):'?';svg+='<g class="'+(rr.visited?'abyss-map-visited':'')+'"><circle cx="'+x+'" cy="100" r="20" fill="'+fill+'" stroke="'+(rr.visited?'#e23':'#4b1919')+'" stroke-width="2"/><text x="'+x+'" y="105" text-anchor="middle" font-size="14" fill="#eee">'+label+'</text><text x="'+x+'" y="145" text-anchor="middle" font-size="10" fill="#999">R'+r+'</text></g>'}svg+='</svg></div><div class="muted" style="font:11px monospace;text-align:center">'+depthName(d)+' · комнаты 1–'+ROOMS_PER_FLOOR+'</div>';el('abyssOverlayBody').innerHTML=svg;el('abyssOverlayMain').textContent='Закрыть';el('abyssOverlayMain').onclick=closeOverlay;o.classList.remove('hidden')}
+    const host=el('abyss');
+    if(!host)return;
+    let box=el('abyssInlineJournal');
+    if(!box){
+      box=document.createElement('div');
+      box.id='abyssInlineJournal';
+      box.className='panel';
+      const scene=host.querySelector('.scene.abyss');
+      if(scene&&scene.parentNode)scene.parentNode.insertBefore(box,scene.nextSibling);
+      else host.appendChild(box);
+    }
+    const d=Number(abyssFloor||1),rooms=[];
+    for(let r=1;r<=ROOMS_PER_FLOOR;r++)rooms.push(getRoom(d,r));
+    let svg='<div class="abyss-map-wrap"><svg viewBox="0 0 360 200" aria-label="Карта Бездны">';
+    for(let r=1;r<ROOMS_PER_FLOOR;r++){
+      const x1=55+(r-1)*65,x2=55+r*65,rr=rooms[r-1];
+      const cls=rr.hiddenRevealed?'abyss-hidden-edge':'';
+      svg+='<line x1="'+x1+'" y1="100" x2="'+x2+'" y2="100" stroke="#4d1919" stroke-width="4" class="'+cls+'"/>';
+    }
+    for(let r=1;r<=ROOMS_PER_FLOOR;r++){
+      const x=55+(r-1)*65,rr=rooms[r-1],type=rr.type?typeOf(rr.type):null;
+      const fill=rr.visited?'#9b1d1d':'#171717',label=rr.visited?(type?type.icon:'✓'):'?';
+      svg+='<g class="'+(rr.visited?'abyss-map-visited':'')+'"><circle cx="'+x+'" cy="100" r="20" fill="'+fill+'" stroke="'+(rr.visited?'#e23':'#4b1919')+'" stroke-width="2"/><text x="'+x+'" y="105" text-anchor="middle" font-size="14" fill="#eee">'+label+'</text><text x="'+x+'" y="145" text-anchor="middle" font-size="10" fill="#999">R'+r+'</text></g>';
+    }
+    svg+='</svg></div>';
+    let events='';
+    const entries=Array.isArray(journalEntries)?journalEntries.slice(0,20):[];
+    events+='<div class="sep"></div><div style="font-weight:bold;text-align:center;margin:6px 0">📖 События</div><div class="log" style="max-height:280px;overflow:auto;text-align:left">';
+    if(entries.length){
+      entries.forEach(x=>{
+        events+='<div style="padding:5px 0;border-bottom:1px solid #241010"><span class="muted">['+String(x.time||'')+']</span> <b>'+String(x.type||'')+'</b> — '+String(x.text||'')+'</div>';
+      });
+    }else{
+      events+='<div class="muted" style="text-align:center;padding:8px">Записей пока нет.</div>';
+    }
+    events+='</div>';
+    box.innerHTML='<div style="display:flex;justify-content:space-between;align-items:center;gap:8px"><b>🗺️ Журнал исследователя</b><button id="abyssJournalClose" style="width:auto;margin:0;padding:7px 12px">Скрыть</button></div><div class="muted" style="text-align:center;margin:5px 0">'+depthName(d)+' · комнаты 1–'+ROOMS_PER_FLOOR+'</div>'+svg+events;
+    box.style.display='block';
+    const close=el('abyssJournalClose');
+    if(close)close.onclick=()=>{box.style.display='none'};
+    try{box.scrollIntoView({behavior:'smooth',block:'nearest'})}catch(e){}
+  }
   function beginDepthTransition(){transition(()=>{renderDynamic()})}
   loadState();ensureTransitionLayer();
 
