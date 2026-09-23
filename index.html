@@ -2392,7 +2392,9 @@ window.abyssKeyCaches = abyssKeyCaches;
    if(!box){box=document.createElement('div');box.id='abyssExpeditionUI';const p=h.querySelector('.panel');if(p)p.appendChild(box)}
    const p=E.pending;
    let actions='';
-   if(p){
+   if(E.done>=SEGMENTS&&E.depth>=MAX){
+     actions='<div class="muted" style="grid-column:1 / -1;text-align:center;padding:10px">🏆 Экспедиция завершена. Все 7 глубин исследованы.</div>';
+   }else if(p){
      const common=[
        ['inspect','🔎 Осмотреть'],
        ['cautious','🛡️ Осторожно'],
@@ -2434,12 +2436,12 @@ window.abyssKeyCaches = abyssKeyCaches;
    render();
  }
  function showNextDepth(){
-   const box=el('abyssExpeditionUI');if(!box)return;
+   const box=el('abyssExpeditionUI');if(!box||E.depth>=MAX)return;
    const btn=document.createElement('button');btn.className='abyss-action';btn.textContent='⬇️ Перейти на следующую глубину';btn.style.gridColumn='1 / -1';
    btn.onclick=()=>nextDepth();box.querySelector('div[style*="grid-template-columns"]')?.appendChild(btn);
  }
  function nextDepth(){
-   if(E.depth>=MAX){log('🏆 Достигнута максимальная глубина.');render();return}
+   if(E.depth>=MAX){E.done=SEGMENTS;E.active=false;E.pending=null;abyssFloor=E.depth;abyssRoom=SEGMENTS;abyssRoomContent='';save();log('🏆 Достигнута максимальная глубина. Экспедиция завершена.');render();return}
    E.depth++;E.done=0;E.morale=clamp(E.morale+5,0,100);E.risk=clamp(E.risk-10,0,100);E.awareness=clamp(E.awareness+3,0,100);E.tempo=50;E.pending=null;E.active=true;abyssFloor=E.depth;abyssRoom=0;abyssRoomContent='';save();log('⬇️ Игрок выбрал переход на глубину '+E.depth+'.');render();
  }
  function combat(){
