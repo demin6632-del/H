@@ -2500,7 +2500,7 @@ window.abyssKeyCaches = abyssKeyCaches;
  }
  function nextDepth(){
    if(E.depth>=MAX){E.done=SEGMENTS;E.active=false;E.pending=null;abyssFloor=E.depth;abyssRoom=SEGMENTS;abyssRoomContent='';save();log('🏆 Достигнута максимальная глубина. Экспедиция завершена.');render();return}
-   E.depth++;E.done=0;E.depthNotice='⚠️ Новая глубина '+E.depth+'. Условия изменились — выберите «Начать исследование участка».');E.morale=clamp(E.morale+5,0,100);E.risk=clamp(E.risk-10,0,100);E.awareness=clamp(E.awareness+3,0,100);E.tempo=50;E.pending=null;abyssFloor=E.depth;abyssRoom=0;abyssRoomContent='Новая комната ещё не исследована.';save();log('⬇️ Игрок выбрал переход на глубину '+E.depth+'.');render();
+   E.depth++;E.done=0;E.depthNotice='⚠️ Новая глубина '+E.depth+'. Условия изменились — выберите «Начать исследование участка».';E.morale=clamp(E.morale+5,0,100);E.risk=clamp(E.risk-10,0,100);E.awareness=clamp(E.awareness+3,0,100);E.tempo=50;E.pending=null;abyssFloor=E.depth;abyssRoom=0;abyssRoomContent='Новая комната ещё не исследована.';save();log('⬇️ Игрок выбрал переход на глубину '+E.depth+'.');render();
  }
  function combat(){
    const d=E.depth,hp=Math.round((42+d*9)*(E.done===4?1.35:1)),names=['Теневой зверь','Заражённый охотник','Пожиратель костей','Мутант Бездны'];
