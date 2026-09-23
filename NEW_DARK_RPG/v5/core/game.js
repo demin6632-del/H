@@ -19,10 +19,10 @@ export function startRun(game) {
 
 export function choose(game, choice) {
   const result = resolveChoice(game.state, choice);
-  if (result?.loot) result.loot.forEach(item => addItem(game.state, item));
-  if (Number.isFinite(result?.gold)) addGold(game.state, result.gold);
-  if (Number.isFinite(result?.xp)) applyXp(game.state, result.xp);
-  return result;
+  if (choice?.loot) choice.loot.forEach(item => addItem(game.state, item));
+  if (Number.isFinite(choice?.gold)) addGold(game.state, choice.gold);
+  if (Number.isFinite(choice?.xp)) applyXp(game.state, choice.xp);
+  return game.state;
 }
 
 export function finishRoom(game) {
