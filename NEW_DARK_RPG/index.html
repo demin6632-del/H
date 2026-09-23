@@ -2481,7 +2481,7 @@ window.abyssKeyCaches = abyssKeyCaches;
      else if(p.kind==='dialogue')specific=[['talk','💬 Поговорить'],['pass','🚶 Пройти мимо']];
      else specific=[['search','🔎 Изучить'],['pass','🚶 Пройти дальше']];
      actions=common.map(x=>'<button class="abyss-action" data-action="'+x[0]+'">'+x[1]+'</button>').join('')+specific.map(x=>'<button class="abyss-action" data-action="'+x[0]+'">'+x[1]+'</button>').join('');
-   }else actions='<button class="abyss-action" data-action="start">🔎 Начать исследование участка</button>';
+   }else actions=E.done>=SEGMENTS?(E.depth>=MAX?'<div class="abyss-final-state">🏆 Глубины Бездны пройдены. Экспедиция завершена.</div>':'<div class="abyss-final-state">✅ Глубина завершена. Выберите переход на следующую глубину.</div>'):'<button class="abyss-action" data-action="start">🔎 Начать исследование участка</button>';
    const feed=E.feed.length?E.feed.map(x=>'<div>'+esc(x)+'</div>').join(''):'<div class="muted">Журнал пока пуст.</div>';
    box.innerHTML='<div class="abyss-expedition-head"><div><b>🌑 УПРАВЛЕНИЕ ЭКСПЕДИЦИЕЙ</b><div class="muted" style="font-size:11px;margin-top:3px">Глубина '+E.depth+' · Участок '+E.done+'/'+SEGMENTS+'</div></div><b style="color:'+depthColor+'">'+E.depth+'/7</b></div>'+
    '<div class="abyss-expedition-progress"><i style="width:'+(E.done/SEGMENTS*100)+'%"></i></div>'+
@@ -2524,6 +2524,8 @@ window.abyssKeyCaches = abyssKeyCaches;
  function act(a){
    const p=E.pending;
    if(a==='start'){
+   if(E.depth>=MAX&&E.done>=SEGMENTS)return;
+   E.depthNotice='';
    E.pending=makeEvent();
    if(E.pending){save();render();return}
    complete('🔎 Игрок начал исследование участка.');
