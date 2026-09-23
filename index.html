@@ -581,7 +581,7 @@ window.abyssKeyCaches = abyssKeyCaches;
     /* Сначала показываем предупреждение. Новая глубина применяется только после подтверждения. */
     showAbyssDepthWarning(d,current);
   }
-  function showAbyssDepthWarning(depth,current){
+  function showAbyssDepthWarning(depth,current,sequential=false){
     let modal=document.getElementById('abyssDepthWarning');
     if(!modal){
       modal=document.createElement('div');
@@ -2438,7 +2438,7 @@ window.abyssKeyCaches = abyssKeyCaches;
  function showNextDepth(){
    const box=el('abyssExpeditionUI');if(!box||E.depth>=MAX)return;
    const btn=document.createElement('button');btn.className='abyss-action';btn.textContent='⬇️ Перейти на следующую глубину';btn.style.gridColumn='1 / -1';
-   btn.onclick=()=>{if(typeof window.showAbyssDepthWarning==='function')window.showAbyssDepthWarning(E.depth+1,E.depth);else nextDepth()};box.querySelector('div[style*="grid-template-columns"]')?.appendChild(btn);
+   btn.onclick=()=>{if(typeof window.showAbyssDepthWarning==='function')window.showAbyssDepthWarning(E.depth+1,E.depth,true);else nextDepth()};box.querySelector('div[style*="grid-template-columns"]')?.appendChild(btn);
  }
  function nextDepth(){
    if(E.depth>=MAX){E.done=SEGMENTS;E.active=false;E.pending=null;abyssFloor=E.depth;abyssRoom=SEGMENTS;abyssRoomContent='';save();log('🏆 Достигнута максимальная глубина. Экспедиция завершена.');render();return}
@@ -2530,7 +2530,7 @@ window.abyssKeyCaches = abyssKeyCaches;
    render();
    return result;
  };
- window.showAbyss=show;window.startAbyssExpedition=show;window.abyssExpeditionBattleFinished=nextAfterBattle;window.selectAbyssExpeditionDepth=selectDepthFromLegacy;window.persistAbyssExpeditionCombatState=persistCombatState;window.clearAbyssExpeditionCombatState=clearCombatState;
+ window.showAbyss=show;window.startAbyssExpedition=show;window.abyssExpeditionBattleFinished=nextAfterBattle;window.selectAbyssExpeditionDepth=selectDepthFromLegacy;window.nextAbyssExpeditionDepth=nextDepth;window.persistAbyssExpeditionCombatState=persistCombatState;window.clearAbyssExpeditionCombatState=clearCombatState;
  load();
 })();
 </script>
