@@ -1412,7 +1412,7 @@ window.abyssKeyCaches = abyssKeyCaches;
     }
   };
   const oldUpdate=updateAbyss;updateAbyss=function(){const r=oldUpdate.apply(this,arguments);renderDynamic();return r};
-  const oldDie=die;die=function(){const d=Number(abyssFloor||1);state.deaths[d]=Number(state.deaths[d]||0)+1;clearDepthState(d);saveState();const r=oldDie.apply(this,arguments);renderDynamic();return r};
+  const oldDie=die;die=function(){const d=Number(abyssFloor||1);state.deaths[d]=Number(state.deaths[d]||0)+1;clearDepthState(d);if(typeof window.clearAbyssExpeditionCombatState==='function')window.clearAbyssExpeditionCombatState();try{const e=JSON.parse(localStorage.getItem('chronicles_abyss_expedition_v2')||'null');if(e&&Number(e.depth)===d&&e.pending){e.pending=null;e.active=false;localStorage.setItem('chronicles_abyss_expedition_v2',JSON.stringify(e))}}catch(e){}saveState();const r=oldDie.apply(this,arguments);renderDynamic();return r};
   /* ABYSS-FLOOR-PROGRESSION-FIX-V4 — единый переход комнаты после успешной победы.
      Любой бой, созданный системой Бездны, завершает ровно одну текущую комнату.
      Пятая комната не перескакивает этаж и не запускается повторно: после неё
