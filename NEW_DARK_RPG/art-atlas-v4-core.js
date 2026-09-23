@@ -90,3 +90,145 @@ function installScreenV4(){
 function bootV4(){installSceneArtFix();installBattleV4();installAbyssV4();installScreenV4();updateScenesV4();}
 bootV4();document.addEventListener('DOMContentLoaded',bootV4);setTimeout(bootV4,250);
 })();
+
+/* === ABYSS-EXPEDITION-INSPIRED-V1 ===
+   Самостоятельный слой экспедиционных контрактов.
+   Не копирует тексты/персонажей/ассеты сторонней игры.
+   Работает поверх существующей Бездны и не заменяет её state machine.
+*/
+(function(){
+ if(window.__COA_EXPEDITION_INSPIRED_V1__)return;
+ window.__COA_EXPEDITION_INSPIRED_V1__=true;
+
+ const CONTRACT_KEY='chronicles_abyss_contract_v1';
+ const CONTRACTS=[
+  {id:'scout',icon:'🔎',name:'Следопыт',desc:'Исследовать участок внимательно и не спешить.',goal:2,reward:55},
+  {id:'survivor',icon:'🛡️',name:'Выживший',desc:'Завершить глубину с риском не выше 55.',goal:5,reward:70},
+  {id:'hunter',icon:'⚔️',name:'Охотник',desc:'Победить существо в ходе экспедиции.',goal:1,reward:85},
+  {id:'relic',icon:'📦',name:'Искатель реликвий',desc:'Забрать находку или изучить руины.',goal:1,reward:65}
+ ];
+
+ function read(){
+  try{
+   const x=JSON.parse(localStorage.getItem(CONTRACT_KEY)||'null');
+   return x&&typeof x==='object'?x:null;
+  }catch(e){return null}
+ }
+ function write(x){
+  try{localStorage.setItem(CONTRACT_KEY,JSON.stringify(x))}catch(e){}
+ }
+ function depth(){
+  return Math.max(1,Math.min(7,Number(window.abyssFloor||1)||1));
+ }
+ function chooseContract(){
+  const pool=CONTRACTS.slice().sort(()=>Math.random()-.5);
+  return pool.slice(0,3);
+ }
+ function ensure(){
+  const old=read();
+  if(old&&old.depth===depth()&&old.contract)return old;
+  const choices=chooseContract();
+  const x={depth:depth(),choices,contract:null,progress:0,completed:false};
+  write(x);
+  return x;
+ }
+ function color(d){
+  return d<=2?'#77db70':d<=5?'#d9a52b':'#e22';
+ }
+ function reward(amount){
+  if(typeof hero==='undefined'||!hero)return;
+  hero.gold=Math.max(0,Number(hero.gold||0)+amount);
+  try{localStorage.setItem('abyss_gold',String(hero.gold))}catch(e){}
+  if(typeof render==='function')render();
+ }
+ function panel(){
+  const host=document.getElementById('abyss');
+  if(!host||host.classList.contains('hidden'))return;
+  const root=document.getElementById('abyssExpeditionUI');
+  if(!root)return;
+  let p=document.getElementById('abyssContractUI');
+  if(!p){
+   p=document.createElement('div');
+   p.id='abyssContractUI';
+   p.className='panel';
+   p.style.cssText='margin:8px 0 0;padding:9px;border-color:#6b1b1b';
+   root.parentNode.insertBefore(p,root);
+  }
+  const state=ensure();
+  const d=depth();
+  if(!state.contract){
+   p.innerHTML='<div style="text-align:center;color:'+color(d)+';font-weight:bold">📜 КОНТРАКТ ЭКСПЕДИЦИИ</div>'+
+    '<div class="muted" style="text-align:center;font-size:11px;margin:5px 0 8px">Выбери цель забега. Это дополнительная задача, а не обязательный путь.</div>'+
+    '<div id="abyssContractChoices" style="display:grid;gap:6px">'+
+    state.choices.map((c,i)=>'<button data-contract-index="'+i+'" style="margin:0;text-align:left"><b>'+c.icon+' '+c.name+'</b><br><small style="color:#999">'+c.desc+' · награда '+c.reward+' золота</small></button>').join('')+
+    '</div>';
+   p.querySelectorAll('[data-contract-index]').forEach(b=>b.onclick=function(){
+    const i=Number(this.dataset.contractIndex);
+    state.contract=state.choices[i];
+    state.progress=0;
+    state.completed=false;
+    write(state);
+    panel();
+   });
+   return;
+  }
+  const c=state.contract;
+  if(!state.completed && c.id==='survivor' && state.progress>=5){
+   state.completed=true;write(state);reward(c.reward);
+  }
+  p.innerHTML='<div style="display:flex;justify-content:space-between;gap:8px"><b>'+c.icon+' '+c.name+'</b><b style="color:'+color(d)+'">Глубина '+d+'/7</b></div>'+
+   '<div class="muted" style="font-size:11px;margin-top:4px">'+c.desc+'</div>'+
+   '<div style="margin-top:7px;font:11px monospace;color:'+(state.completed?'#77db70':'#d9a52b')+'">'+
+   (state.completed?'✓ Контракт выполнен · +'+c.reward+' золота':'Прогресс: '+Math.min(c.goal,state.progress)+'/'+c.goal)+'</div>';
+ }
+ function bump(type){
+  const s=read();
+  if(!s||!s.contract||s.completed)return;
+  const c=s.contract;
+  let add=0;
+  if(c.id==='scout'&&type==='inspect')add=1;
+  if(c.id==='hunter'&&type==='battle')add=1;
+  if(c.id==='relic'&&(type==='take'||type==='search'))add=1;
+  if(add){
+   s.progress=Math.min(c.goal,s.progress+add);
+   if(s.progress>=c.goal){s.completed=true;write(s);reward(c.reward);setTimeout(panel,0);return}
+   write(s);
+  }
+  setTimeout(panel,0);
+ }
+ function resetForNewDepth(){
+  try{
+   const s=read();
+   if(s&&s.depth!==depth())localStorage.removeItem(CONTRACT_KEY);
+  }catch(e){}
+  setTimeout(panel,0);
+ }
+
+ const oldShow=window.showAbyss;
+ if(typeof oldShow==='function'&&!oldShow.__expeditionInspired){
+  const wrapped=function(){
+   const out=oldShow.apply(this,arguments);
+   setTimeout(panel,0);
+   return out;
+  };
+  wrapped.__expeditionInspired=true;
+  window.showAbyss=wrapped;
+  window.startAbyssExpedition=wrapped;
+ }
+ document.addEventListener('click',function(e){
+  const b=e.target&&e.target.closest?e.target.closest('[data-action]'):null;
+  if(!b)return;
+  const a=b.getAttribute('data-action');
+  if(a==='inspect')bump('inspect');
+  else if(a==='fight')bump('battle');
+  else if(a==='take'||a==='search')bump(a);
+  else if(a==='start')setTimeout(panel,120);
+ },true);
+ let lastDepth=depth();
+ setInterval(function(){
+  const d=depth();
+  if(d!==lastDepth){lastDepth=d;resetForNewDepth();}
+  const host=document.getElementById('abyss');
+  if(host&&!host.classList.contains('hidden'))panel();
+ },900);
+})();
