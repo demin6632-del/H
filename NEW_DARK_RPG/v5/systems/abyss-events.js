@@ -106,6 +106,14 @@ export function completeIntegratedRoom(game) {
   return {ok:true,room:state.abyss.room,depth:state.abyss.depth,transition:state.abyss.room===5};
 }
 
+import { resolveCombat } from "./combat-resolution.js";
+
+export function finishCurrentCombat(game) {
+  const result = resolveCombat(game);
+  if (!result.ok || result.victory === null) return result;
+  return completeCombatRoom(game, result.victory);
+}
+
 export function completeCombatRoom(game, victory) {
   const state = game.state;
   const pending = state.abyss.pending;
