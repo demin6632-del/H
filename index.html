@@ -2359,7 +2359,7 @@ window.abyssKeyCaches = abyssKeyCaches;
  const esc=s=>String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
  function clamp(n,a,b){return Math.max(a,Math.min(b,Number(n)||0))}
  function load(){try{const x=JSON.parse(localStorage.getItem(KEY)||'null');if(x&&typeof x==='object')E=Object.assign({},base,x)}catch(e){}E.depth=clamp(E.depth||abyssFloor||1,1,MAX);E.done=clamp(E.done,0,SEGMENTS);E.morale=clamp(E.morale,0,100);E.risk=clamp(E.risk,0,100);E.awareness=clamp(E.awareness,0,100);E.tempo=clamp(E.tempo,0,100);E.feed=Array.isArray(E.feed)?E.feed.slice(0,40):[]}
- function save(){try{localStorage.setItem(KEY,JSON.stringify(E))}catch(e){}}
+ function save(){try{localStorage.setItem(KEY,JSON.stringify(E));abyssFloor=E.depth;abyssRoom=E.done;abyssRoomContent=E.pending?JSON.stringify({kind:E.pending.kind,title:E.pending.title}):''}catch(e){}}
  function log(t){E.feed.unshift(t);E.feed=E.feed.slice(0,40);save();if(typeof logEvent==='function')logEvent('ЭКСПЕДИЦИЯ',t)}
  function host(){return el('abyss')}
  function condition(){return E.morale>=70?'Стабильное':E.morale>=40?'Напряжённое':'Критическое'}
@@ -2421,6 +2421,7 @@ window.abyssKeyCaches = abyssKeyCaches;
  }
  function complete(text){
    E.done=Math.min(SEGMENTS,E.done+1);
+   abyssFloor=E.depth;abyssRoom=E.done;abyssRoomContent='';
    log(text);
    if(E.done>=SEGMENTS){E.active=false;E.pending=null;save();render();showNextDepth();return}
    E.pending=makeEvent();
@@ -2434,7 +2435,7 @@ window.abyssKeyCaches = abyssKeyCaches;
  }
  function nextDepth(){
    if(E.depth>=MAX){log('🏆 Достигнута максимальная глубина.');render();return}
-   E.depth++;E.done=0;E.morale=clamp(E.morale+5,0,100);E.risk=clamp(E.risk-10,0,100);E.awareness=clamp(E.awareness+3,0,100);E.tempo=50;E.pending=makeEvent();abyssFloor=E.depth;abyssRoom=0;abyssRoomContent='';save();if(typeof save==='function')save();log('⬇️ Игрок выбрал переход на глубину '+E.depth+'.');render();
+   E.depth++;E.done=0;E.morale=clamp(E.morale+5,0,100);E.risk=clamp(E.risk-10,0,100);E.awareness=clamp(E.awareness+3,0,100);E.tempo=50;E.pending=makeEvent();abyssFloor=E.depth;abyssRoom=0;abyssRoomContent='';save();log('⬇️ Игрок выбрал переход на глубину '+E.depth+'.');render();
  }
  function combat(){
    const d=E.depth,hp=Math.round((42+d*9)*(E.done===4?1.35:1)),names=['Теневой зверь','Заражённый охотник','Пожиратель костей','Мутант Бездны'];
@@ -2461,7 +2462,7 @@ window.abyssKeyCaches = abyssKeyCaches;
    if(a==='search'){E.awareness=clamp(E.awareness+12,0,100);const g=10+E.depth*3;addReward(g);complete('🔎 Руины изучены: найдено '+g+' золота.');return}
  }
  function show(){
-   load();E.active=true;E.depth=clamp(abyssFloor||E.depth,1,MAX);abyssFloor=E.depth;save();setScreen('abyss');render();
+   load();E.active=true;E.depth=clamp(E.depth,1,MAX);abyssFloor=E.depth;abyssRoom=E.done;save();setScreen('abyss');render();
  }
  function nextAfterBattle(won){
    if(!E.pending)return;
