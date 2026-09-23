@@ -29,6 +29,9 @@ jobs:
           cp -a NEW_DARK_RPG/generated/. android/app/src/main/assets/generated/
           du -sh NEW_DARK_RPG/generated
 
+      - name: Sync Android WebView HTML
+        run: cp NEW_DARK_RPG/index.html android/app/src/main/assets/index.html
+
       - name: Full source audit
         run: |
           python - <<'PY'
