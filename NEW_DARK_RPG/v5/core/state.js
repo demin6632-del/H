@@ -30,7 +30,8 @@ export function createInitialState() {
       morale: 100,
       risk: 0,
       awareness: 50,
-      tempo: 50
+      tempo: 50,
+      returnRewards: null
     },
     economy: {
       reputation: 0,
@@ -77,6 +78,7 @@ export function normalizeState(input) {
   out.abyss.risk = clampInteger(src.abyss?.risk, 0, 100, 0);
   out.abyss.awareness = clampInteger(src.abyss?.awareness, 0, 100, 50);
   out.abyss.tempo = clampInteger(src.abyss?.tempo, 0, 100, 50);
+  out.abyss.returnRewards = src.abyss?.returnRewards && typeof src.abyss.returnRewards === "object" ? structuredClone(src.abyss.returnRewards) : null;
 
   out.economy.reputation = clampInteger(src.economy?.reputation, 0, 9999999, 0);
   out.economy.merchants = src.economy?.merchants && typeof src.economy.merchants === "object" ? structuredClone(src.economy.merchants) : {};
