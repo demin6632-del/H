@@ -222,12 +222,13 @@ bootV4();document.addEventListener('DOMContentLoaded',bootV4);setTimeout(bootV4,
   window.startAbyssExpedition=wrapped;
  }
  document.addEventListener('abyss-segment-complete',function(){bump('segment')});
+ document.addEventListener('abyss-battle-won',function(){bump('battle')});
  document.addEventListener('click',function(e){
   const b=e.target&&e.target.closest?e.target.closest('[data-action]'):null;
   if(!b)return;
   const a=b.getAttribute('data-action');
   if(a==='inspect')bump('inspect');
-  else if(a==='fight')bump('battle');
+  else if(a==='fight'){};
   else if(a==='take'||a==='search')bump(a);
   else if(a==='start')setTimeout(panel,120);
  },true);
