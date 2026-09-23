@@ -2389,7 +2389,7 @@ window.abyssKeyCaches = abyssKeyCaches;
  function sceneImage(){
    const h=host(),s=h&&h.querySelector('.scene.abyss');if(!s)return;
    const imgs=['abyss_core','blood_rift','bone_catacomb','shadow_forest','void_bridge','red_chasm','obsidian_hall'];
-   s.style.backgroundImage='linear-gradient(rgba(8,0,4,.20),rgba(0,0,0,.52)),url("assets/generated/'+imgs[Math.min(6,E.depth-1)]+'.png")';
+   s.style.backgroundImage='linear-gradient(rgba(8,0,4,.20),rgba(0,0,0,.52)),url("generated/'+imgs[Math.min(6,E.depth-1)]+'.png")';
    s.style.backgroundSize='cover';s.style.backgroundPosition='center';
  }
  function render(){
