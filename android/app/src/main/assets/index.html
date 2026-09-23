@@ -2424,7 +2424,7 @@ window.abyssKeyCaches = abyssKeyCaches;
  let E=Object.assign({},base);
  const esc=s=>String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
  function clamp(n,a,b){return Math.max(a,Math.min(b,Number(n)||0))}
- function load(){try{const x=JSON.parse(localStorage.getItem(KEY)||'null');if(x&&typeof x==='object')E=Object.assign({},base,x)}catch(e){}E.depth=clamp(E.depth||abyssFloor||1,1,MAX);E.done=clamp(E.done,0,SEGMENTS);E.morale=clamp(E.morale,0,100);E.risk=clamp(E.risk,0,100);E.awareness=clamp(E.awareness,0,100);E.tempo=clamp(E.tempo,0,100);E.feed=Array.isArray(E.feed)?E.feed.slice(0,40):[]}
+ function load(){try{const x=JSON.parse(localStorage.getItem(KEY)||'null');if(x&&typeof x==='object')E=Object.assign({},base,x)}catch(e){}E.depth=clamp(E.depth||abyssFloor||1,1,MAX);E.done=clamp(E.done,0,SEGMENTS);E.morale=clamp(E.morale,0,100);E.risk=clamp(E.risk,0,100);E.awareness=clamp(E.awareness,0,100);E.tempo=clamp(E.tempo,0,100);E.feed=Array.isArray(E.feed)?E.feed.slice(0,40):[];E.depthNotice=String(E.depthNotice||'')}
  function save(){abyssFloor=E.depth;abyssRoom=E.done;abyssRoomContent=E.pending?'Исследование участка ожидает решения игрока.':'Новая комната ещё не исследована.';try{localStorage.setItem(KEY,JSON.stringify(E))}catch(e){}}
  function log(t){E.feed.unshift(t);E.feed=E.feed.slice(0,40);save();if(typeof logEvent==='function')logEvent('ЭКСПЕДИЦИЯ',t)}
  function host(){return el('abyss')}
@@ -2470,10 +2470,10 @@ window.abyssKeyCaches = abyssKeyCaches;
      actions=common.map(x=>'<button class="abyss-action" data-action="'+x[0]+'">'+x[1]+'</button>').join('')+specific.map(x=>'<button class="abyss-action" data-action="'+x[0]+'">'+x[1]+'</button>').join('');
    }else actions='<button class="abyss-action" data-action="start">🔎 Начать исследование участка</button>';
    const feed=E.feed.length?E.feed.map(x=>'<div>'+esc(x)+'</div>').join(''):'<div class="muted">Журнал пока пуст.</div>';
-   box.innerHTML='<div class="abyss-expedition-head"><div><b>🌑 УПРАВЛЕНИЕ ЭКСПЕДИЦИЕЙ</b><div class="muted" style="font-size:11px;margin-top:3px">Глубина '+E.depth+' · Участок '+E.done+'/'+SEGMENTS+'</div></div><b style="color:#d9a52b">'+E.depth+'/7</b></div>'+
+   box.innerHTML='<div class="abyss-expedition-head"><div><b>🌑 УПРАВЛЕНИЕ ЭКСПЕДИЦИЕЙ</b><div class="muted" style="font-size:11px;margin-top:3px">Глубина '+E.depth+' · Участок '+E.done+'/'+SEGMENTS+'</div></div><b style="color:'+depthColor+'">'+E.depth+'/7</b></div>'+
    '<div class="abyss-expedition-progress"><i style="width:'+(E.done/SEGMENTS*100)+'%"></i></div>'+
    '<div class="abyss-state"><div class="info-card">❤️ Мораль<b>'+condition()+'</b></div><div class="info-card">⚠️ Риск<b>'+risk()+'</b></div><div class="info-card">🔎 Внимательность<b>'+Math.round(E.awareness)+'</b></div></div>'+
-   '<div class="abyss-event"><div class="event-type">'+(p?esc(p.title):'ГОТОВ К ИССЛЕДОВАНИЮ')+'</div><div style="text-align:center;color:#bbb;line-height:1.5">'+(p?esc(p.text):'Игрок полностью управляет следующим действием.')+'</div></div>'+
+   '<div class="abyss-event">'+(E.depthNotice?'<div style="text-align:center;color:'+depthColor+';font-weight:bold;margin-bottom:7px">'+esc(E.depthNotice)+'</div>':'')+'<div class="event-type">'+(p?esc(p.title):'ГОТОВ К ИССЛЕДОВАНИЮ')+'</div><div style="text-align:center;color:#bbb;line-height:1.5">'+(p?esc(p.text):'Игрок полностью управляет следующим действием.')+'</div></div>'+
    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-top:8px">'+actions+'</div>'+
    '<div class="panel" style="margin:8px 0 0;padding:7px"><div style="text-align:center;color:#d9a52b;font:11px monospace;letter-spacing:1px">📖 ЖУРНАЛ</div><div class="abyss-feed">'+feed+'</div></div>';
    box.querySelectorAll('.abyss-action').forEach(b=>b.onclick=()=>act(b.dataset.action));
@@ -2500,7 +2500,7 @@ window.abyssKeyCaches = abyssKeyCaches;
  }
  function nextDepth(){
    if(E.depth>=MAX){E.done=SEGMENTS;E.active=false;E.pending=null;abyssFloor=E.depth;abyssRoom=SEGMENTS;abyssRoomContent='';save();log('🏆 Достигнута максимальная глубина. Экспедиция завершена.');render();return}
-   E.depth++;E.done=0;E.morale=clamp(E.morale+5,0,100);E.risk=clamp(E.risk-10,0,100);E.awareness=clamp(E.awareness+3,0,100);E.tempo=50;E.pending=null;abyssFloor=E.depth;abyssRoom=0;abyssRoomContent='Новая комната ещё не исследована.';save();log('⬇️ Игрок выбрал переход на глубину '+E.depth+'.');render();
+   E.depth++;E.done=0;E.depthNotice='⚠️ Новая глубина '+E.depth+'. Условия изменились — выберите «Начать исследование участка».');E.morale=clamp(E.morale+5,0,100);E.risk=clamp(E.risk-10,0,100);E.awareness=clamp(E.awareness+3,0,100);E.tempo=50;E.pending=null;abyssFloor=E.depth;abyssRoom=0;abyssRoomContent='Новая комната ещё не исследована.';save();log('⬇️ Игрок выбрал переход на глубину '+E.depth+'.');render();
  }
  function combat(){
    const d=E.depth,hp=Math.round((42+d*9)*(E.done===4?1.35:1)),names=['Теневой зверь','Заражённый охотник','Пожиратель костей','Мутант Бездны'];
