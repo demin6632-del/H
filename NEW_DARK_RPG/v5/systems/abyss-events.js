@@ -4,9 +4,12 @@ import { addToInventory } from "./inventory.js";
 import { progressContract } from "./merchant.js";
 import { addGold } from "./economy.js";
 import { applyXp } from "./progression.js";
+import { rollLoot } from "./loot.js";
+import { createReturnRewards } from "./city-loop.js";
 
 export function openRoom(game, random = Math.random) {
   const state = game.state;
+  if (!state.abyss.active) return null;
   const depth = state.abyss.depth;
   const room = state.abyss.room + 1;
   const event = createRoom(depth, room, random);
@@ -17,7 +20,7 @@ export function openRoom(game, random = Math.random) {
 export function resolveRoomAction(game, action, random = Math.random) {
   const state = game.state;
   const pending = state.abyss.pending;
-  if (!pending || pending.resolved) return {ok:false,reason:"no_pending_room"};
+  if (!pending || pending.resolved || pending.transition) return {ok:false,reason:"no_pending_room"};
   const event = pending.event;
 
   if ((event.type === ROOM_TYPES.ambush || event.type === ROOM_TYPES.elite || event.type === ROOM_TYPES.boss) && action === "fight") {
@@ -124,6 +127,8 @@ export function completeCombatRoom(game, victory) {
   addGold(state,reward);
   applyXp(state,20 + state.abyss.depth * 8);
   progressContract(state,"kills");
+  const drops=rollLoot(state.abyss.depth);
+  createReturnRewards(state,{items:drops,gold:reward,xp:20 + state.abyss.depth * 8});
   game.combat = null;
   return completeIntegratedRoom(game);
 }
