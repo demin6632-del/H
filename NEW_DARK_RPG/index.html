@@ -1956,7 +1956,7 @@ window.abyssKeyCaches = abyssKeyCaches;
     ensure(item);
     const x=itemInfo(item)||{};
     let old=null;
-    if(item&&item.slot&&hero.gear)old=hero.items.find(z=>z&&z.name===hero.gear[item.slot]);
+    if(item&&item.slot&&hero.equippedIds&&hero.equippedIds[item.slot])old=hero.items.find(z=>z&&z._equipUid===hero.equippedIds[item.slot]);if(!old&&item&&item.slot&&hero.gear)old=hero.items.find(z=>z&&z.name===hero.gear[item.slot]);
     if(old){
       const o=itemInfo(old)||{};
       if(o.def)hero.def=Math.max(0,hero.def-(stat(o.def,old)-Number(o.def)));
@@ -1974,11 +1974,12 @@ window.abyssKeyCaches = abyssKeyCaches;
 
   const unequip0=unequipItemType;
   unequipItemType=function(type){
-    const item=hero&&hero.items?hero.items.find(z=>z&&(
+    const equippedId=hero&&hero.equippedIds?hero.equippedIds[type]:null;
+    const item=hero&&hero.items?((equippedId&&hero.items.find(z=>z&&z._equipUid===equippedId))||hero.items.find(z=>z&&(
       (type==='weapon'&&z.name===hero.weapon)||
       (type==='armor'&&z.name===hero.armor)||
       (SLOTS.includes(type)&&hero.gear&&z.name===hero.gear[type])
-    )):null;
+    ))):null;
     if(item){
       const x=itemInfo(item)||{};
       if(x.attack)hero.attack=Math.max(0,hero.attack-(stat(x.attack,item)-Number(x.attack)));
