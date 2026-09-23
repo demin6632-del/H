@@ -1,5 +1,6 @@
 // Chronicles of the Abyss V5 — itemisation foundation
 import { clampInteger } from "../core/state.js";
+import { createInstanceId } from "../core/id.js";
 
 export const RARITIES = Object.freeze({
   common: { id: "common", name: "Обычный", power: 1 },
@@ -12,7 +13,7 @@ export const RARITIES = Object.freeze({
 export function createItem({ id, name, slot, rarity = "common", level = 1, stats = {}, stackable = false, quantity = 1 }) {
   if (!id || !name || !slot || !RARITIES[rarity]) throw new Error("Invalid item definition");
   return {
-    instanceId: crypto.randomUUID(),
+    instanceId: createInstanceId("itm"),
     id, name, slot, rarity,
     level: clampInteger(level, 1, 999, 1),
     stats: { ...stats },
