@@ -2532,7 +2532,7 @@ window.abyssKeyCaches = abyssKeyCaches;
    if(!p)return;
    if(a==='fight'){combat();return}
    if(a==='escape'){E.risk=clamp(E.risk+8,0,100);E.tempo=clamp(E.tempo+5,0,100);complete('↩️ Игрок отступил от опасности. Риск увеличился.');return}
-   if(a==='inspect'){E.awareness=clamp(E.awareness+10,0,100);E.tempo=clamp(E.tempo-8,0,100);E.risk=clamp(E.risk-4,0,100);if(p.kind==='trap'&&E.awareness>=60)log('🪤 Ловушка обнаружена заранее: обезвреживание стало безопаснее.');log('🔎 Игрок осмотрел участок: внимательность повышена.');render();return}
+   if(a==='inspect'){if(p.inspected)return;p.inspected=true;E.awareness=clamp(E.awareness+10,0,100);E.tempo=clamp(E.tempo-8,0,100);E.risk=clamp(E.risk-4,0,100);if(p.kind==='trap'&&E.awareness>=60)log('🪤 Ловушка обнаружена заранее: обезвреживание стало безопаснее.');log('🔎 Игрок осмотрел участок: внимательность повышена.');render();return}
    if(a==='cautious'){E.risk=clamp(E.risk-10,0,100);E.tempo=clamp(E.tempo-10,0,100);E.morale=clamp(E.morale+2,0,100);complete('🛡️ Игрок выбрал осторожное исследование. Риск снижен.');return}
    if(a==='fast'){E.risk=clamp(E.risk+12,0,100);E.tempo=clamp(E.tempo+12,0,100);E.awareness=clamp(E.awareness-7,0,100);complete('🏃 Игрок ускорил продвижение. Риск вырос, внимательность снизилась.');return}
    if(a==='disarm'){if(E.awareness>=55){E.risk=clamp(E.risk-12,0,100);complete('🛠️ Ловушка обезврежена благодаря внимательности.')}else{hero.hp=Math.max(1,hero.hp-(6+E.depth*2));E.morale=clamp(E.morale-8,0,100);complete('⚠️ Ловушка сработала при попытке обезвреживания.')}return}
