@@ -2550,7 +2550,7 @@ window.abyssKeyCaches = abyssKeyCaches;
  }
  function nextAfterBattle(won){
    if(!E.pending)return;
-   if(won){E.morale=clamp(E.morale+5,0,100);E.risk=clamp(E.risk-5,0,100);complete('⚔️ Существо побеждено. Решение игрока изменило состояние экспедиции.')}
+   if(won){E.morale=clamp(E.morale+5,0,100);E.risk=clamp(E.risk-5,0,100);try{document.dispatchEvent(new CustomEvent('abyss-battle-won'))}catch(e){}complete('⚔️ Существо побеждено. Решение игрока изменило состояние экспедиции.')}
    else{E.active=false;save()}
  }
  const oldDie=window.die;
