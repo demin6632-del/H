@@ -2604,6 +2604,8 @@ window.abyssKeyCaches = abyssKeyCaches;
  };
  function isAbyssExpeditionV2CombatActive(){return !!(E.pending&&E.pending.combat)}
  window.isAbyssExpeditionV2CombatActive=isAbyssExpeditionV2CombatActive;
+ window.persistAbyssExpeditionCombatState=persistCombatState;
+ window.clearAbyssExpeditionCombatState=clearCombatState;
  window.showAbyss=show;window.startAbyssExpedition=show;window.abyssExpeditionBattleFinished=nextAfterBattle;
  load();
 })();
