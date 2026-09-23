@@ -21,7 +21,7 @@ export function beginRun(state) {
   return state;
 }
 
-export function beginRoom(state, event) {
+export function beginRoom(state, event = { type: "unknown", actions: [] }) {
   if (!state.abyss.active) throw new Error("Expedition is not active");
   if (state.abyss.room >= ROOMS_PER_DEPTH) throw new Error("Depth is already complete");
   state.abyss.pending = {
