@@ -602,6 +602,11 @@ window.abyssKeyCaches = abyssKeyCaches;
     const close=()=>modal.classList.add('hidden');
     const confirm=()=>{
       close();
+      if(sequential&&typeof window.nextAbyssExpeditionDepth==='function'){
+        window.nextAbyssExpeditionDepth();
+        logEvent('ГЛУБИНА','Открыта глубина '+Math.max(1,Number(depth))+'.');
+        return;
+      }
       abyssFloor=Math.max(1,Number(depth));
       abyssRoom=0;
       abyssBossDefeated=false;
