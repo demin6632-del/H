@@ -2000,7 +2000,7 @@ window.abyssKeyCaches = abyssKeyCaches;
     if(gear(raw))price=Math.max(1,Math.round(price*r.mult));
     try{const s=JSON.parse(localStorage.getItem('chronicles_abyss_trader_v1')||'{}');if(traderSale&&s.open&&s.talked)price=Math.max(1,Math.round(price*Number(s.sellRate||1)))}catch(e){}
     const slot=typeof slotOf==='function'?slotOf(x):null;
-    const equipped=!!(slot&&hero.equippedIds&&hero.equippedIds[slot]&&raw._equipUid===hero.equippedIds[slot])||(x.type==='weapon'&&hero.weapon===x.name)||(x.type==='armor'&&hero.armor===x.name)||(x.slot&&hero.gear&&hero.gear[x.slot]===x.name);
+    const equipped=!!(slot&&hero.equippedIds&&hero.equippedIds[slot]&&raw._equipUid===hero.equippedIds[slot]);
     if(equipped&&typeof unequipItemType==='function')unequipItemType(slot||x.slot||x.type);
     hero.items.splice(index,1);hero.gold=Math.max(0,Number(hero.gold||0)+price);save();update();if(typeof updateHud==='function')updateHud();renderInventory();if(typeof renderHero==='function')renderHero();if(typeof renderEquipment==='function')renderEquipment();sfx('buy');logEvent('ПРОДАЖА','Продан '+x.name+' · '+rarityText(raw)+' за '+price+' золота.');if(el('out'))el('out').innerHTML='<span class="green">Продано: '+x.name+' · '+rarityText(raw)+' за '+price+' золота.</span>';if(traderSale&&typeof tRender==='function')tRender();
   };
