@@ -103,7 +103,7 @@ bootV4();document.addEventListener('DOMContentLoaded',bootV4);setTimeout(bootV4,
  const CONTRACT_KEY='chronicles_abyss_contract_v1';
  const CONTRACTS=[
   {id:'scout',icon:'🔎',name:'Следопыт',desc:'Исследовать участок внимательно и не спешить.',goal:2,reward:55},
-  {id:'survivor',icon:'🛡️',name:'Выживший',desc:'Завершить глубину с риском не выше 55.',goal:5,reward:70},
+  {id:'survivor',icon:'🛡️',name:'Выживший',desc:'Завершить все 5 участков глубины.',goal:5,reward:70},
   {id:'hunter',icon:'⚔️',name:'Охотник',desc:'Победить существо в ходе экспедиции.',goal:1,reward:85},
   {id:'relic',icon:'📦',name:'Искатель реликвий',desc:'Забрать находку или изучить руины.',goal:1,reward:65}
  ];
@@ -260,6 +260,6 @@ bootV4();document.addEventListener('DOMContentLoaded',bootV4);setTimeout(bootV4,
 window.__coaAbyssRoute=state;
  const old=window.showAbyss;
  if(typeof old==='function'&&!old.__routeWrapped){const w=function(){const r=old.apply(this,arguments);setTimeout(render,80);return r};w.__routeWrapped=true;window.showAbyss=w;window.startAbyssExpedition=w}
- document.addEventListener('click',function(e){const b=e.target&&e.target.closest?e.target.closest('[data-action]'):null;if(!b)return;const a=b.getAttribute('data-action');if(a!=='take'&&a!=='search')return;const x=state();if(x.route!=='danger'||!x.applied)return;setTimeout(function(){try{const bonus=a==='take'?Math.max(8,Math.round(25+depth()*7)*0.35):Math.max(5,Math.round((10+depth()*3)*0.35));const fresh=state();if(fresh.route!=='danger'||!fresh.applied)return;if(typeof hero!=='undefined'&&hero){hero.gold=Math.max(0,Number(hero.gold||0)+bonus);try{localStorage.setItem('abyss_gold',String(hero.gold))}catch(_){}if(typeof save==='function')save();if(typeof render==='function')render();logEvent('ПУТЬ','Опасный маршрут принёс дополнительную добычу: +'+bonus+' золота.');}}catch(_){}},120);},true);
+ document.addEventListener('click',function(e){const b=e.target&&e.target.closest?e.target.closest('[data-action]'):null;if(!b)return;const a=b.getAttribute('data-action');if(a!=='take'&&a!=='search')return;const x=state();if(x.route!=='danger'||!x.applied)return;setTimeout(function(){try{const bonus=a==='take'?Math.max(8,Math.round(Math.round(25+depth()*7)*0.35)):Math.max(5,Math.round(Math.round((10+depth()*3)*0.35)));const fresh=state();if(fresh.route!=='danger'||!fresh.applied)return;if(typeof hero!=='undefined'&&hero){hero.gold=Math.max(0,Number(hero.gold||0)+bonus);try{localStorage.setItem('abyss_gold',String(hero.gold))}catch(_){}if(typeof save==='function')save();if(typeof render==='function')render();logEvent('ПУТЬ','Опасный маршрут принёс дополнительную добычу: +'+bonus+' золота.');}}catch(_){}},120);},true);
  let last=depth();setInterval(()=>{const d=depth();if(d!==last){last=d;try{localStorage.removeItem(KEY)}catch(e){}}const h=document.getElementById('abyss');if(h&&!h.classList.contains('hidden'))render()},1000);
 })();
