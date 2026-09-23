@@ -124,8 +124,6 @@ export function completeCombatRoom(game, victory) {
   if (!victory) return {ok:false,reason:"combat_lost"};
   pending.resolved = true;
   const reward = 20 + state.abyss.depth * 8;
-  addGold(state,reward);
-  applyXp(state,20 + state.abyss.depth * 8);
   progressContract(state,"kills");
   const drops=rollLoot(state.abyss.depth);
   createReturnRewards(state,{items:drops,gold:reward,xp:20 + state.abyss.depth * 8});
