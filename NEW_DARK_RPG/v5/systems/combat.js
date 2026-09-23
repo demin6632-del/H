@@ -2,6 +2,7 @@
 import { clampInteger } from "../core/state.js";
 import { skillsForClass, useSkill } from "./skills.js";
 import { tickStatuses, modifyDamage, hasStatus, STATUS } from "./status.js";
+import { bossPhase } from "./combat-resolution.js";
 
 export const COMBAT_PHASES = Object.freeze({ idle:"idle", player:"player", enemy:"enemy", victory:"victory", defeat:"defeat" });
 
@@ -51,6 +52,8 @@ export function basicAttack(combat, source="player") {
   if (hit.critical && source==="player") combat.criticals++;
   combat.log.push((source==="player"?"Игрок":"Враг")+" наносит "+hit.damage+(hit.critical?" критический":"")+" урона.");
   endCheck(combat);
+  if (source==="player" && !combat.enemyMeta?.boss) bossPhase(combat);
+  if (source==="player" && combat.enemyMeta?.boss && combat.enemy.hp>0) bossPhase(combat);
   return {ok:true,damage:hit.damage,critical:hit.critical,ended:endCheck(combat)};
 }
 
