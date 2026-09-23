@@ -2530,7 +2530,17 @@ window.abyssKeyCaches = abyssKeyCaches;
  function combat(){
    const d=E.depth,hp=Math.round((42+d*9)*(E.done===4?1.35:1)),names=['Теневой зверь','Заражённый охотник','Пожиратель костей','Мутант Бездны'];
    enemy={name:names[Math.floor(Math.random()*names.length)],hp,max:hp,attack:8+d*2,def:Math.floor(d/2),xp:45+d*8,gold:15+d*6,isElite:E.done===4,isBoss:false,phase:1,icon:'👹'};
-   E.pending.combat=true;save();log('⚔️ Игрок решил вступить в бой.');setScreen('battle');updateBattle();
+   E.pending.combat=true;persistCombatState();log('⚔️ Игрок решил вступить в бой.');setScreen('battle');updateBattle();
+ }
+ function persistCombatState(){
+   if(!E.pending||!E.pending.combat)return;
+   E.pending.combatState=enemy?JSON.parse(JSON.stringify(enemy)):null;
+   E.pending.guard=!!guard;
+   save();
+ }
+ function clearCombatState(){
+   if(!E.pending)return;
+   E.pending.combat=false;delete E.pending.combatState;delete E.pending.guard;save();
  }
  function act(a){
    const p=E.pending;
@@ -2559,12 +2569,18 @@ window.abyssKeyCaches = abyssKeyCaches;
    if(a==='search'){E.awareness=clamp(E.awareness+12,0,100);const g=10+E.depth*3;addReward(g);complete('🔎 Руины изучены: найдено '+g+' золота.');return}
  }
  function show(){
-   load();E.active=true;abyssFloor=E.depth;abyssRoom=E.done;save();setScreen('abyss');render();
+   load();
+   if(E.pending&&E.pending.combat&&E.pending.combatState){
+     enemy=JSON.parse(JSON.stringify(E.pending.combatState));
+     guard=!!E.pending.guard;
+     E.active=true;abyssFloor=E.depth;abyssRoom=E.done;save();setScreen('battle');updateBattle();return
+   }
+   E.active=true;abyssFloor=E.depth;abyssRoom=E.done;save();setScreen('abyss');render();
  }
  function nextAfterBattle(won){
    if(!E.pending)return;
-   if(won){E.morale=clamp(E.morale+5,0,100);E.risk=clamp(E.risk-5,0,100);try{document.dispatchEvent(new CustomEvent('abyss-battle-won'))}catch(e){}complete('⚔️ Существо побеждено. Решение игрока изменило состояние экспедиции.')}
-   else{E.active=false;save()}
+   if(won){E.morale=clamp(E.morale+5,0,100);E.risk=clamp(E.risk-5,0,100);E.pending.combat=false;delete E.pending.combatState;delete E.pending.guard;try{document.dispatchEvent(new CustomEvent('abyss-battle-won'))}catch(e){}complete('⚔️ Существо побеждено. Решение игрока изменило состояние экспедиции.')}
+   else{E.active=false;E.pending.combat=false;delete E.pending.combatState;delete E.pending.guard;save()}
  }
  const oldDie=window.die;
  window.die=function(){
