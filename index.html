@@ -2420,8 +2420,11 @@ window.abyssKeyCaches = abyssKeyCaches;
    try{localStorage.setItem('abyss_gold',String(hero.gold))}catch(e){}
  }
  function complete(text){
-   E.done=Math.min(SEGMENTS,E.done+1);E.pending=null;save();log(text);
-   if(E.done>=SEGMENTS){E.active=false;render();showNextDepth();return}
+   E.done=Math.min(SEGMENTS,E.done+1);
+   log(text);
+   if(E.done>=SEGMENTS){E.active=false;E.pending=null;save();render();showNextDepth();return}
+   E.pending=makeEvent();
+   save();
    render();
  }
  function showNextDepth(){
