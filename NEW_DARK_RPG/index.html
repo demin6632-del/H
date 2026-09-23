@@ -1434,9 +1434,11 @@ window.abyssKeyCaches = abyssKeyCaches;
     return true;
   }
   const oldTurn=turn;turn=function(){
+    const expeditionV2CombatBefore=typeof window.isAbyssExpeditionV2CombatActive==='function'&&window.isAbyssExpeditionV2CombatActive();
     const before=enemy,pendingBefore=state.pending?{depth:Number(state.pending.depth),room:Number(state.pending.room)}:null;
     const dBefore=Number(abyssFloor||1),roomBefore=Math.max(1,Math.min(ROOMS_PER_FLOOR,Number(abyssRoom)+1));
     const r=oldTurn.apply(this,arguments);
+    if(expeditionV2CombatBefore)return r;
     if(!enemy&&before){
       const d=pendingBefore?pendingBefore.depth:dBefore,roomNo=pendingBefore?pendingBefore.room:roomBefore,room=getRoom(d,roomNo);
       const isAbyssCombat=!!(room&&!room.visited&&room.type==='ambush'&&((pendingBefore&&pendingBefore.depth===d&&pendingBefore.room===roomNo)||roomNo===Number(abyssRoom)+1));
@@ -2584,6 +2586,8 @@ window.abyssKeyCaches = abyssKeyCaches;
    }catch(e){}
    return out;
  };
+ function isAbyssExpeditionV2CombatActive(){return !!(E.pending&&E.pending.combat)}
+ window.isAbyssExpeditionV2CombatActive=isAbyssExpeditionV2CombatActive;
  window.showAbyss=show;window.startAbyssExpedition=show;window.abyssExpeditionBattleFinished=nextAfterBattle;
  load();
 })();
