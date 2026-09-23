@@ -2455,3 +2455,45 @@ window.abyssKeyCaches = abyssKeyCaches;
   },true);
 })();
 </script>
+
+<!-- SCROLL-NO-CLICK-V1: палец, начавший прокрутку, не активирует кнопку при отпускании. -->
+<script id="SCROLL-NO-CLICK-V1">
+(function(){
+  if(window.__COA_SCROLL_NO_CLICK_V1__)return;
+  window.__COA_SCROLL_NO_CLICK_V1__=true;
+  var root=document.getElementById('game')||document.body;
+  var downX=0,downY=0,tracking=false,moved=false,ignoreUntil=0;
+  var MOVE=12;
+  root.addEventListener('touchstart',function(e){
+    if(!e.touches||!e.touches[0])return;
+    downX=e.touches[0].clientX; downY=e.touches[0].clientY;
+    tracking=true; moved=false;
+  },{capture:true,passive:true});
+  root.addEventListener('touchmove',function(e){
+    if(!tracking||!e.touches||!e.touches[0])return;
+    var dx=e.touches[0].clientX-downX,dy=e.touches[0].clientY-downY;
+    if(Math.sqrt(dx*dx+dy*dy)>=MOVE){
+      moved=true;
+      ignoreUntil=Date.now()+180;
+    }
+  },{capture:true,passive:true});
+  root.addEventListener('touchend',function(e){
+    if(moved){
+      ignoreUntil=Date.now()+220;
+      if(e.cancelable)e.preventDefault();
+      e.stopImmediatePropagation();
+    }
+    tracking=false;
+  },{capture:true,passive:false});
+  root.addEventListener('click',function(e){
+    if(Date.now()<ignoreUntil){
+      var b=e.target&&e.target.closest?e.target.closest('button'):null;
+      if(b){
+        e.preventDefault();
+        e.stopImmediatePropagation();
+      }
+    }
+  },true);
+  root.addEventListener('touchcancel',function(){tracking=false;moved=false;ignoreUntil=Date.now()+120},{capture:true,passive:true});
+})();
+</script>
