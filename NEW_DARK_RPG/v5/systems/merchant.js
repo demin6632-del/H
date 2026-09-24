@@ -68,3 +68,12 @@ export function progressContract(state,type,amount=1) {
   }
   return state;
 }
+
+export function claimContract(state,id) {
+  const progress = state.endgame.contracts?.[id];
+  const contract = CONTRACTS.find(x => x.id === id);
+  if (!progress || !contract) return {ok:false,reason:"contract_not_found"};
+  if (!progress.completed || progress.claimed) return {ok:false,reason:"not_ready"};
+  addGold(state,contract.reward.gold||0);
+  return {ok:true,reward:contract.reward};
+}
