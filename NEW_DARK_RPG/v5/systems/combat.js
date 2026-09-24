@@ -16,6 +16,7 @@ function actorFromStats(source, fallback) {
     speed: clampInteger(s.speed, 1, 99999, fallback.speed),
     mp: clampInteger(s.maxMp, 0, 99999, fallback.mp || 0),
     maxMp: clampInteger(s.maxMp, 0, 99999, fallback.mp || 0),
+    resistance: clampInteger(s.resistance, 0, 100, fallback.resistance || 0),
     statuses: {}
   };
 }
@@ -32,8 +33,10 @@ export function createCombatState(character, enemy) {
 
 function damageValue(attacker, defender, multiplier=1) {
   const critical = Math.random() < Math.min(0.25, 0.05 + attacker.speed / 500);
+  const resistance = Math.max(0, defender.resistance || 0);
   const raw = Math.max(1, Math.floor(attacker.power * multiplier) - Math.floor(defender.defense / 2));
-  return { damage:modifyDamage(defender, critical ? raw * 2 : raw), critical };
+  const resisted = Math.max(1, Math.floor(raw * Math.max(0.5, 1 - resistance * 0.02)));
+  return { damage:modifyDamage(defender, critical ? resisted * 2 : resisted), critical };
 }
 
 function endCheck(combat) {
