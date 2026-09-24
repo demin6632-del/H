@@ -1,6 +1,6 @@
 // Chronicles of the Abyss V5 — city preparation and return loop
 import { addGold, spendGold } from "./economy.js";
-import { recalculateCharacterStats } from "../systems/equipment.js";
+import { recalculateCharacterStats } from "../systems/equipment.js";\nimport { addToInventory } from "./inventory.js";
 import { applyXp } from "./../systems/progression.js";
 
 export const CITY_ACTIONS=Object.freeze({
@@ -39,7 +39,7 @@ export function collectReturnRewards(game) {
   pending.collected=true;
   addGold(state,pending.gold||0);
   applyXp(state,pending.xp||0);
-  for (const item of pending.items||[]) state.inventory.push(item);
+  for (const item of pending.items||[]) {\n    const result=addToInventory(state,item);\n    if (!result.ok) break;\n  }
   state.abyss.returnRewards=null;
   return {ok:true};
 }
