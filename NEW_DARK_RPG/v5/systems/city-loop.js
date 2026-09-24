@@ -37,13 +37,18 @@ export function collectReturnRewards(game) {
   const state=game.state;
   const pending=state.abyss.returnRewards;
   if (!pending || pending.collected) return {ok:false,reason:"no_rewards"};
+  const remaining=[];
+  for (const item of pending.items||[]) {
+    const result=addToInventory(state,item);
+    if (!result.ok) remaining.push(item);
+  }
+  if (remaining.length) {
+    pending.items=remaining;
+    return {ok:false,reason:"inventory_full",remaining:remaining.length};
+  }
   pending.collected=true;
   addGold(state,pending.gold||0);
   applyXp(state,pending.xp||0);
-  for (const item of pending.items||[]) {
-    const result=addToInventory(state,item);
-    if (!result.ok) break;
-  }
   state.abyss.returnRewards=null;
   return {ok:true};
 }
