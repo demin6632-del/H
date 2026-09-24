@@ -1,6 +1,8 @@
 // Chronicles of the Abyss V5 — endgame systems
 import { addGold } from "./economy.js";
 import { applyXp } from "./progression.js";
+import { createEnemy } from "./enemies.js";
+import { createCombatState } from "./combat.js";
 
 export const ARENA_WAVES=20;
 
@@ -45,6 +47,19 @@ export function enterArena(game) {
   return {ok:true,wave:1};
 }
 
+export function startArenaWave(game) {
+  if (!game.arena) return {ok:false,reason:"arena_not_started"};
+  if (game.combat) return {ok:false,reason:"combat_active"};
+  const wave=game.arena.wave;
+  const depth=Math.min(7,3+Math.floor((wave-1)/4));
+  const elite=wave%5===0;
+  const enemy=createEnemy(depth,Math.random,elite);
+  enemy.name="Арена: "+enemy.name;
+  game.combat=createCombatState(game.state.character,enemy);
+  game.arena.combatWave=wave;
+  return {ok:true,wave,enemy};
+}
+
 export function resolveArenaWave(game,victory=true) {
   if (!game.arena) return {ok:false,reason:"arena_not_started"};
   if (!victory) {
@@ -53,6 +68,7 @@ export function resolveArenaWave(game,victory=true) {
     return {ok:true,finished:true};
   }
   const wave=game.arena.wave;
+  game.combat=null;
   addGold(game.state,20+wave*8);
   applyXp(game.state,25+wave*10);
   game.state.endgame.arena.bestWave=Math.max(game.state.endgame.arena.bestWave||0,wave);
