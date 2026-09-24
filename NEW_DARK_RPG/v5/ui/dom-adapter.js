@@ -7,7 +7,7 @@ import { recalculateCharacterStats, upgradeEquipment, forgeCost, SLOTS } from ".
 import { sell } from "../systems/merchant.js";
 import { buy, CONTRACTS, acceptContract, claimContract } from "../systems/merchant.js";
 import { healAtTavern, trainCharacter, prepareRun, collectReturnRewards } from "../systems/city-loop.js";
-import { checkAchievements, enterArena, resolveArenaWave, ACHIEVEMENTS } from "../systems/endgame.js";
+import { checkAchievements, enterArena, startArenaWave, resolveArenaWave, ACHIEVEMENTS } from "../systems/endgame.js";
 import { skillsForClass } from "../systems/skills.js";
 
 export function createV5UI(game, root) {
@@ -193,8 +193,25 @@ export function createV5UI(game, root) {
     },!arenaUnlocked);
     if(game.arena){
       panel.appendChild(el("div","log","Волна "+game.arena.wave+" / 20"));
-      button(panel,"Победить волну",()=>{resolveArenaWave(game,true);persist();render();});
-      button(panel,"Завершить испытание",()=>{resolveArenaWave(game,false);persist();render();});
+      if(game.combat){
+        const c=game.combat;
+        panel.appendChild(el("div","log","⚔️ "+c.enemy.name+" — HP "+c.enemy.hp+"/"+c.enemy.maxHp+" | Ваше HP "+c.player.hp+"/"+c.player.maxHp+" MP "+c.player.mp+"/"+c.player.maxMp));
+        if(c.log?.length)panel.appendChild(el("div","log",c.log.slice(-6).join("\n")));
+        if(c.phase==="player"){
+          button(panel,"⚔️ Атаковать",()=>{playerAttack(c);persist();render();});
+          button(panel,"🛡️ Защита",()=>{playerDefend(c);persist();render();});
+          for(const skill of c.skills||[])button(panel,"✦ "+skill.name+" ("+skill.cost+" MP)",()=>{playerSkill(c,skill.id);persist();render();},c.player.mp<skill.cost);
+        }
+        if(c.phase==="victory"){
+          button(panel,"🏆 Забрать победу",()=>{resolveArenaWave(game,true);persist();render();});
+        }
+        if(c.phase==="defeat"){
+          button(panel,"💀 Завершить испытание",()=>{resolveArenaWave(game,false);persist();render();});
+        }
+      }else{
+        button(panel,"⚔️ Начать бой этой волны",()=>{const r=startArenaWave(game);if(!r.ok)alert("Не удалось начать волну: "+r.reason);persist();render();});
+        button(panel,"🚪 Выйти из арены",()=>{resolveArenaWave(game,false);persist();render();});
+      }
     }
     panel.appendChild(el("div","muted","Достижения"));
     for(const [id,a] of Object.entries(ACHIEVEMENTS)){
