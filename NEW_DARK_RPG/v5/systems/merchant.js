@@ -75,5 +75,6 @@ export function claimContract(state,id) {
   if (!progress || !contract) return {ok:false,reason:"contract_not_found"};
   if (!progress.completed || progress.claimed) return {ok:false,reason:"not_ready"};
   addGold(state,contract.reward.gold||0);
+  state.endgame.contracts[id].claimed=true;
   return {ok:true,reward:contract.reward};
 }
