@@ -6,6 +6,7 @@ import { addGold } from "./economy.js";
 import { applyXp } from "./progression.js";
 import { rollLoot } from "./loot.js";
 import { createReturnRewards } from "./city-loop.js";
+import { addCollection } from "./endgame.js";
 
 export function openRoom(game, random = Math.random) {
   const state = game.state;
@@ -45,8 +46,8 @@ export function resolveRoomAction(game, action, random = Math.random) {
         state.abyss.risk = Math.min(100,state.abyss.risk + 15);
       } else {
         const reward = { gold:10 + Math.floor(random()*31), xp:15 + Math.floor(random()*21) };
-        addGold(state,reward.gold);
-        applyXp(state,reward.xp);
+        createReturnRewards(state,reward);
+        addCollection(state,"treasures","treasure_depth_"+state.abyss.depth);
         progressContract(state,"treasure");
         pending.resolved = true;
         return {ok:true,type:"reward",reward};
