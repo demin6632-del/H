@@ -8,7 +8,7 @@ import { createV5UI } from "./ui/dom-adapter.js";
 let game = createGame();
 let ui = null;
 
-function root() {
+function activateV5Screen() {\n  document.querySelectorAll(".screen").forEach(x => x.classList.add("hidden"));\n  document.getElementById("menu")?.classList.add("hidden");\n  document.getElementById("abyss")?.classList.remove("hidden");\n}\n\nfunction root() {
   let host = document.getElementById("abyss");
   if (!host) {
     host = document.createElement("div");
@@ -67,7 +67,7 @@ function newV5Game() {
   chooseClassIfNeeded();
 }
 
-window.showAbyss=showV5;
+window.showClasses=newV5Game;\nwindow.continueGame=showV5;\nwindow.showAbyss=showV5;
 window.startAbyssExpedition=showV5;
 window.__COA_V5_NEW_GAME=newV5Game;
 window.__COA_V5_GAME=()=>game;
