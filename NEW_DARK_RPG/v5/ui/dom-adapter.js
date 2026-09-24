@@ -117,7 +117,7 @@ export function createV5UI(game, root) {
     panel.appendChild(el("div","muted","Навыки класса"));
     const skills=skillsForClass(c.classId||"");
     if(!skills.length)panel.appendChild(el("div","log","Навыки назначаются системой боя по выбранному классу."));
-    for(const sk of skills)panel.appendChild(el("div","item","✦ "+sk));
+    for(const sk of skills)panel.appendChild(el("div","item","✦ "+sk.name+" — "+sk.description));
   }
 
   function renderInventory(panel){
@@ -177,11 +177,11 @@ export function createV5UI(game, root) {
   function renderEndgame(panel){
     const s=game.state;
     panel.appendChild(el("div","log","Испытания открываются по мере прохождения Бездны. Лучший результат арены: "+(s.endgame.arena?.bestWave||0)+" волн."));
-    const arena=enterArena(game);
-    button(panel,arena.ok?"⚔️ Начать арену":"🔒 Арена закрыта до глубины 3",()=>{
-      const a=enterArena(game);
-      if(a.ok){game.arena=a;render();}
-    },!arena.ok);
+    const arenaUnlocked=(s.meta.bestDepth||1)>=3;
+    button(panel,game.arena?"⚔️ Продолжить арену":(arenaUnlocked?"⚔️ Начать арену":"🔒 Арена закрыта до глубины 3"),()=>{
+      if(!game.arena){const a=enterArena(game);if(a.ok)game.arena=a;}
+      render();
+    },!arenaUnlocked);
     if(game.arena){
       panel.appendChild(el("div","log","Волна "+game.arena.wave+" / 20"));
       button(panel,"Победить волну",()=>{resolveArenaWave(game,true);persist();render();});
