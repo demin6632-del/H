@@ -9,6 +9,7 @@ export function snapshotRun(game) {
     version:5,
     state:normalizeState(game.state),
     combat:game.combat ? clone(game.combat) : null,
+    arena:game.arena ? clone(game.arena) : null,
     savedAt:Date.now()
   };
 }
@@ -28,6 +29,7 @@ export function loadRun(storage=globalThis.localStorage) {
     return {
       state:normalizeState(snapshot.state),
       combat:snapshot.combat ? clone(snapshot.combat) : null,
+      arena:snapshot.arena ? clone(snapshot.arena) : null,
       savedAt:Number(snapshot.savedAt)||0
     };
   } catch (_) { return null; }
