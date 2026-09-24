@@ -5,7 +5,7 @@ import { saveActiveRun, descend, killPlayer } from "../core/game.js";
 import { equipItem, unequipItem } from "../systems/items.js";
 import { recalculateCharacterStats, upgradeEquipment, forgeCost, SLOTS } from "../systems/equipment.js";
 import { sell } from "../systems/merchant.js";
-import { buy } from "../systems/merchant.js";
+import { buy, CONTRACTS, acceptContract } from "../systems/merchant.js";
 import { healAtTavern, trainCharacter, prepareRun, collectReturnRewards } from "../systems/city-loop.js";
 import { checkAchievements, enterArena, resolveArenaWave, ACHIEVEMENTS } from "../systems/endgame.js";
 import { skillsForClass } from "../systems/skills.js";
@@ -167,7 +167,15 @@ export function createV5UI(game, root) {
     button(panel,"📚 Обучение — +75 XP (50 🪙)",()=>{trainCharacter(game);persist();render();},s.meta.gold<50);
     button(panel,"⚒️ Подготовить персонажа",()=>{prepareRun(game);persist();render();});
     if(s.abyss.returnRewards)button(panel,"🎁 Забрать трофеи",()=>{collectReturnRewards(game);persist();render();});
-    panel.appendChild(el("div","muted","Торговля и контракты"));
+    panel.appendChild(el("div","muted","Контракты"));
+    for(const contract of CONTRACTS){
+      const p=s.endgame.contracts?.[contract.id];
+      const stateLabel=p?.completed?"✓ выполнен":p?((p.progress||0)+"/"+contract.target):"не принят";
+      const row=el("div","item",contract.name+" · "+stateLabel);
+      if(!p) button(row,"Принять",()=>{acceptContract(s,contract.id);persist();render();});
+      panel.appendChild(row);
+    }
+    panel.appendChild(el("div","muted","Торговля и подготовка"));
     const shop=[["healing_potion","🧪 Зелье лечения"],["mana_potion","🔵 Зелье маны"],["abyss_key","🗝️ Ключ Бездны"],["iron_shard","⚙️ Железный осколок"]];
     for(const [id,label] of shop){
       button(panel,label,()=>{const r=buy(game.state,id,1);if(!r.ok)alert("Не удалось купить: "+r.reason);persist();render();});
