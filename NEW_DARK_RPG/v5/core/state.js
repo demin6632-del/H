@@ -13,7 +13,7 @@ export function createInitialState() {
     meta: {
       deaths: 0,
       gold: 0,
-      bestDepth: 1
+      bestDepth: 0
     },
     character: {
       level: 1,
@@ -62,7 +62,7 @@ export function normalizeState(input) {
   out.version = SAVE_VERSION;
   out.meta.deaths = clampInteger(src.meta?.deaths, 0, 999999, 0);
   out.meta.gold = clampInteger(src.meta?.gold, 0, 999999999, 0);
-  out.meta.bestDepth = clampInteger(src.meta?.bestDepth, 1, MAX_DEPTH, 1);
+  out.meta.bestDepth = clampInteger(src.meta?.bestDepth, 0, MAX_DEPTH, 0);
 
   out.character.level = clampInteger(src.character?.level, 1, 999, 1);
   out.character.xp = clampInteger(src.character?.xp, 0, 2147483647, 0);
