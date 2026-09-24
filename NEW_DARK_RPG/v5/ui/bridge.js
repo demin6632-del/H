@@ -1,12 +1,14 @@
 // Chronicles of the Abyss V5 — integration bridge
 import { createGame, continueRun, resetGame, saveActiveRun } from "./core/game.js";
 import { selectClass } from "./systems/progression.js";
+import { skillsForClass } from "./systems/skills.js";
+import { recalculateCharacterStats } from "./systems/equipment.js";
 import { createV5UI } from "./ui/dom-adapter.js";
 
 let game = createGame();
 let ui = null;
 
-function root() {
+function activateV5Screen() {\n  document.querySelectorAll(".screen").forEach(x => x.classList.add("hidden"));\n  document.getElementById("menu")?.classList.add("hidden");\n  document.getElementById("abyss")?.classList.remove("hidden");\n}\n\nfunction root() {
   let host = document.getElementById("abyss");
   if (!host) {
     host = document.createElement("div");
@@ -37,7 +39,7 @@ function chooseClassIfNeeded() {
   for (const [id,name,desc] of classes) {
     const b=document.createElement("button");
     b.textContent=name+" — "+desc;
-    b.onclick=()=>{selectClass(game.state,id);game.state.abyss.active=true;saveActiveRun(game);mount.innerHTML="";ui=createV5UI(game,mount);};
+    b.onclick=()=>{selectClass(game.state,id);game.state.character.skills=skillsForClass(id).map(x=>x.id);recalculateCharacterStats(game.state);game.state.abyss.active=true;saveActiveRun(game);mount.innerHTML="";ui=createV5UI(game,mount);};
     panel.appendChild(b);
   }
   mount.appendChild(panel);
@@ -65,7 +67,7 @@ function newV5Game() {
   chooseClassIfNeeded();
 }
 
-window.showAbyss=showV5;
+window.showClasses=newV5Game;\nwindow.continueGame=showV5;\nwindow.showAbyss=showV5;
 window.startAbyssExpedition=showV5;
 window.__COA_V5_NEW_GAME=newV5Game;
 window.__COA_V5_GAME=()=>game;

@@ -20,11 +20,11 @@ export function buy(state, itemId, quantity = 1, modifier = 1) {
   if (!def || quantity < 1) return {ok:false,reason:"invalid_item"};
   const price = merchantPrice(def, state.economy.reputation || 0, modifier);
   const total = price * Math.floor(quantity);
-  if ((state.economy.gold || 0) < total) return {ok:false,reason:"not_enough_gold"};
+  if ((state.meta.gold || 0) < total) return {ok:false,reason:"not_enough_gold"};
   const item = createItem({...def, quantity});
   const result = addToInventory(state,item);
   if (!result.ok) return result;
-  state.economy.gold -= total;
+  state.meta.gold -= total;
   return {ok:true,item:result.item,total};
 }
 

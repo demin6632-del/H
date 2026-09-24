@@ -1,5 +1,6 @@
 // Chronicles of the Abyss V5 — loot generation
 import { createItem } from "./items.js";
+import { createEquipment } from "./equipment.js";
 
 export const LOOT_TABLE = Object.freeze([
   { id:"rust_blade", name:"Ржавая сабля", slot:"weapon", chance:0.45, stats:{power:4} },
@@ -22,8 +23,14 @@ export function rollLoot(depth = 1, random = Math.random) {
   const drops = [];
   for (const entry of LOOT_TABLE) {
     if (random() < entry.chance / 2) {
-      const stats = Object.fromEntries(Object.entries(entry.stats).map(([k,v]) => [k, Math.max(1, Math.round(v * scale / 2))]));
-      drops.push(createItem({ ...entry, rarity:rollRarity(random), level:scale, stats }));
+      const rarity = rollRarity(random);
+      const stats = Object.fromEntries(
+        Object.entries(entry.stats).map(([k,v]) => [k, Math.max(1, Math.round(v * scale / 2))])
+      );
+      const item = entry.slot === "consumable"
+        ? createItem({ ...entry, rarity, level:scale, stats })
+        : createEquipment({ ...entry, rarity, level:scale, stats }, random);
+      drops.push(item);
     }
   }
   return drops;

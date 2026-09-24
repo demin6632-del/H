@@ -66,7 +66,7 @@ jobs:
           ids=re.findall(r"\bid=[\"']([^\"']+)",s,re.I)
           dup=sorted({x for x in ids if ids.count(x)>1})
           if dup: raise SystemExit(f"Duplicate IDs: {dup}")
-          if "COA_VERSION='5.0.0'" not in s: raise SystemExit("Missing v5.0.0 runtime marker")
+          if "COA_VERSION='5.1.0'" not in s: raise SystemExit("Missing v5.1.0 runtime marker")
           required_media = [
             "abyss_gate","blood_rift","ash_citadel","bone_catacomb","shadow_forest","void_bridge",
             "fallen_temple","red_chasm","obsidian_hall","forgotten_throne","night_marsh","iron_ruins",
@@ -92,8 +92,8 @@ jobs:
           for marker in ["ANDROID-NATIVE-TOUCH-FALLBACK-V64","__nativeTapBridgeV61","__nativeTapFallbackAt","enableImmersiveFullscreen"]:
             if marker not in a: raise SystemExit("Missing Android touch bridge marker: "+marker)
           gradle=(root/"android/app/build.gradle").read_text()
-          if "versionCode 56" not in gradle: raise SystemExit("Bad versionCode")
-          if "versionName '5.0.0'" not in gradle: raise SystemExit("Bad versionName")
+          if "versionCode 57" not in gradle: raise SystemExit("Bad versionCode")
+          if "versionName '5.1.0'" not in gradle: raise SystemExit("Bad versionName")
           media=root/"android/app/src/main/assets/generated"
           files=list(media.glob("*"))
           total=sum(p.stat().st_size for p in files if p.is_file())
@@ -127,7 +127,7 @@ jobs:
           BUILD_TOOLS=$(find "$ANDROID_HOME/build-tools" -maxdepth 1 -mindepth 1 -type d | sort -V | tail -1)
           "$BUILD_TOOLS/apksigner" verify --verbose "$APK"
           BADGING=$("$BUILD_TOOLS/aapt" dump badging "$APK")
-          echo "$BADGING" | grep -F "package: name='com.chronicles.abyss' versionCode='56' versionName='5.0.0'"
+          echo "$BADGING" | grep -F "package: name='com.chronicles.abyss' versionCode='56' versionName='5.1.0'"
           unzip -l "$APK" | grep -E 'assets/(index.html|art-atlas-v4.js|art-atlas-v4-core.js)$'
           unzip -l "$APK" | grep 'assets/generated/'
           unzip -p "$APK" assets/index.html > /tmp/apk-index.html
@@ -146,52 +146,52 @@ jobs:
         run: |
           rm -rf release-package
           mkdir -p release-package
-          cp app/build/outputs/apk/release/app-release.apk release-package/ChroniclesOfTheAbyss-v5.0.0.apk
-          sha256sum release-package/ChroniclesOfTheAbyss-v5.0.0.apk > release-package/SHA256SUMS.txt
+          cp app/build/outputs/apk/release/app-release.apk release-package/ChroniclesOfTheAbyss-v5.1.0.apk
+          sha256sum release-package/ChroniclesOfTheAbyss-v5.1.0.apk > release-package/SHA256SUMS.txt
           cd release-package
-          zip -9 ../ChroniclesOfTheAbyss-v5.0.0-APK.zip *
+          zip -9 ../ChroniclesOfTheAbyss-v5.1.0-APK.zip *
 
       - name: Package PROJECT ZIP
         run: |
           rm -rf /tmp/ChroniclesOfTheAbyss_PROJECT
           rsync -a --exclude=".git" --exclude="android/.gradle" --exclude="android/app/build" --exclude="android/release-package" --exclude="android/*.zip" ./ /tmp/ChroniclesOfTheAbyss_PROJECT/
           cd /tmp
-          zip -9 -r ChroniclesOfTheAbyss_PROJECT-v5.0.0.zip ChroniclesOfTheAbyss_PROJECT >/dev/null
+          zip -9 -r ChroniclesOfTheAbyss_PROJECT-v5.1.0.zip ChroniclesOfTheAbyss_PROJECT >/dev/null
 
       - name: Package FULL ZIP
         run: |
           rm -rf /tmp/ChroniclesOfTheAbyss_FULL
           mkdir -p /tmp/ChroniclesOfTheAbyss_FULL/APK /tmp/ChroniclesOfTheAbyss_FULL/PROJECT
-          cp android/app/build/outputs/apk/release/app-release.apk /tmp/ChroniclesOfTheAbyss_FULL/APK/ChroniclesOfTheAbyss-v5.0.0.apk
-          cp android/ChroniclesOfTheAbyss-v5.0.0-APK.zip /tmp/ChroniclesOfTheAbyss_FULL/APK/ChroniclesOfTheAbyss-v5.0.0-APK.zip
-          cp /tmp/ChroniclesOfTheAbyss_PROJECT-v5.0.0.zip /tmp/ChroniclesOfTheAbyss_FULL/PROJECT/ChroniclesOfTheAbyss_PROJECT-v5.0.0.zip
-          printf '%s\n' 'ChroniclesOfTheAbyss v5.0.0 FULL PACKAGE' 'Contains standalone APK, APK ZIP, and PROJECT ZIP.' > /tmp/ChroniclesOfTheAbyss_FULL/README.txt
+          cp android/app/build/outputs/apk/release/app-release.apk /tmp/ChroniclesOfTheAbyss_FULL/APK/ChroniclesOfTheAbyss-v5.1.0.apk
+          cp android/ChroniclesOfTheAbyss-v5.1.0-APK.zip /tmp/ChroniclesOfTheAbyss_FULL/APK/ChroniclesOfTheAbyss-v5.1.0-APK.zip
+          cp /tmp/ChroniclesOfTheAbyss_PROJECT-v5.1.0.zip /tmp/ChroniclesOfTheAbyss_FULL/PROJECT/ChroniclesOfTheAbyss_PROJECT-v5.1.0.zip
+          printf '%s\n' 'ChroniclesOfTheAbyss v5.1.0 FULL PACKAGE' 'Contains standalone APK, APK ZIP, and PROJECT ZIP.' > /tmp/ChroniclesOfTheAbyss_FULL/README.txt
           cd /tmp
-          zip -9 -r ChroniclesOfTheAbyss-v5.0.0-FULL.zip ChroniclesOfTheAbyss_FULL >/dev/null
+          zip -9 -r ChroniclesOfTheAbyss-v5.1.0-FULL.zip ChroniclesOfTheAbyss_FULL >/dev/null
 
       - name: Upload FULL ZIP
         uses: actions/upload-artifact@v5
         with:
-          name: ChroniclesOfTheAbyss-v5.0.0-FULL
-          path: /tmp/ChroniclesOfTheAbyss-v5.0.0-FULL.zip
+          name: ChroniclesOfTheAbyss-v5.1.0-FULL
+          path: /tmp/ChroniclesOfTheAbyss-v5.1.0-FULL.zip
 
       - name: Upload APK
         uses: actions/upload-artifact@v5
         with:
-          name: ChroniclesOfTheAbyss-v5.0.0-apk
+          name: ChroniclesOfTheAbyss-v5.1.0-apk
           path: android/app/build/outputs/apk/release/app-release.apk
 
       - name: Upload APK ZIP
         uses: actions/upload-artifact@v5
         with:
-          name: ChroniclesOfTheAbyss-v5.0.0-apk-zip
-          path: android/ChroniclesOfTheAbyss-v5.0.0-APK.zip
+          name: ChroniclesOfTheAbyss-v5.1.0-apk-zip
+          path: android/ChroniclesOfTheAbyss-v5.1.0-APK.zip
 
       - name: Upload PROJECT ZIP
         uses: actions/upload-artifact@v5
         with:
-          name: ChroniclesOfTheAbyss_PROJECT-v5.0.0
-          path: /tmp/ChroniclesOfTheAbyss_PROJECT-v5.0.0.zip
+          name: ChroniclesOfTheAbyss_PROJECT-v5.1.0
+          path: /tmp/ChroniclesOfTheAbyss_PROJECT-v5.1.0.zip
 
 # PROGRESSION-V2-SINGLE-SOURCE-FINAL-BUILD
 # INSTALL-FIX-REBUILD-2026-09-22
