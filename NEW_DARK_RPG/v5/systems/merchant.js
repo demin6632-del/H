@@ -2,6 +2,7 @@
 import { createItem } from "./items.js";
 import { addGold } from "./economy.js";
 import { addToInventory } from "./inventory.js";
+import { applyXp } from "./progression.js";
 
 export const SHOP_ITEMS = Object.freeze({
   healing_potion:{id:"healing_potion",name:"Зелье лечения",slot:"consumable",rarity:"common",stackable:true,stats:{},basePrice:18},
@@ -75,6 +76,7 @@ export function claimContract(state,id) {
   if (!progress || !contract) return {ok:false,reason:"contract_not_found"};
   if (!progress.completed || progress.claimed) return {ok:false,reason:"not_ready"};
   addGold(state,contract.reward.gold||0);
+  applyXp(state,contract.reward.xp||0);
   state.endgame.contracts[id].claimed=true;
   return {ok:true,reward:contract.reward};
 }
