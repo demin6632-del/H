@@ -5,7 +5,7 @@ import { saveActiveRun, descend, killPlayer } from "../core/game.js";
 import { equipItem, unequipItem } from "../systems/items.js";
 import { recalculateCharacterStats, upgradeEquipment, forgeCost, SLOTS } from "../systems/equipment.js";
 import { sell } from "../systems/merchant.js";
-import { buy, CONTRACTS, acceptContract } from "../systems/merchant.js";
+import { buy, CONTRACTS, acceptContract, claimContract } from "../systems/merchant.js";
 import { healAtTavern, trainCharacter, prepareRun, collectReturnRewards } from "../systems/city-loop.js";
 import { checkAchievements, enterArena, resolveArenaWave, ACHIEVEMENTS } from "../systems/endgame.js";
 import { skillsForClass } from "../systems/skills.js";
@@ -173,6 +173,7 @@ export function createV5UI(game, root) {
       const stateLabel=p?.completed?"✓ выполнен":p?((p.progress||0)+"/"+contract.target):"не принят";
       const row=el("div","item",contract.name+" · "+stateLabel);
       if(!p) button(row,"Принять",()=>{acceptContract(s,contract.id);persist();render();});
+      if(p?.completed && !p.claimed) button(row,"Забрать награду",()=>{claimContract(s,contract.id);persist();render();});
       panel.appendChild(row);
     }
     panel.appendChild(el("div","muted","Торговля и подготовка"));
