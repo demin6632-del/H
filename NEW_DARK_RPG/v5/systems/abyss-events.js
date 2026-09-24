@@ -105,7 +105,10 @@ export function completeIntegratedRoom(game) {
   state.abyss.pending = null;
   progressContract(state,"rooms");
   applyXp(state,10 + state.abyss.depth * 2);
-  if (state.abyss.room === 5) {\n    state.meta.bestDepth = Math.max(state.meta.bestDepth || 0, state.abyss.depth);\n    state.abyss.pending = { transition:true, depth:state.abyss.depth };\n  }
+  if (state.abyss.room === 5) {
+    state.meta.bestDepth = Math.max(state.meta.bestDepth || 0, state.abyss.depth);
+    state.abyss.pending = { transition:true, depth:state.abyss.depth };
+  }
   return {ok:true,room:state.abyss.room,depth:state.abyss.depth,transition:state.abyss.room===5};
 }
 
