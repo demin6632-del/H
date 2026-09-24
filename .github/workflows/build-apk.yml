@@ -127,7 +127,7 @@ jobs:
           BUILD_TOOLS=$(find "$ANDROID_HOME/build-tools" -maxdepth 1 -mindepth 1 -type d | sort -V | tail -1)
           "$BUILD_TOOLS/apksigner" verify --verbose "$APK"
           BADGING=$("$BUILD_TOOLS/aapt" dump badging "$APK")
-          echo "$BADGING" | grep -F "package: name='com.chronicles.abyss' versionCode='56' versionName='5.1.0'"
+          echo "$BADGING" | grep -F "package: name='com.chronicles.abyss' versionCode='57' versionName='5.1.0'"
           unzip -l "$APK" | grep -E 'assets/(index.html|art-atlas-v4.js|art-atlas-v4-core.js)$'
           unzip -l "$APK" | grep 'assets/generated/'
           unzip -p "$APK" assets/index.html > /tmp/apk-index.html
