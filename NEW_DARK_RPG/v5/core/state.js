@@ -67,6 +67,7 @@ export function normalizeState(input) {
   out.character.level = clampInteger(src.character?.level, 1, 999, 1);
   out.character.xp = clampInteger(src.character?.xp, 0, 2147483647, 0);
   out.character.classId = typeof src.character?.classId === "string" ? src.character.classId : null;
+  out.character.baseStats = src.character?.baseStats && typeof src.character.baseStats === "object" ? clone(src.character.baseStats) : {};
   out.character.stats = src.character?.stats && typeof src.character.stats === "object" ? clone(src.character.stats) : {};
   out.character.skills = Array.isArray(src.character?.skills) ? [...src.character.skills] : [];
   out.character.equipment = src.character?.equipment && typeof src.character.equipment === "object" ? clone(src.character.equipment) : {};
