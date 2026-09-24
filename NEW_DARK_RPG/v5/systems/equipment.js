@@ -54,8 +54,13 @@ export function equipmentStats(state) {
 }
 
 export function recalculateCharacterStats(state) {
-  const base = state.character.baseStats || state.character.stats || {};
+  const previous = state.character.stats || {};
+  const base = state.character.baseStats || previous || {};
   const gear = equipmentStats(state);
+  const oldMaxHp = Math.max(1, previous.maxHp || base.maxHp || base.hp || 1);
+  const oldMaxMp = Math.max(0, previous.maxMp || base.maxMp || 0);
+  const hpRatio = oldMaxHp > 0 ? Math.max(0, Math.min(1, (previous.hp ?? oldMaxHp) / oldMaxHp)) : 1;
+  const mpRatio = oldMaxMp > 0 ? Math.max(0, Math.min(1, (previous.mp ?? oldMaxMp) / oldMaxMp)) : 1;
   state.character.stats = {
     ...base,
     hp: Math.max(1, (base.hp || 1) + (gear.maxHp || 0)),
@@ -66,7 +71,10 @@ export function recalculateCharacterStats(state) {
     maxMp: Math.max(0, (base.maxMp || 30) + (gear.maxMp || 0)),
     resistance: Math.max(0, (base.resistance || 0) + (gear.resistance || 0))
   };
-  state.character.stats.hp = Math.min(state.character.stats.hp, state.character.stats.maxHp);
+  state.character.stats.hp = Math.min(state.character.stats.maxHp, Math.max(1, Math.round(state.character.stats.maxHp * hpRatio)));
+  state.character.stats.mp = state.character.stats.maxMp > 0
+    ? Math.min(state.character.stats.maxMp, Math.round(state.character.stats.maxMp * mpRatio))
+    : 0;
   return state.character.stats;
 }
 
