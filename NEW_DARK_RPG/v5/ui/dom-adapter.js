@@ -8,6 +8,7 @@ import { sell } from "../systems/merchant.js";
 import { buy } from "../systems/merchant.js";
 import { healAtTavern, trainCharacter, prepareRun, collectReturnRewards } from "../systems/city-loop.js";
 import { checkAchievements, enterArena, resolveArenaWave, ACHIEVEMENTS } from "../systems/endgame.js";
+import { skillsForClass } from "../systems/skills.js";
 
 export function createV5UI(game, root) {
   if (!root) throw new Error("V5 UI root is required");
@@ -114,7 +115,7 @@ export function createV5UI(game, root) {
     panel.appendChild(el("h3","", "👤 "+(c.classId||"Класс не выбран")));
     panel.appendChild(el("div","log","Уровень "+c.level+" · XP "+c.xp+"\nHP "+(st.hp||0)+"/"+(st.maxHp||0)+" · MP "+(st.mp||0)+"/"+(st.maxMp||0)+"\nМощь "+(st.power||0)+" · Защита "+(st.defense||0)+" · Скорость "+(st.speed||0)));
     panel.appendChild(el("div","muted","Навыки класса"));
-    const skills=c.skills||[];
+    const skills=skillsForClass(c.classId||"");
     if(!skills.length)panel.appendChild(el("div","log","Навыки назначаются системой боя по выбранному классу."));
     for(const sk of skills)panel.appendChild(el("div","item","✦ "+sk));
   }
